@@ -220,61 +220,113 @@ export default function DanbaiwaApp() {
   };
 
   const handleExecutePurchase = async () => {
+    const plan = dataFlow.selectedPlan!;
+    let toastId: string | number = "";
+    
     try {
-      if (dataFlow.pin !== "000000") {
-        toast.error("❌ Incorrect PIN", { description: "Please check your PIN and try again", duration: 3000 });
-        return;
-      }
-
-      if (!user || user.balance < (dataFlow.selectedPlan?.price || 0)) {
-        const needed = (dataFlow.selectedPlan?.price || 0) - user!.balance;
-        toast.error("❌ Insufficient Balance", { description: `You need ₦${needed.toLocaleString()} more`, duration: 3000 });
-        return;
-      }
-
+      // STEP 1: Show spinner immediately
       setDataFlow(prev => ({ ...prev, isLoading: true }));
-      const toastId = toast.loading("Processing purchase...");
+      toastId = toast.loading("🔄 Processing payment...");
 
-      const plan = dataFlow.selectedPlan!;
-      const apiSource = plan.apiSource || "API_A";
-      const endpoint = apiSource === "API_A" ? "/api/data/purchase-api-a" : "/api/data/purchase-api-b";
+      console.log(`[DATA PURCHASE] Starting flow for plan: ${plan.name}, amount: ₦${plan.price}`);
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          phoneNumber: dataFlow.phone,
-          planId: plan.id,
-          plan: plan.name,
-          network: dataFlow.selectedNetwork?.toUpperCase(),
-          amount: plan.price,
-          userId: user.id,
-        }),
-      });
-
-      toast.dismiss(toastId);
-
-      if (!res.ok) {
-        const error = await res.json();
-        toast.error("❌ Purchase Failed", { description: error.error || "Please try again", duration: 3000 });
+      // STEP 2: Validate PIN
+      console.log(`[DATA PURCHASE] Validating PIN...`);
+      if (!dataFlow.pin || dataFlow.pin.length !== 6) {
+        toast.dismiss(toastId);
+        toast.error("❌ Invalid PIN", { description: "PIN must be 6 digits", duration: 3000 });
         setDataFlow(prev => ({ ...prev, isLoading: false }));
         return;
       }
 
-      toast.success("✅ Data Delivered!", { description: `${plan.name} sent to ${dataFlow.phone}`, duration: 3000 });
+      if (dataFlow.pin !== "000000") {
+        console.error(`[DATA PURCHASE] PIN validation failed`);
+        toast.dismiss(toastId);
+        toast.error("❌ Incorrect PIN", { description: "Please check your PIN and try again", duration: 3000 });
+        setDataFlow(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      console.log(`[DATA PURCHASE] ✅ PIN validated successfully`);
+
+      // STEP 3: Validate Balance
+      console.log(`[DATA PURCHASE] Validating balance: have ₦${user!.balance}, need ₦${plan.price}`);
+      if (!user || user.balance < plan.price) {
+        const needed = plan.price - user!.balance;
+        console.error(`[DATA PURCHASE] Insufficient balance: need ₦${needed} more`);
+        toast.dismiss(toastId);
+        toast.error("❌ Insufficient Balance", { description: `You need ₦${needed.toLocaleString()} more`, duration: 3000 });
+        setDataFlow(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      console.log(`[DATA PURCHASE] ✅ Balance validated successfully`);
+
+      // STEP 4: Call API
+      console.log(`[DATA PURCHASE] Calling API to process purchase...`);
+      const apiSource = plan.apiSource || "API_A";
+      const endpoint = apiSource === "API_A" ? "/api/data/purchase-api-a" : "/api/data/purchase-api-b";
+
+      const requestPayload = {
+        phoneNumber: dataFlow.phone,
+        planId: plan.id,
+        plan: plan.name,
+        network: dataFlow.selectedNetwork?.toUpperCase(),
+        amount: plan.price,
+        userId: user.id,
+      };
+
+      console.log(`[DATA PURCHASE] API Request:`, requestPayload);
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestPayload),
+      });
+
+      const responseData = await res.json();
+      console.log(`[DATA PURCHASE] API Response:`, responseData);
+
+      toast.dismiss(toastId);
+
+      // STEP 5: Handle Response
+      if (!res.ok) {
+        console.error(`[DATA PURCHASE] ❌ API Error: ${responseData.error}`);
+        toast.error("❌ Purchase Failed", { 
+          description: responseData.error || "Please try again", 
+          duration: 4000 
+        });
+        setDataFlow(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
+
+      console.log(`[DATA PURCHASE] ✅ Purchase successful!`);
+
+      // STEP 6: Show success and refresh balance
+      toast.success("✅ Data Delivered!", { 
+        description: `${plan.name} sent to ${dataFlow.phone}`, 
+        duration: 3000 
+      });
 
       // Refresh balance
       const userRes = await fetch("/api/auth/me");
       if (userRes.ok) {
         const updatedUser = await userRes.json();
         setUser(updatedUser);
+        console.log(`[DATA PURCHASE] Balance refreshed: ₦${updatedUser.balance}`);
       }
 
-      // Reset flow
+      // STEP 7: Reset and return to home
       setDataFlow({ step: "idle", phone: "", selectedNetwork: null, selectedPlan: null, pin: "", isLoading: false });
       setActiveTab("home");
+
     } catch (error: any) {
-      toast.error("Error", { description: error.message || "Something went wrong", duration: 3000 });
+      console.error(`[DATA PURCHASE] ❌ Exception:`, error);
+      if (toastId) toast.dismiss(toastId);
+      toast.error("❌ Error", { 
+        description: error.message || "Something went wrong during purchase", 
+        duration: 3000 
+      });
       setDataFlow(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -285,6 +337,111 @@ export default function DanbaiwaApp() {
       router.push("/app/auth");
     } catch {
       toast.error("Logout failed");
+    }
+  };
+
+  const handleAirtimePurchase = async () => {
+    let toastId: string | number = "";
+    
+    try {
+      // STEP 1: Validate all fields
+      if (!airtimeForm.network || !airtimeForm.recipientPhone || !airtimeForm.amount) {
+        toast.error("❌ Missing Fields", { description: "Please fill all fields", duration: 3000 });
+        return;
+      }
+
+      if (airtimeForm.recipientPhone.length < 10) {
+        toast.error("❌ Invalid Phone", { description: "Phone number must be at least 10 digits", duration: 3000 });
+        return;
+      }
+
+      if (airtimeForm.amount < 100 || airtimeForm.amount > 50000) {
+        toast.error("❌ Invalid Amount", { description: "Amount must be between ₦100 and ₦50,000", duration: 3000 });
+        return;
+      }
+
+      // STEP 2: Show spinner
+      toastId = toast.loading("🔄 Processing airtime purchase...");
+      console.log(`[AIRTIME PURCHASE] Starting flow for recipient: ${airtimeForm.recipientPhone}, amount: ₦${airtimeForm.amount}`);
+
+      // STEP 3: Validate balance (airtime uses kobo internally - multiply by 100)
+      const amountInKobo = airtimeForm.amount * 100;
+      console.log(`[AIRTIME PURCHASE] Validating balance: have ${user!.balance} kobo, need ${amountInKobo} kobo`);
+      
+      if (!user || user.balance < amountInKobo) {
+        const needed = amountInKobo - user!.balance;
+        const neededInNaira = Math.ceil(needed / 100);
+        console.error(`[AIRTIME PURCHASE] Insufficient balance: need ₦${neededInNaira} more`);
+        toast.dismiss(toastId);
+        toast.error("❌ Insufficient Balance", { 
+          description: `You need ₦${neededInNaira.toLocaleString()} more`, 
+          duration: 3000 
+        });
+        return;
+      }
+
+      console.log(`[AIRTIME PURCHASE] ✅ Balance validated successfully`);
+
+      // STEP 4: Call API
+      console.log(`[AIRTIME PURCHASE] Calling API to process purchase...`);
+      const requestPayload = {
+        buyerPhone: user.phone,
+        recipientPhone: airtimeForm.recipientPhone,
+        amount: airtimeForm.amount,
+        network: airtimeForm.network,
+        pin: "000000", // Demo PIN
+      };
+
+      console.log(`[AIRTIME PURCHASE] API Request:`, requestPayload);
+
+      const res = await fetch("/api/airtime/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestPayload),
+      });
+
+      const responseData = await res.json();
+      console.log(`[AIRTIME PURCHASE] API Response:`, responseData);
+
+      toast.dismiss(toastId);
+
+      // STEP 5: Handle Response
+      if (!res.ok) {
+        console.error(`[AIRTIME PURCHASE] ❌ API Error: ${responseData.error}`);
+        toast.error("❌ Purchase Failed", { 
+          description: responseData.error || "Please try again", 
+          duration: 4000 
+        });
+        return;
+      }
+
+      console.log(`[AIRTIME PURCHASE] ✅ Purchase successful!`);
+
+      // STEP 6: Show success and refresh balance
+      toast.success("✅ Airtime Sent!", { 
+        description: `₦${airtimeForm.amount.toLocaleString()} sent to ${airtimeForm.recipientPhone}`, 
+        duration: 3000 
+      });
+
+      // Refresh balance
+      const userRes = await fetch("/api/auth/me");
+      if (userRes.ok) {
+        const updatedUser = await userRes.json();
+        setUser(updatedUser);
+        console.log(`[AIRTIME PURCHASE] Balance refreshed: ₦${updatedUser.balance / 100}`);
+      }
+
+      // STEP 7: Reset and return to home
+      setAirtimeForm({ network: "mtn", recipientPhone: "", amount: 0 });
+      setActiveTab("home");
+
+    } catch (error: any) {
+      console.error(`[AIRTIME PURCHASE] ❌ Exception:`, error);
+      if (toastId) toast.dismiss(toastId);
+      toast.error("❌ Error", { 
+        description: error.message || "Something went wrong during purchase", 
+        duration: 3000 
+      });
     }
   };
 
@@ -380,108 +537,164 @@ export default function DanbaiwaApp() {
               transition={{ duration: 0.2 }}
               style={{ padding: "20px 16px 100px" }}
             >
-              {/* FINTECH WALLET CARD */}
+              {/* FINTECH WALLET CARD - PROFESSIONAL SKY BLUE */}
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
                 style={{
-                  background: `linear-gradient(135deg, ${COLORS.bgSecondary} 0%, #F5F8FF 100%)`,
-                  border: `2px solid ${COLORS.primary}`,
-                  borderRadius: 20,
-                  padding: "24px",
+                  background: `linear-gradient(135deg, #0099FF 0%, #00D4FF 50%, #00CCFF 100%)`,
+                  border: "none",
+                  borderRadius: 24,
+                  padding: "28px",
                   marginBottom: 28,
-                  boxShadow: "0 8px 24px rgba(0, 102, 204, 0.12)",
+                  boxShadow: "0 20px 60px rgba(0, 153, 255, 0.25), 0 0 1px rgba(0, 0, 0, 0.08)",
+                  position: "relative",
+                  overflow: "hidden",
                 }}
               >
-                <p style={{ margin: "0 0 12px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                {/* Subtle background pattern */}
+                <div style={{
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                  width: "200px",
+                  height: "200px",
+                  background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+                  borderRadius: "50%",
+                  pointerEvents: "none",
+                }}/>
+
+                <p style={{ 
+                  margin: "0 0 16px", 
+                  fontSize: 11, 
+                  color: "rgba(255,255,255,0.8)", 
+                  fontWeight: 700, 
+                  textTransform: "uppercase", 
+                  letterSpacing: "1px",
+                  position: "relative",
+                  zIndex: 1,
+                }}>
                   Available Balance
                 </p>
                 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+                <div style={{ 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "space-between", 
+                  marginBottom: 28,
+                  position: "relative",
+                  zIndex: 1,
+                }}>
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.1 }}
-                    style={{ display: "flex", alignItems: "baseline", gap: 0 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.15 }}
+                    style={{ display: "flex", alignItems: "baseline", gap: 2 }}
                   >
                     <h2 style={{
                       margin: 0,
-                      fontSize: 52,
-                      fontWeight: 800,
-                      color: COLORS.primary,
+                      fontSize: 64,
+                      fontWeight: 900,
+                      color: "white",
                       fontFamily: 'Menlo, monospace',
-                      letterSpacing: "-2px",
+                      letterSpacing: "-3px",
                       display: "flex",
                       alignItems: "baseline",
+                      textShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
                     }}>
-                      <span style={{ marginRight: 4, fontSize: 28 }}>₦</span>
+                      <span style={{ marginRight: 6, fontSize: 32, fontWeight: 800 }}>₦</span>
                       <span>{balanceVisible ? user.balance.toLocaleString() : "•••••"}</span>
                     </h2>
                   </motion.div>
 
                   <motion.button
-                    whileTap={{ scale: 0.85 }}
+                    whileTap={{ scale: 0.75 }}
+                    whileHover={{ scale: 1.1 }}
                     onClick={() => setBalanceVisible(!balanceVisible)}
                     style={{
-                      background: COLORS.bgMain,
-                      border: `1px solid ${COLORS.border}`,
-                      borderRadius: 12,
-                      width: 44,
-                      height: 44,
+                      background: "rgba(255,255,255,0.25)",
+                      border: "1.5px solid rgba(255,255,255,0.5)",
+                      borderRadius: 14,
+                      width: 48,
+                      height: 48,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      color: COLORS.textSecondary,
+                      color: "white",
                       cursor: "pointer",
+                      backdropFilter: "blur(10px)",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                     }}
                   >
-                    {balanceVisible ? <Eye size={20} /> : <EyeOff size={20} />}
+                    {balanceVisible ? <Eye size={22} strokeWidth={2.5} /> : <EyeOff size={22} strokeWidth={2.5} />}
                   </motion.button>
                 </div>
 
                 {/* Card Footer Info */}
                 <div style={{
-                  borderTop: `1px solid ${COLORS.border}`,
-                  paddingTop: 16,
+                  borderTop: "1px solid rgba(255,255,255,0.3)",
+                  paddingTop: 20,
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
+                  position: "relative",
+                  zIndex: 1,
                 }}>
                   <div>
-                    <p style={{ margin: "0 0 4px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600 }}>
-                      Phone Number
+                    <p style={{ 
+                      margin: "0 0 6px", 
+                      fontSize: 11, 
+                      color: "rgba(255,255,255,0.75)", 
+                      fontWeight: 600,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                    }}>
+                      Registered Phone
                     </p>
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: COLORS.text }}>
+                    <p style={{ 
+                      margin: 0, 
+                      fontSize: 15, 
+                      fontWeight: 700, 
+                      color: "white",
+                      fontFamily: "Menlo, monospace",
+                      letterSpacing: "-0.5px",
+                    }}>
                       {user.phone}
                     </p>
                   </div>
                   <motion.button
                     whileTap={{ scale: 0.85 }}
+                    whileHover={{ scale: 1.05 }}
                     onClick={() => {
                       navigator.clipboard.writeText(user.phone);
-                      toast.success("Copied!");
+                      toast.success("Phone copied!");
                     }}
                     style={{
-                      background: COLORS.bgMain,
-                      border: `1px solid ${COLORS.border}`,
-                      borderRadius: 10,
-                      padding: "8px 12px",
-                      color: COLORS.primary,
-                      fontWeight: 600,
+                      background: "rgba(255,255,255,0.25)",
+                      border: "1.5px solid rgba(255,255,255,0.5)",
+                      borderRadius: 12,
+                      padding: "8px 14px",
+                      color: "white",
+                      fontWeight: 700,
                       cursor: "pointer",
                       fontSize: 12,
                       display: "flex",
                       alignItems: "center",
                       gap: 6,
+                      backdropFilter: "blur(10px)",
+                      transition: "all 0.2s ease",
+                      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                     }}
                   >
-                    <Copy size={14} />
+                    <Copy size={14} strokeWidth={2.5} />
                     Copy
                   </motion.button>
                 </div>
               </motion.div>
 
+              {/* SERVICES GRID */}
               {/* SERVICES GRID */}
               <p style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: COLORS.text, letterSpacing: "-0.3px" }}>
                 Quick Services
@@ -1073,13 +1286,7 @@ export default function DanbaiwaApp() {
                 {/* Confirm Button */}
                 <motion.button
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    if (!airtimeForm.recipientPhone || !airtimeForm.amount || !airtimeForm.network) {
-                      toast.error("Please fill all fields");
-                      return;
-                    }
-                    toast.success("Airtime feature coming soon");
-                  }}
+                  onClick={handleAirtimePurchase}
                   style={{
                     background: "#DC2626",
                     border: "none",
