@@ -18,24 +18,6 @@ export const signupSchema = z.object({
   path: ["confirmPin"],
 });
 
-export const dataPurchaseSchema = z.object({
-  planId: z.string().min(1, "Plan is required"),
-  phoneNumber: z
-    .string()
-    .regex(/^(\+?234|0)[0-9]{10}$/, "Invalid Nigerian phone number"),
-});
-
-export const airtimePurchaseSchema = z.object({
-  phoneNumber: z
-    .string()
-    .regex(/^(\+?234|0)[0-9]{10}$/, "Invalid Nigerian phone number"),
-  amount: z
-    .number()
-    .min(50, "Minimum amount is ₦50")
-    .max(100000, "Maximum amount is ₦100,000"),
-  network: z.enum(["MTN", "AIRTEL", "GLO", "9MOBILE"]),
-});
-
 export const createVirtualAccountSchema = z.object({
   accountName: z.string().min(2, "Account name is required"),
 });
@@ -47,8 +29,6 @@ export const setPINSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;
-export type DataPurchaseInput = z.infer<typeof dataPurchaseSchema>;
-export type AirtimePurchaseInput = z.infer<typeof airtimePurchaseSchema>;
 export type CreateVirtualAccountInput = z.infer<
   typeof createVirtualAccountSchema
 >;
