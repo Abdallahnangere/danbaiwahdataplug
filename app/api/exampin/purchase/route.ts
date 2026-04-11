@@ -124,11 +124,13 @@ export async function POST(req: NextRequest) {
     const transaction = await db.transaction.create({
       data: {
         userId: user.id,
-        type: "exampin",
-        service: examName,
+        type: "EXAMPIN_PURCHASE",
+        description: `${quantity} ${examName} Exam PIN${quantity > 1 ? "s" : ""}`,
         amount: totalAmount,
-        status: "completed",
-        externalId: epinResult.data?.ident || reference,
+        status: "COMPLETED",
+        phone: user.id, // Using userId since phone is not needed for exam pins
+        reference: reference,
+        externalReference: epinResult.data?.ident || reference,
         metadata: {
           examName,
           quantity,
@@ -151,9 +153,10 @@ export async function POST(req: NextRequest) {
         message: epinResult.message,
         transaction: {
           id: transaction.id,
-          reference: transaction.externalId,
+          reference: transaction.reference,
+          externalReference: transaction.externalReference,
           type: transaction.type,
-          service: transaction.service,
+          description: transaction.description,
           amount: transaction.amount,
           quantity,
           examName,

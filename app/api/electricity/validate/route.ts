@@ -21,7 +21,7 @@ const DISCO_MAP: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await auth();
+    const user = await getSessionUser(req);
     if (!user) {
       return NextResponse.json(
         { error: "Unauthorized" },

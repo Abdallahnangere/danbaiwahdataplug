@@ -29,13 +29,13 @@ export async function deliverGuestData(transaction: Transaction) {
       result = await smeplug.purchaseData({
         externalNetworkId: plan.externalNetworkId,
         externalPlanId: plan.externalPlanId,
-        phone: transaction.phone,
+        phone: transaction.phone || "",
         reference: transaction.reference,
       });
     } else {
       result = await saiful.purchaseData({
         plan: plan.externalPlanId,
-        mobileNumber: transaction.phone,
+        mobileNumber: transaction.phone || "",
         network: plan.network,
         reference: transaction.reference,
       });

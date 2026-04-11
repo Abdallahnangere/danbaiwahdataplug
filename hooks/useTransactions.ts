@@ -2,7 +2,25 @@
 
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { Transaction } from "@/types";
+
+interface Transaction {
+  id: string;
+  userId?: string;
+  type: 'DATA_PURCHASE' | 'AIRTIME_PURCHASE' | 'CABLE_SUBSCRIPTION' | 'ELECTRICITY_PAYMENT' | 'EXAMPIN_PURCHASE' | 'DEPOSIT' | 'WALLET_FUNDING' | 'REWARD_CREDIT';
+  method?: string;
+  amount: number;
+  status: 'PENDING' | 'SUCCESS' | 'FAILED' | 'COMPLETED';
+  reference: string;
+  externalReference?: string;
+  description?: string;
+  phone?: string;
+  guestPhone?: string;
+  planId?: string;
+  apiUsed?: string;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 interface TransactionsResponse {
   data: Transaction[];

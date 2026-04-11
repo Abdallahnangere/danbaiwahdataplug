@@ -1043,7 +1043,7 @@ export default function DashboardPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setSuccessData({
-          type: "data",
+          type: "DATA_PURCHASE",
           plan: selectedPlan.sizeLabel,
           network: selectedPlan.network,
           amount: getPriceForTier(selectedPlan, user?.tier || "user"),

@@ -2,7 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { UserReward } from "@/types";
+
+interface UserReward {
+  id: string;
+  userId: string;
+  rewardId: string;
+  status: 'IN_PROGRESS' | 'EARNED' | 'CLAIMED';
+  claimedAt?: Date;
+  createdAt: Date;
+}
 
 interface RewardsResponse {
   availableRewards: any[];

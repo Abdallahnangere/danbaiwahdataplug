@@ -167,12 +167,13 @@ export async function POST(req: NextRequest) {
     const transaction = await db.transaction.create({
       data: {
         userId: user.id,
-        type: "electricity",
-        service: DISCO_NAMES[discoId],
+        type: "ELECTRICITY_PAYMENT",
+        description: `Payment for ${DISCO_NAMES[discoId]}`,
         amount: amount,
-        status: "completed",
-        phoneNumber,
-        externalId: paymentResult.data?.reference || reference,
+        status: "COMPLETED",
+        phone: phoneNumber,
+        reference: reference,
+        externalReference: paymentResult.data?.reference || reference,
         metadata: {
           meterType,
           meterNumber,
@@ -200,9 +201,10 @@ export async function POST(req: NextRequest) {
         message: paymentResult.message,
         transaction: {
           id: transaction.id,
-          reference: transaction.externalId,
+          reference: transaction.reference,
+          externalReference: transaction.externalReference,
           type: transaction.type,
-          service: transaction.service,
+          description: transaction.description,
           amount: transaction.amount,
           status: transaction.status,
           meterNumber,

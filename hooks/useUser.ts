@@ -2,7 +2,21 @@
 
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { User } from "@/types";
+
+interface User {
+  id: string;
+  fullName: string;
+  phone: string;
+  email?: string;
+  role: 'USER' | 'AGENT' | 'ADMIN';
+  tier: string;
+  balance: number;
+  isBanned: boolean;
+  isActive: boolean;
+  joinedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 export function useUser() {
   return useQuery<User>({

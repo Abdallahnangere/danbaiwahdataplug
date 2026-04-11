@@ -15,6 +15,7 @@ interface AppStore {
   isLoading: boolean;
   setUser: (user: User | null) => void;
   setLoading: (isLoading: boolean) => void;
+  logout: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -22,4 +23,5 @@ export const useAppStore = create<AppStore>((set) => ({
   isLoading: true,
   setUser: (user) => set({ user }),
   setLoading: (isLoading) => set({ isLoading }),
+  logout: () => set({ user: null }),
 }));
