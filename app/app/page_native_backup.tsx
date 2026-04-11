@@ -4,58 +4,61 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
-  Eye, EyeOff, Copy, Loader2, ChevronRight,
+  Wifi, Phone, Tv, Zap, BookOpen, Home, History, Gift, Settings as SettingsIcon,
+  Eye, EyeOff, Copy, Loader2, ChevronRight, AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
+import { LogoIcon } from "@/components/Logo";
 
-// ============ PREMIUM COLORS ============
+// ============ NATIVE iOS COLORS ============
 const COLORS = {
-  // Brand colors
-  primary: "#007AFF",
+  // iOS system colors
+  primary: "#007AFF",      // iOS Blue
+  secondary: "#FF9500",    // iOS Orange
+  success: "#34C759",      // iOS Green
+  danger: "#FF3B30",       // iOS Red
+  warning: "#FF9500",      // iOS Orange
   
-  // Modern backgrounds
-  bgMain: "#F8FAFF",
-  bgSecondary: "#FFFFFF",
-  bgGradientStart: "#F0F4FF",
-  bgGradientEnd: "#FAFAFA",
+  // iOS backgrounds
+  bg: "#FFFFFF",
+  bgSecondary: "#F2F2F7",
+  bgTertiary: "#FFFFFF",
   
-  // Text
-  text: "#1A1A2E",
-  textSecondary: "#525566",
-  textTertiary: "#8B8BA8",
+  // iOS text
+  text: "#000000",
+  textSecondary: "#3C3C43",
+  textTertiary: "#8E8E93",
   
-  // Borders & dividers
-  separator: "#E8EBFF",
+  // iOS borders
+  separator: "#C6C6C6",
   
-  // Service colors
-  dataColor: "#007AFF",
-  airtimeColor: "#FF3B30",
-  cableColor: "#AF52DE",
-  electricityColor: "#FF9500",
-  examColor: "#34C759",
+  // Dark mode support
+  darkBg: "#000000",
+  darkBgSecondary: "#1C1C1E",
+  darkText: "#FFFFFF",
 };
 
-// Service color mapping
-const SERVICE_COLORS = {
-  data: { color: COLORS.dataColor, bg: "#EBF5FF" },
-  airtime: { color: "#FF3B30", bg: "#FFEBEE" },
-  cable: { color: "#AF52DE", bg: "#F3E5FF" },
-  electricity: { color: "#FF9500", bg: "#FFF4E6" },
-  exampin: { color: "#34C759", bg: "#EEFFF4" },
-};
+const SERVICES = [
+  { id: "home", label: "Home", icon: Home },
+  { id: "data", label: "Data", icon: Wifi },
+  { id: "airtime", label: "Airtime", icon: Phone },
+  { id: "cable", label: "Cable", icon: Tv },
+  { id: "electricity", label: "Power", icon: Zap },
+  { id: "exampin", label: "Exams", icon: BookOpen },
+];
 
 const ACCOUNT_SERVICES = [
   { id: "transactions", label: "Transactions", icon: History },
+  { id: "rewards", label: "Rewards", icon: Gift },
   { id: "settings", label: "Settings", icon: SettingsIcon },
 ];
 
 const NETWORKS = [
-  { id: "mtn", name: "MTN", image: "/networks/mtn.jpeg" },
-  { id: "airtel", name: "Airtel", image: "/networks/airtel.jpeg" },
-  { id: "glo", name: "Glo", image: "/networks/glo.jpeg" },
-  { id: "9mobile", name: "9Mobile", image: "/networks/9mobile.jpeg" },
+  { id: "mtn", name: "MTN", image: "/networks/mtn.jpeg", color: "#FFCC00" },
+  { id: "airtel", name: "Airtel", image: "/networks/airtel.jpeg", color: "#FF3333" },
+  { id: "glo", name: "Glo", image: "/networks/glo.jpeg", color: "#22C55E" },
+  { id: "9mobile", name: "9Mobile", image: "/networks/9mobile.jpeg", color: "#00A859" },
 ];
 
 const CABLE_PROVIDERS = {
@@ -115,16 +118,6 @@ interface DataPlan {
   network: string;
 }
 
-// Helper to get user initials
-const getInitials = (name: string) => {
-  return name
-    .split(" ")
-    .map(n => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-};
-
 // ============ MAIN COMPONENT ============
 export default function NativeIOSDashboard() {
   const router = useRouter();
@@ -135,10 +128,16 @@ export default function NativeIOSDashboard() {
   const [plans, setPlans] = useState<DataPlan[]>([]);
   const [selectedNetwork, setSelectedNetwork] = useState("mtn");
   
-  // Form states
+  // Airtime form
   const [airtimeForm, setAirtimeForm] = useState({ recipientPhone: "", amount: 100, network: "mtn" });
+  
+  // Cable form
   const [cableForm, setCableForm] = useState({ provider: "dstv", plan: "padi" });
+  
+  // Electricity form
   const [electricityForm, setElectricityForm] = useState({ meterNumber: "", disco: "Ikeja Electric", meterType: "prepaid" });
+  
+  // Exam form
   const [examForm, setExamForm] = useState({ exam: "WAEC", quantity: 1 });
 
   // ============ EFFECTS ============
@@ -296,7 +295,7 @@ export default function NativeIOSDashboard() {
   if (loading || !user) {
     return (
       <div style={{
-        background: `linear-gradient(135deg, ${COLORS.bgGradientStart}, ${COLORS.bgGradientEnd})`,
+        background: COLORS.bg,
         color: COLORS.text,
         minHeight: "100vh",
         display: "flex",
@@ -311,18 +310,41 @@ export default function NativeIOSDashboard() {
     );
   }
 
-  const SERVICES = [
-    { id: "data", label: "Data", icon: Wifi, color: SERVICE_COLORS.data },
-    { id: "airtime", label: "Airtime", icon: Phone, color: SERVICE_COLORS.airtime },
-    { id: "cable", label: "Cable", icon: Tv, color: SERVICE_COLORS.cable },
-    { id: "electricity", label: "Power", icon: Zap, color: SERVICE_COLORS.electricity },
-    { id: "exampin", label: "Exams", icon: BookOpen, color: SERVICE_COLORS.exampin },
-  ];
+  const TabIcon = ({ id, Icon }: { id: string; Icon: any }) => (
+    <motion.button
+      whileTap={{ scale: 0.85 }}
+      onClick={() => setActiveTab(id)}
+      style={{
+        background: "transparent",
+        border: "none",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        padding: "8px 16px",
+        gap: 4,
+      }}
+    >
+      <Icon
+        size={24}
+        color={activeTab === id ? COLORS.primary : COLORS.textTertiary}
+        strokeWidth={activeTab === id ? 2.5 : 2}
+      />
+      <span style={{
+        fontSize: 10,
+        fontWeight: activeTab === id ? 600 : 500,
+        color: activeTab === id ? COLORS.primary : COLORS.textTertiary,
+      }}>
+        {SERVICES.find(s => s.id === id)?.label || ""}
+      </span>
+    </motion.button>
+  );
 
   // ============ RENDER ============
   return (
     <div style={{
-      background: `linear-gradient(to bottom, ${COLORS.bgGradientStart}, ${COLORS.bgGradientEnd})`,
+      background: COLORS.bgSecondary,
       color: COLORS.text,
       minHeight: "100vh",
       display: "flex",
@@ -331,14 +353,13 @@ export default function NativeIOSDashboard() {
       overflow: "hidden",
     }}>
       {/* STATUS BAR SPACING */}
-      <div style={{ height: "env(safe-area-inset-top, 20px)", background: "transparent" }} />
+      <div style={{ height: "env(safe-area-inset-top, 20px)", background: COLORS.bg }} />
 
-      {/* PREMIUM HEADER */}
+      {/* TOP NAVIGATION */}
       <div style={{
-        background: `linear-gradient(135deg, ${COLORS.bgGradientStart}, ${COLORS.bgSecondary})`,
-        backdropFilter: "blur(10px)",
+        background: COLORS.bg,
         borderBottom: `1px solid ${COLORS.separator}`,
-        padding: "12px 16px 18px",
+        padding: "12px 16px 16px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -346,43 +367,33 @@ export default function NativeIOSDashboard() {
         <div>
           <h1 style={{
             margin: 0,
-            fontSize: 28,
+            fontSize: 32,
             fontWeight: 700,
             letterSpacing: -0.5,
-            color: COLORS.text,
           }}>
-            Hi, {user.fullName.split(" ")[0]} 👋
+            {activeTab === "home" ? "Danbaiwa" : SERVICES.find(s => s.id === activeTab)?.label}
           </h1>
-          <p style={{
-            margin: "2px 0 0",
-            fontSize: 13,
-            color: COLORS.textTertiary,
-            fontWeight: 500,
-          }}>
-            Welcome back
-          </p>
         </div>
         <motion.button
-          whileTap={{ scale: 0.85 }}
+          whileTap={{ scale: 0.8 }}
           onClick={handleLogout}
           style={{
-            background: `linear-gradient(135deg, ${COLORS.primary}20, ${COLORS.primary}10)`,
-            border: `1.5px solid ${COLORS.primary}40`,
+            background: COLORS.bgSecondary,
+            border: "none",
             borderRadius: 50,
-            width: 44,
-            height: 44,
+            width: 40,
+            height: 40,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             cursor: "pointer",
-            color: COLORS.primary,
-            fontWeight: 700,
-            fontSize: 20,
-            backdropFilter: "blur(10px)",
+            color: COLORS.danger,
+            fontWeight: 600,
+            fontSize: 18,
           }}
           title="Logout"
         >
-          {getInitials(user.fullName)}
+          ←
         </motion.button>
       </div>
 
@@ -404,210 +415,156 @@ export default function NativeIOSDashboard() {
               transition={{ duration: 0.3 }}
               style={{ padding: "16px" }}
             >
-              {/* PREMIUM BALANCE CARD */}
+              {/* BALANCE CARD */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
                 style={{
-                  background: "linear-gradient(135deg, #003A9F 0%, #7C3AED 50%, #0EA5E9 100%)",
+                  background: `linear-gradient(135deg, ${COLORS.primary}, #5B7EFF)`,
                   borderRadius: 24,
-                  padding: "28px 24px",
+                  padding: "24px",
                   color: "white",
-                  marginBottom: 24,
-                  position: "relative",
-                  overflow: "hidden",
-                  boxShadow: "0 20px 60px rgba(0, 122, 255, 0.25), 0 0 1px rgba(0, 122, 255, 0.5)",
-                  backdropFilter: "blur(20px)",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  marginBottom: 20,
+                  boxShadow: "0 10px 30px rgba(0, 122, 255, 0.2)",
                 }}
               >
-                {/* Mesh overlay pattern */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundImage: `
-                      linear-gradient(45deg, transparent 30%, rgba(255,255,255,.05) 50%, transparent 70%),
-                      linear-gradient(-45deg, transparent 30%, rgba(255,255,255,.05) 50%, transparent 70%)
-                    `,
-                    backgroundSize: "40px 40px",
-                    pointerEvents: "none",
-                  }}
-                />
-
-                <div style={{ position: "relative", zIndex: 1 }}>
-                  <p style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 500, opacity: 0.9 }}>
-                    Available Balance
-                  </p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>
-                    <motion.h2
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.2 }}
-                      style={{
-                        margin: 0,
-                        fontSize: 44,
-                        fontWeight: 800,
-                        fontFamily: 'Menlo, monospace',
-                        letterSpacing: 2,
-                      }}
-                    >
-                      {balanceVisible ? `₦${user.balance.toLocaleString()}` : "••••••"}
-                    </motion.h2>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
-                      onClick={() => setBalanceVisible(!balanceVisible)}
-                      style={{
-                        background: "rgba(255, 255, 255, 0.25)",
-                        border: "1px solid rgba(255, 255, 255, 0.3)",
-                        borderRadius: 20,
-                        width: 44,
-                        height: 44,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: "white",
-                        cursor: "pointer",
-                        backdropFilter: "blur(10px)",
-                      }}
-                    >
-                      {balanceVisible ? <Eye size={20} /> : <EyeOff size={20} />}
-                    </motion.button>
-                  </div>
-                  <div style={{
-                    borderTop: "1px solid rgba(255, 255, 255, 0.2)",
-                    paddingTop: 16,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    fontSize: 13,
+                <p style={{ margin: "0 0 12px", fontSize: 13, fontWeight: 500, opacity: 0.9 }}>
+                  Available Balance
+                </p>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                  <h2 style={{
+                    margin: 0,
+                    fontSize: 44,
+                    fontWeight: 700,
+                    fontFamily: 'Menlo, monospace',
                   }}>
-                    <div>
-                      <p style={{ margin: "0 0 4px", opacity: 0.8, fontSize: 12 }}>Phone</p>
-                      <p style={{ margin: 0, fontWeight: 600 }}>{user.phone}</p>
-                    </div>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
-                      onClick={copyPhone}
-                      style={{
-                        background: "rgba(255, 255, 255, 0.25)",
-                        border: "1px solid rgba(255, 255, 255, 0.3)",
-                        borderRadius: 10,
-                        padding: "8px 12px",
-                        color: "white",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        fontSize: 12,
-                        backdropFilter: "blur(10px)",
-                      }}
-                    >
-                      <Copy size={14} style={{ display: "inline", marginRight: 4 }} />
-                      Copy
-                    </motion.button>
+                    {balanceVisible ? `₦${user.balance.toLocaleString()}` : "••••••"}
+                  </h2>
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={() => setBalanceVisible(!balanceVisible)}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.3)",
+                      border: "none",
+                      borderRadius: 20,
+                      width: 40,
+                      height: 40,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "white",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {balanceVisible ? <Eye size={20} /> : <EyeOff size={20} />}
+                  </motion.button>
+                </div>
+                <div style={{
+                  borderTop: "1px solid rgba(255, 255, 255, 0.3)",
+                  paddingTop: 16,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 13,
+                }}>
+                  <div>
+                    <p style={{ margin: "0 0 4px", opacity: 0.8 }}>Phone</p>
+                    <p style={{ margin: 0, fontWeight: 600 }}>{user.phone}</p>
                   </div>
+                  <motion.button
+                    whileTap={{ scale: 0.85 }}
+                    onClick={copyPhone}
+                    style={{
+                      background: "rgba(255, 255, 255, 0.2)",
+                      border: "none",
+                      borderRadius: 10,
+                      padding: "8px 12px",
+                      color: "white",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontSize: 12,
+                    }}
+                  >
+                    Copy
+                  </motion.button>
                 </div>
               </motion.div>
 
-              {/* SERVICES GRID */}
-              <h3 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 700, letterSpacing: -0.3, color: COLORS.text }}>
-                Quick Services
-              </h3>
+              {/* QUICK ACTIONS */}
+              <h3 style={{ margin: "0 0 12px", fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>Services</h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginBottom: 24 }}>
-                {SERVICES.map(service => {
+                {SERVICES.slice(1).map(service => {
                   const Icon = service.icon;
                   return (
                     <motion.button
                       key={service.id}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setActiveTab(service.id)}
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.05 }}
                       style={{
-                        background: COLORS.bgSecondary,
-                        border: `1.5px solid ${COLORS.separator}`,
-                        borderRadius: 18,
+                        background: COLORS.bgTertiary,
+                        border: `1px solid ${COLORS.separator}`,
+                        borderRadius: 16,
                         padding: "16px",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         gap: 10,
                         cursor: "pointer",
-                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)",
                       }}
                     >
                       <div style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: 14,
-                        background: service.color.bg,
+                        width: 48,
+                        height: 48,
+                        borderRadius: 12,
+                        background: COLORS.bgSecondary,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                       }}>
-                        <Icon size={28} color={service.color.color} strokeWidth={2.2} />
+                        <Icon size={28} color={COLORS.primary} />
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, textAlign: "center", color: COLORS.text }}>{service.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, textAlign: "center" }}>{service.label}</span>
                     </motion.button>
                   );
                 })}
               </div>
 
               {/* ACCOUNT SECTION */}
-              <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, letterSpacing: -0.3, color: COLORS.text }}>
-                Account
-              </h3>
-              <div style={{ background: COLORS.bgSecondary, borderRadius: 18, border: `1px solid ${COLORS.separator}`, overflow: "hidden", boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)", marginBottom: 24 }}>
-                {ACCOUNT_SERVICES.map((item, idx) => {
-                  const Icon = item.icon;
-                  return (
-                    <motion.button
-                      key={item.id}
-                      whileTap={{ scale: 0.97 }}
-                      onClick={() => {
-                        if (item.id === "transactions") router.push("/app/dashboard/transactions");
-                        else if (item.id === "settings") router.push("/app/dashboard/settings");
-                      }}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        borderBottom: idx < ACCOUNT_SERVICES.length - 1 ? `1px solid ${COLORS.separator}` : "none",
-                        padding: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        cursor: "pointer",
-                        width: "100%",
-                      }}
-                    >
-                      <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 10,
-                        background: COLORS.bgMain,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}>
-                        <Icon size={22} color={COLORS.primary} />
-                      </div>
-                      <div style={{ flex: 1, textAlign: "left" }}>
-                        <p style={{ margin: 0, fontWeight: 500, color: COLORS.text }}>{item.label}</p>
-                      </div>
-                      <ChevronRight size={20} color={COLORS.textTertiary} />
-                    </motion.button>
-                  );
-                })}
-              </div>
+              <h3 style={{ margin: "0 0 8px", fontSize: 17, fontWeight: 700, letterSpacing: -0.3 }}>My Account</h3>
+              {ACCOUNT_SERVICES.map(item => {
+                const Icon = item.icon;
+                return (
+                  <motion.button
+                    key={item.id}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={() => {
+                      if (item.id === "transactions") router.push("/app/dashboard/transactions");
+                      else if (item.id === "rewards") router.push("/app/dashboard/rewards");
+                      else if (item.id === "settings") router.push("/app/dashboard/settings");
+                    }}
+                    style={{
+                      background: COLORS.bgTertiary,
+                      border: "none",
+                      borderBottom: `1px solid ${COLORS.separator}`,
+                      padding: "16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      cursor: "pointer",
+                      width: "100%",
+                    }}
+                  >
+                    <Icon size={24} color={COLORS.primary} />
+                    <div style={{ flex: 1, textAlign: "left" }}>
+                      <p style={{ margin: 0, fontWeight: 500 }}>{item.label}</p>
+                    </div>
+                    <ChevronRight size={20} color={COLORS.textTertiary} />
+                  </motion.button>
+                );
+              })}
             </motion.div>
           )}
 
-          {/* DATA SERVICE */}
+          {/* DATA TAB */}
           {activeTab === "data" && (
             <motion.div
               key="data"
@@ -628,7 +585,7 @@ export default function NativeIOSDashboard() {
                       toast.success(`${net.name} selected`);
                     }}
                     style={{
-                      background: selectedNetwork === net.id ? `${COLORS.primary}15` : COLORS.bgSecondary,
+                      background: selectedNetwork === net.id ? `${COLORS.primary}15` : COLORS.bgTertiary,
                       border: `2px solid ${selectedNetwork === net.id ? COLORS.primary : COLORS.separator}`,
                       borderRadius: 16,
                       padding: "16px",
@@ -637,7 +594,6 @@ export default function NativeIOSDashboard() {
                       alignItems: "center",
                       gap: 10,
                       cursor: "pointer",
-                      boxShadow: selectedNetwork === net.id ? "0 8px 24px rgba(0, 122, 255, 0.15)" : "0 2px 8px rgba(0, 0, 0, 0.05)",
                     }}
                   >
                     <Image
@@ -668,7 +624,7 @@ export default function NativeIOSDashboard() {
                         router.push(`/app/checkout?plan=${plan.id}&network=${selectedNetwork}`);
                       }}
                       style={{
-                        background: COLORS.bgSecondary,
+                        background: COLORS.bgTertiary,
                         border: `1px solid ${COLORS.separator}`,
                         borderRadius: 16,
                         padding: "16px",
@@ -676,11 +632,10 @@ export default function NativeIOSDashboard() {
                         flexDirection: "column",
                         gap: 12,
                         cursor: "pointer",
-                        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
                       }}
                     >
                       <div>
-                        <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: COLORS.text }}>{plan.name}</p>
+                        <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>{plan.name}</p>
                         <p style={{ margin: "4px 0 0", fontSize: 12, color: COLORS.textTertiary }}>Plan</p>
                       </div>
                       <p style={{
@@ -699,7 +654,7 @@ export default function NativeIOSDashboard() {
             </motion.div>
           )}
 
-          {/* AIRTIME SERVICE */}
+          {/* AIRTIME TAB */}
           {activeTab === "airtime" && (
             <motion.div
               key="airtime"
@@ -709,17 +664,17 @@ export default function NativeIOSDashboard() {
               transition={{ duration: 0.3 }}
               style={{ padding: "16px" }}
             >
-              <div style={{ background: COLORS.bgSecondary, borderRadius: 20, padding: "20px", marginBottom: 24, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)" }}>
+              <div style={{ background: COLORS.bgTertiary, borderRadius: 20, padding: "20px", marginBottom: 24 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700 }}>Buy Airtime</h3>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Network</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Network</label>
                   <select
                     value={airtimeForm.network}
                     onChange={(e) => setAirtimeForm({ ...airtimeForm, network: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -735,7 +690,7 @@ export default function NativeIOSDashboard() {
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Phone</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Phone</label>
                   <input
                     type="tel"
                     placeholder="09012345678"
@@ -743,7 +698,7 @@ export default function NativeIOSDashboard() {
                     onChange={(e) => setAirtimeForm({ ...airtimeForm, recipientPhone: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -755,7 +710,7 @@ export default function NativeIOSDashboard() {
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Amount (₦)</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Amount (₦)</label>
                   <input
                     type="number"
                     placeholder="100"
@@ -764,7 +719,7 @@ export default function NativeIOSDashboard() {
                     min="100"
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -779,7 +734,7 @@ export default function NativeIOSDashboard() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleAirtimePurchase}
                   style={{
-                    background: `linear-gradient(135deg, ${COLORS.primary}, #0066FF)`,
+                    background: COLORS.primary,
                     border: "none",
                     borderRadius: 12,
                     padding: "14px",
@@ -788,7 +743,6 @@ export default function NativeIOSDashboard() {
                     fontSize: 16,
                     cursor: "pointer",
                     width: "100%",
-                    boxShadow: "0 8px 24px rgba(0, 122, 255, 0.2)",
                   }}
                 >
                   Buy Airtime
@@ -797,7 +751,7 @@ export default function NativeIOSDashboard() {
             </motion.div>
           )}
 
-          {/* CABLE SERVICE */}
+          {/* CABLE TAB */}
           {activeTab === "cable" && (
             <motion.div
               key="cable"
@@ -807,17 +761,17 @@ export default function NativeIOSDashboard() {
               transition={{ duration: 0.3 }}
               style={{ padding: "16px" }}
             >
-              <div style={{ background: COLORS.bgSecondary, borderRadius: 20, padding: "20px", marginBottom: 24, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)" }}>
+              <div style={{ background: COLORS.bgTertiary, borderRadius: 20, padding: "20px", marginBottom: 24 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700 }}>Subscribe to Cable</h3>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Provider</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Provider</label>
                   <select
                     value={cableForm.provider}
                     onChange={(e) => setCableForm({ ...cableForm, provider: e.target.value, plan: Object.values(CABLE_PROVIDERS)[0].plans[0].id })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -833,13 +787,13 @@ export default function NativeIOSDashboard() {
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Plan</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Plan</label>
                   <select
                     value={cableForm.plan}
                     onChange={(e) => setCableForm({ ...cableForm, plan: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -858,7 +812,7 @@ export default function NativeIOSDashboard() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleCableSubscribe}
                   style={{
-                    background: `linear-gradient(135deg, ${COLORS.primary}, #0066FF)`,
+                    background: COLORS.primary,
                     border: "none",
                     borderRadius: 12,
                     padding: "14px",
@@ -867,7 +821,6 @@ export default function NativeIOSDashboard() {
                     fontSize: 16,
                     cursor: "pointer",
                     width: "100%",
-                    boxShadow: "0 8px 24px rgba(0, 122, 255, 0.2)",
                   }}
                 >
                   Subscribe
@@ -876,7 +829,7 @@ export default function NativeIOSDashboard() {
             </motion.div>
           )}
 
-          {/* ELECTRICITY SERVICE */}
+          {/* ELECTRICITY TAB */}
           {activeTab === "electricity" && (
             <motion.div
               key="electricity"
@@ -886,17 +839,17 @@ export default function NativeIOSDashboard() {
               transition={{ duration: 0.3 }}
               style={{ padding: "16px" }}
             >
-              <div style={{ background: COLORS.bgSecondary, borderRadius: 20, padding: "20px", marginBottom: 24, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)" }}>
+              <div style={{ background: COLORS.bgTertiary, borderRadius: 20, padding: "20px", marginBottom: 24 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700 }}>Pay Electricity Bill</h3>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>DISCO</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>DISCO</label>
                   <select
                     value={electricityForm.disco}
                     onChange={(e) => setElectricityForm({ ...electricityForm, disco: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -912,13 +865,13 @@ export default function NativeIOSDashboard() {
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Meter Type</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Meter Type</label>
                   <select
                     value={electricityForm.meterType}
                     onChange={(e) => setElectricityForm({ ...electricityForm, meterType: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -933,7 +886,7 @@ export default function NativeIOSDashboard() {
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Meter Number</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Meter Number</label>
                   <input
                     type="text"
                     placeholder="Enter meter number"
@@ -941,7 +894,7 @@ export default function NativeIOSDashboard() {
                     onChange={(e) => setElectricityForm({ ...electricityForm, meterNumber: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -956,7 +909,7 @@ export default function NativeIOSDashboard() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleElectricityPay}
                   style={{
-                    background: `linear-gradient(135deg, ${COLORS.primary}, #0066FF)`,
+                    background: COLORS.primary,
                     border: "none",
                     borderRadius: 12,
                     padding: "14px",
@@ -965,7 +918,6 @@ export default function NativeIOSDashboard() {
                     fontSize: 16,
                     cursor: "pointer",
                     width: "100%",
-                    boxShadow: "0 8px 24px rgba(0, 122, 255, 0.2)",
                   }}
                 >
                   Validate & Pay
@@ -974,7 +926,7 @@ export default function NativeIOSDashboard() {
             </motion.div>
           )}
 
-          {/* EXAM SERVICE */}
+          {/* EXAM TAB */}
           {activeTab === "exampin" && (
             <motion.div
               key="exampin"
@@ -984,17 +936,17 @@ export default function NativeIOSDashboard() {
               transition={{ duration: 0.3 }}
               style={{ padding: "16px" }}
             >
-              <div style={{ background: COLORS.bgSecondary, borderRadius: 20, padding: "20px", marginBottom: 24, boxShadow: "0 4px 12px rgba(0, 0, 0, 0.05)" }}>
+              <div style={{ background: COLORS.bgTertiary, borderRadius: 20, padding: "20px", marginBottom: 24 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 17, fontWeight: 700 }}>Buy Exam PINs</h3>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Exam Body</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Exam Body</label>
                   <select
                     value={examForm.exam}
                     onChange={(e) => setExamForm({ ...examForm, exam: e.target.value })}
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -1010,7 +962,7 @@ export default function NativeIOSDashboard() {
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600, color: COLORS.text }}>Quantity</label>
+                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 600 }}>Quantity</label>
                   <input
                     type="number"
                     placeholder="1"
@@ -1020,7 +972,7 @@ export default function NativeIOSDashboard() {
                     max="5"
                     style={{
                       width: "100%",
-                      background: COLORS.bgMain,
+                      background: COLORS.bgSecondary,
                       border: `1px solid ${COLORS.separator}`,
                       borderRadius: 10,
                       padding: "12px",
@@ -1035,7 +987,7 @@ export default function NativeIOSDashboard() {
                   whileTap={{ scale: 0.95 }}
                   onClick={handleExamPinPurchase}
                   style={{
-                    background: `linear-gradient(135deg, ${COLORS.primary}, #0066FF)`,
+                    background: COLORS.primary,
                     border: "none",
                     borderRadius: 12,
                     padding: "14px",
@@ -1044,7 +996,6 @@ export default function NativeIOSDashboard() {
                     fontSize: 16,
                     cursor: "pointer",
                     width: "100%",
-                    boxShadow: "0 8px 24px rgba(0, 122, 255, 0.2)",
                   }}
                 >
                   Buy Exam PINs
@@ -1054,81 +1005,28 @@ export default function NativeIOSDashboard() {
           )}
         </AnimatePresence>
 
-        {/* BOTTOM SPACING */}
+        {/* BOTTOM SPACING FOR TAB BAR */}
         <div style={{ height: 80 }} />
       </div>
 
-      {/* PREMIUM BOTTOM TAB BAR - 3 TABS ONLY */}
+      {/* BOTTOM TAB BAR - iOS STYLE */}
       <div style={{
         position: "fixed",
         bottom: 0,
         left: 0,
         right: 0,
-        background: COLORS.bgSecondary,
-        backdropFilter: "blur(20px)",
+        background: COLORS.bg,
         borderTop: `1px solid ${COLORS.separator}`,
         display: "flex",
         justifyContent: "space-around",
+        alignItems: "center",
         paddingBottom: "env(safe-area-inset-bottom, 8px)",
         zIndex: 40,
       }}>
-        {[
-          { id: "home", icon: Home, label: "Home" },
-          { id: "transactions", icon: History, label: "History" },
-          { id: "settings", icon: SettingsIcon, label: "Settings" },
-        ].map(tab => {
-          const Icon = tab.icon;
+        {SERVICES.map(service => {
+          const Icon = service.icon;
           return (
-            <motion.button
-              key={tab.id}
-              whileTap={{ scale: 0.85 }}
-              onClick={() => {
-                if (tab.id === "home") setActiveTab("home");
-                else if (tab.id === "transactions") router.push("/app/dashboard/transactions");
-                else if (tab.id === "settings") router.push("/app/dashboard/settings");
-              }}
-              style={{
-                background: "transparent",
-                border: "none",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                padding: "8px 16px",
-                gap: 4,
-                flex: 1,
-                position: "relative",
-              }}
-            >
-              {activeTab === tab.id && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  style={{
-                    position: "absolute",
-                    bottom: -1,
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 32,
-                    height: 3,
-                    background: COLORS.primary,
-                    borderRadius: 2,
-                  }}
-                />
-              )}
-              <Icon
-                size={24}
-                color={activeTab === tab.id ? COLORS.primary : COLORS.textTertiary}
-                strokeWidth={activeTab === tab.id ? 2.5 : 2}
-              />
-              <span style={{
-                fontSize: 10,
-                fontWeight: activeTab === tab.id ? 600 : 500,
-                color: activeTab === tab.id ? COLORS.primary : COLORS.textTertiary,
-              }}>
-                {tab.label}
-              </span>
-            </motion.button>
+            <TabIcon key={service.id} id={service.id} Icon={Icon} />
           );
         })}
       </div>
