@@ -5,18 +5,23 @@ import Link from "next/link";
 const steps = [
   {
     number: "1",
-    title: "Create Account",
-    description: "Sign up with your phone number in under 60 seconds.",
+    title: "Sign Up",
+    description: "Phone number + 6-digit PIN. No documents. Takes 60 seconds.",
   },
   {
     number: "2",
     title: "Fund Your Wallet",
-    description: "Use your dedicated bank account number to top up.",
+    description: "Transfer funds from any bank. Balance updates instantly.",
   },
   {
     number: "3",
-    title: "Buy & Enjoy",
-    description: "Select a plan, enter recipient, confirm with PIN.",
+    title: "Buy Anything",
+    description: "Data, airtime, bills, cable, exam PINs—everything at your fingertips.",
+  },
+  {
+    number: "4",
+    title: "Instant Delivery",
+    description: "Most services complete within 2-5 seconds. Guaranteed.",
   },
 ];
 
@@ -27,15 +32,15 @@ export function HowItWorksSection() {
         {/* Section header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl sm:text-5xl font-bold text-black mb-4">
-            How It Works
+            Simple 4-Step Process
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Simple and straightforward. Get data in just three steps.
+            From signup to delivery, everything happens in minutes.
           </p>
         </div>
 
         {/* Steps grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {steps.map((step, index) => (
             <div key={index} className="relative">
               {/* Step indicator */}

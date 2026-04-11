@@ -5,18 +5,18 @@ import { Zap, Lock, Award } from "lucide-react";
 const features = [
   {
     icon: Zap,
-    title: "Instant Delivery",
-    description: "Data credits delivered in seconds. Most users receive data within 2-5 seconds.",
+    title: "Lightning-Fast Delivery",
+    description: "Data, airtime, and bills processed in seconds. Most transactions complete within 2-5 seconds.",
   },
   {
     icon: Award,
-    title: "Best Prices Guaranteed",
-    description: "We match or beat any competitor on all networks. Your money goes further with us.",
+    title: "All Services, One App",
+    description: "Data, airtime, electricity bills, cable TV, and exam PINs. Everything you need in 5 simple taps.",
   },
   {
     icon: Lock,
     title: "Secure & Trusted",
-    description: "Bank-grade security protects every transaction. Trusted by 50,000+ Nigerians.",
+    description: "Bank-grade security with encrypted transactions. Trusted by 100,000+ Nigerians nationwide.",
   },
 ];
 
@@ -27,10 +27,10 @@ export function PremiumValueSection() {
         {/* Header */}
         <div className="text-center mb-16">
           <h2 className="text-4xl sm:text-5xl font-bold text-black mb-4 leading-tight">
-            Why customers choose us
+            Why millions choose DANBAIWA
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            We've built the fastest and most reliable data platform in Nigeria.
+            Complete digital solutions for every Nigerian. Fast, reliable, trustworthy.
           </p>
         </div>
 
@@ -40,7 +40,7 @@ export function PremiumValueSection() {
             const Icon = feature.icon;
             return (
               <div key={idx} className="bg-white rounded-lg p-8 border border-gray-200">
-                <div className="w-12 h-12 bg-black rounded-lg flex items-center justify-center mb-6">
+                <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-orange-500 rounded-lg flex items-center justify-center mb-6">
                   <Icon className="w-6 h-6 text-white" />
                 </div>
 
@@ -57,20 +57,37 @@ export function PremiumValueSection() {
 
         {/* Stats Section */}
         <div className="border-t border-gray-200 pt-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {[
-              { number: "50K+", label: "Users" },
-              { number: "99.9%", label: "Uptime" },
-              { number: "2sec", label: "Delivery" },
-              { number: "₦500M+", label: "Volume" },
-            ].map((stat, idx) => (
-              <div key={idx} className="text-center">
-                <p className="text-3xl md:text-4xl font-bold text-black mb-2">
-                  {stat.number}
-                </p>
-                <p className="text-gray-600 font-medium text-sm">{stat.label}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8">
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-orange-500 mb-2">
+                100K+
+              </p>
+              <p className="text-gray-600 font-medium text-sm">Happy Users</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-cyan-500 mb-2">
+                5M+
+              </p>
+              <p className="text-gray-600 font-medium text-sm">Transactions</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-green-500 mb-2">
+                99.9%
+              </p>
+              <p className="text-gray-600 font-medium text-sm">Uptime</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-purple-500 mb-2">
+                2-5s
+              </p>
+              <p className="text-gray-600 font-medium text-sm">Avg Delivery</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl md:text-4xl font-bold text-emerald-500 mb-2">
+                4.9★
+              </p>
+              <p className="text-gray-600 font-medium text-sm">App Rating</p>
+            </div>
           </div>
         </div>
       </div>

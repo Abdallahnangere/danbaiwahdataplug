@@ -21,7 +21,7 @@ export function Footer() {
               <span className="font-semibold text-sm">DANBAIWA DATA PLUG</span>
             </Link>
             <p className="text-gray-400 text-sm mb-4">
-              Fast, reliable, affordable mobile data for Nigeria.
+              All your digital services in one app. Data, airtime, bills, cable, exam PINs.
             </p>
           </div>
 

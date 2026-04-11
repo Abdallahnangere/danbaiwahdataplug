@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { signToken } from "@/lib/auth";
-import { createVirtualAccount } from "@/lib/wiaxy";
 import bcryptjs from "bcryptjs";
 import { z } from "zod";
 
@@ -56,117 +55,6 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create virtual account via Wiaxy
-    let virtualAccount = null;
-    let wiaxyReference = null;
-    
-    try {
-      const wiaxyBank = (process.env.WIAXY_BANK || "PALMPAY") as any;
-      
-      const wiaxyResponse = await createVirtualAccount({
-        reference: user.id,
-        email: `user-${user.id}@danbaiwa.app`,
-        phone: user.phone,
-        firstName: firstName,
-        lastName: lastName,
-        bank: wiaxyBank,
-      });
-
-      if (wiaxyResponse.success && wiaxyResponse.data) {
-        virtualAccount = wiaxyResponse.data;
-        wiaxyReference = user.id;
-        
-        console.log("[SIGNUP] Wiaxy account created", {
-          userId: user.id,
-          accountNumber: virtualAccount.account_number,
-          bank: virtualAccount.bank_name,
-        });
-      } else {
-        console.warn("[SIGNUP] Wiaxy account creation failed", {
-          userId: user.id,
-          error: wiaxyResponse.error,
-        });
-        
-        // Fallback to placeholder if Wiaxy fails
-        virtualAccount = {
-          account_number: `DBDA-${user.id.slice(0, 8)}`,
-          bank_name: "DANBAIWA WALLET",
-          bank_id: "000001",
-          created_at: new Date().toISOString(),
-        };
-      }
-    } catch (error) {
-      console.error("[SIGNUP] Virtual account creation error", error);
-      
-      // Fallback to placeholder
-      virtualAccount = {
-        account_number: `DBDA-${user.id.slice(0, 8)}`,
-        bank_name: "DANBAIWA WALLET",
-        bank_id: "000001",
-        created_at: new Date().toISOString(),
-      };
-    }
-
-    // Save virtual account to DB
-    if (virtualAccount) {
-      await prisma.virtualAccount.create({
-        data: {
-          userId: user.id,
-          accountNumber: virtualAccount.account_number,
-          bankName: virtualAccount.bank_name,
-          accountName: user.fullName,
-        },
-      });
-    }
-
-    // Create UserReward records for all rewards
-    const rewards = await prisma.reward.findMany();
-    await Promise.all(
-      rewards.map((reward) =>
-        prisma.userReward.create({
-          data: {
-            userId: user.id,
-            rewardId: reward.id,
-            status: "IN_PROGRESS",
-          },
-        })
-      )
-    );
-
-    // Credit signup bonus (₦100 = 10000 kobo)
-    const SIGNUP_BONUS = 10000;
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { balance: { increment: SIGNUP_BONUS } },
-    });
-
-    // Create transaction record for signup bonus
-    const signupBonusReward = await prisma.reward.findFirst({
-      where: { type: "SIGNUP_BONUS" },
-    });
-    if (signupBonusReward) {
-      await prisma.transaction.create({
-        data: {
-          userId: user.id,
-          type: "REWARD_CREDIT",
-          amount: SIGNUP_BONUS,
-          status: "SUCCESS",
-          reference: `SIGNUP-BONUS-${user.id}-${Date.now()}`,
-          description: "Signup bonus credit",
-          phone: user.phone,
-        },
-      });
-
-      // Update UserReward status to CLAIMED
-      await prisma.userReward.updateMany({
-        where: {
-          userId: user.id,
-          rewardId: signupBonusReward.id,
-        },
-        data: { status: "CLAIMED" },
-      });
-    }
-
     // Sign JWT
     const token = await signToken({
       userId: user.id,
@@ -174,31 +62,15 @@ export async function POST(req: NextRequest) {
       role: user.role,
     });
 
-    // Get updated user with signup bonus balance
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: user.id },
-    });
-
-    if (!updatedUser) {
-      return NextResponse.json(
-        { error: "Failed to retrieve user data" },
-        { status: 500 }
-      );
-    }
-
     const response = NextResponse.json(
       {
         message: "Account created successfully",
         user: {
-          id: updatedUser.id,
-          phone: updatedUser.phone,
-          fullName: updatedUser.fullName,
-          role: updatedUser.role,
-          balance: updatedUser.balance,
-        },
-        virtualAccount: {
-          accountNumber: virtualAccount?.account_number || `DBDA-${updatedUser.id.slice(0, 8)}`,
-          bankName: virtualAccount?.bank_name || "DANBAIWA WALLET",
+          id: user.id,
+          phone: user.phone,
+          fullName: user.fullName,
+          role: user.role,
+          balance: user.balance,
         },
       },
       { status: 201 }

@@ -9,29 +9,44 @@ import {
 
 const faqs = [
   {
-    question: "How fast is data delivery?",
+    question: "What services does DANBAIWA offer?",
     answer:
-      "Data is delivered instantly to your line within seconds of purchase. Most users receive their data within 2-5 seconds. We guarantee delivery or your money back.",
+      "We offer 5 core services: Mobile Data (MTN, Glo, Airtel, 9Mobile), Airtime Top-ups, Electricity Bill Payments (all 11 Nigerian DISCOs), Cable TV Subscriptions (DSTV, GOtv, Startimes), and Exam PINs (WAEC, NECO, NABTEB).",
   },
   {
-    question: "What networks do you support?",
+    question: "How fast is delivery?",
     answer:
-      "We support all major Nigerian networks: MTN, Glo, Airtel, and 9Mobile. Each network has a wide range of plans from daily to monthly packages.",
+      "Most transactions complete within 2-5 seconds. Data is delivered instantly to your line, airtime is credited immediately, and utility payments are processed in real-time.",
   },
   {
-    question: "Is my money safe on DANBAIWA DATA PLUG?",
+    question: "Which networks do you support?",
     answer:
-      "Yes! All payments are secured by our payment processor, one of Africa's leading payment providers. Your funds are protected with industry-standard encryption and security protocols.",
+      "We support all major Nigerian networks: MTN, Glo, Airtel, and 9Mobile for data and airtime. For electricity, we cover all 11 DISCOs nationwide.",
+  },
+  {
+    question: "Is my money safe on DANBAIWA?",
+    answer:
+      "Yes! All payments are processed securely using industry-standard encryption. Your funds are protected with bank-grade security protocols, and your PIN is hashed with bcryptjs.",
   },
   {
     question: "How do I create an account?",
     answer:
-      "Creating an account is simple: Go to the app, enter your phone number, set a 6-digit PIN, and you're done. The entire process takes less than 60 seconds.",
+      "Creating an account is simple: Enter your phone number, set a 6-digit PIN, and you're done. The entire process takes less than 60 seconds. No documents or emails required.",
   },
   {
-    question: "Can I buy data without creating an account?",
+    question: "Can I buy without creating an account?",
     answer:
-      "Yes! Guest purchases are available. Simply enter your phone number and recipient details without creating an account. However, creating an account gives you access to exclusive rewards.",
+      "Yes! Guest purchases are available for data. Simply enter your phone number and recipient details. However, creating an account gives you access to exclusive rewards and better rates.",
+  },
+  {
+    question: "What if I forget my PIN?",
+    answer:
+      "You can reset your PIN in the login screen. Follow the verification process with your phone number and you'll be able to set a new 6-digit PIN.",
+  },
+  {
+    question: "How do I check my transaction history?",
+    answer:
+      "Your complete transaction history is available in the app dashboard. You can view all purchases, deposits, and refunds with timestamps and status updates.",
   },
 ];
 

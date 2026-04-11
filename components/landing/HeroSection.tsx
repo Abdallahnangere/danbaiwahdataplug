@@ -41,23 +41,22 @@ export function HeroSection() {
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-100 to-orange-100 border border-cyan-200 mb-8">
           <span className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-400 to-orange-500 animate-pulse" />
           <span className="text-sm font-semibold bg-gradient-to-r from-cyan-600 to-orange-600 bg-clip-text text-transparent">
-            🚀 Ultimate Data & Airtime Platform
+            🚀 All Your Digital Services in One App
           </span>
         </div>
 
         {/* Main headline with gradient */}
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight mb-6">
           <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-orange-600 bg-clip-text text-transparent">
-            Lightning-Fast Data
+            Everything Nigeria Needs
           </span>
           <br />
-          <span className="text-gray-900">at Best Prices</span>
+          <span className="text-gray-900">Digital & Bills, Made Simple</span>
         </h1>
 
         {/* Subheadline */}
         <p className="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed font-medium">
-          Get mobile data for <strong>MTN, Glo, Airtel & 9Mobile</strong>. Instant delivery, reliable service, unbeatable prices. 
-          From data & airtime to electricity & cable TV—everything in one app.
+          Buy data for all networks, pay electricity bills, subscribe to cable TV, get airtime, and grab exam PINs—all from one app. Instant delivery, best prices, zero hassle.
         </p>
 
         {/* Trust indicators - stats row */}

@@ -10,11 +10,11 @@ import { CTABanner } from "@/components/landing/CTABanner";
 import { Footer } from "@/components/landing/Footer";
 
 export const metadata: Metadata = {
-  title: "DANBAIWA DATA PLUG - Buy Data & Airtime Online in Nigeria",
+  title: "DANBAIWA DATA PLUG - Data, Airtime, Bills, Cable TV & More",
   description:
-    "Fast, affordable data plans for MTN, Glo, Airtel & 9Mobile. Get instant delivery with DANBAIWA DATA PLUG. Best prices. Zero stress. Trusted by 10,000+ Nigerians.",
+    "Buy data for MTN, Glo, Airtel & 9Mobile. Pay electricity bills, subscribe to cable TV, get airtime, and grab exam PINs. Fast delivery, best prices, 100% secure.",
   keywords:
-    "buy data Nigeria, airtime, data plans, MTN, Airtel, Glo, 9Mobile, fast data delivery",
+    "buy data Nigeria, airtime, electricity bills, cable tv, DSTV, GOtv, exam pins, MTN, Airtel, Glo, 9Mobile",
   authors: [{ name: "DANBAIWA DATA PLUG" }],
   creator: "DANBAIWA DATA PLUG",
   formatDetection: {
@@ -26,15 +26,15 @@ export const metadata: Metadata = {
     locale: "en_NG",
     url: "https://danbaiwa.com",
     images: "https://danbaiwa.com/og-image.png",
-    title: "DANBAIWA DATA PLUG - Buy Data & Airtime Online in Nigeria",
+    title: "DANBAIWA DATA PLUG - Everything Nigeria Needs, One App",
     description:
-      "Fast, affordable data plans for all networks with instant delivery",
+      "Data, airtime, electricity bills, cable TV, exam PINs—instant delivery, best prices",
   },
   twitter: {
     card: "summary_large_image",
-    title: "DANBAIWA DATA PLUG - Buy Data & Airtime Online in Nigeria",
+    title: "DANBAIWA DATA PLUG - Everything Nigeria Needs, One App",
     description:
-      "Fast, affordable data plans for all networks with instant delivery",
+      "Buy data, pay bills, subscribe to cable—all in one secure app. Fast delivery. Best prices.",
     images: "https://danbaiwa.com/og-image.png",
     creator: "@danbaiwa",
   },
