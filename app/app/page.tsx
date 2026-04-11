@@ -916,87 +916,189 @@ export default function DanbaiwaApp() {
               exit={{ opacity: 0 }}
               style={{ padding: "20px 16px 100px" }}
             >
-              <h2 style={{ margin: "0 0 24px", fontSize: 24, fontWeight: 700, color: COLORS.text }}>Buy Airtime</h2>
-              <div style={{ background: COLORS.bgSecondary, borderRadius: 14, padding: "20px", border: `1px solid ${COLORS.border}` }}>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 700, color: COLORS.text }}>Network</label>
-                  <select
-                    value={airtimeForm.network}
-                    onChange={(e) => setAirtimeForm({ ...airtimeForm, network: e.target.value })}
-                    style={{
-                      width: "100%",
-                      background: COLORS.bgMain,
-                      border: `1px solid ${COLORS.border}`,
-                      borderRadius: 10,
-                      padding: "12px",
-                      color: COLORS.text,
-                      fontSize: 14,
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    {NETWORKS.map(net => (
-                      <option key={net.id} value={net.id}>{net.name}</option>
-                    ))}
-                  </select>
+              <button
+                onClick={() => setActiveTab("home")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  color: COLORS.primary,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  marginBottom: 24,
+                  fontSize: 14,
+                }}
+              >
+                <ArrowLeftCircle size={20} />
+                Back
+              </button>
+
+              <h2 style={{ margin: "0 0 8px", fontSize: 28, fontWeight: 700, color: COLORS.text }}>Buy Airtime</h2>
+              <p style={{ margin: "0 0 24px", fontSize: 14, color: COLORS.textSecondary }}>Send instant airtime to any network</p>
+
+              {/* Form Card */}
+              <div style={{
+                background: `linear-gradient(135deg, ${COLORS.bgSecondary} 0%, #FEF2F2 100%)`,
+                border: `2px solid #DC2626`,
+                borderRadius: 18,
+                padding: "24px",
+                boxShadow: "0 8px 24px rgba(220, 38, 38, 0.1)",
+              }}>
+                {/* Network Selection */}
+                <p style={{ margin: "0 0 12px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Select Network
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 24 }}>
+                  {NETWORKS.map(net => (
+                    <motion.button
+                      key={net.id}
+                      whileTap={{ scale: 0.92 }}
+                      onClick={() => setAirtimeForm({ ...airtimeForm, network: net.id })}
+                      style={{
+                        background: airtimeForm.network === net.id ? "#DC2626" : COLORS.bgSecondary,
+                        border: `2px solid #DC2626`,
+                        borderRadius: 12,
+                        padding: "12px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 8,
+                        cursor: "pointer",
+                        transition: "all 0.2s ease",
+                      }}
+                    >
+                      <Image
+                        src={net.image}
+                        alt={net.name}
+                        width={32}
+                        height={32}
+                        style={{ borderRadius: 6, objectFit: "contain" }}
+                      />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: airtimeForm.network === net.id ? "white" : COLORS.text }}>{net.name}</span>
+                    </motion.button>
+                  ))}
                 </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 700, color: COLORS.text }}>Phone</label>
-                  <input
-                    type="tel"
-                    placeholder="09012345678"
-                    value={airtimeForm.recipientPhone}
-                    onChange={(e) => setAirtimeForm({ ...airtimeForm, recipientPhone: e.target.value })}
-                    style={{
-                      width: "100%",
-                      background: COLORS.bgMain,
-                      border: `1px solid ${COLORS.border}`,
-                      borderRadius: 10,
-                      padding: "12px",
-                      color: COLORS.text,
-                      fontSize: 14,
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", marginBottom: 8, fontSize: 13, fontWeight: 700, color: COLORS.text }}>Amount (₦)</label>
+
+                {/* Recipient Phone */}
+                <label style={{ display: "block", marginBottom: 8, fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Recipient Phone
+                </label>
+                <input
+                  type="tel"
+                  placeholder="0801xxxxxxx"
+                  value={airtimeForm.recipientPhone}
+                  onChange={(e) => setAirtimeForm({ ...airtimeForm, recipientPhone: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: COLORS.bgSecondary,
+                    border: `2px solid ${COLORS.border}`,
+                    borderRadius: 12,
+                    padding: "14px",
+                    color: COLORS.text,
+                    fontSize: 14,
+                    boxSizing: "border-box",
+                    marginBottom: 20,
+                    fontWeight: 500,
+                  }}
+                />
+
+                {/* Amount */}
+                <label style={{ display: "block", marginBottom: 8, fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Amount (₦)
+                </label>
+                <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
                   <input
                     type="number"
-                    placeholder="100"
+                    placeholder="1000"
                     value={airtimeForm.amount}
                     onChange={(e) => setAirtimeForm({ ...airtimeForm, amount: parseInt(e.target.value) || 0 })}
-                    min="100"
+                    min="50"
                     style={{
-                      width: "100%",
-                      background: COLORS.bgMain,
-                      border: `1px solid ${COLORS.border}`,
-                      borderRadius: 10,
-                      padding: "12px",
+                      flex: 1,
+                      background: COLORS.bgSecondary,
+                      border: `2px solid ${COLORS.border}`,
+                      borderRadius: 12,
+                      padding: "14px",
                       color: COLORS.text,
-                      fontSize: 14,
+                      fontSize: 18,
+                      fontWeight: 700,
                       boxSizing: "border-box",
+                      fontFamily: "Menlo, monospace",
                     }}
                   />
                 </div>
+
+                {/* Order Summary */}
+                {airtimeForm.amount && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    style={{
+                      background: `linear-gradient(135deg, #FEF2F2 0%, ${COLORS.bgSecondary} 100%)`,
+                      border: `2px solid #DC2626`,
+                      borderRadius: 14,
+                      padding: "16px",
+                      marginBottom: 20,
+                      boxShadow: "0 4px 12px rgba(220, 38, 38, 0.1)",
+                    }}
+                  >
+                    <p style={{ margin: "0 0 12px", fontSize: 11, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase" }}>ORDER SUMMARY</p>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, color: COLORS.textSecondary }}>Network</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>
+                        {NETWORKS.find(n => n.id === airtimeForm.network)?.name || "Select"}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
+                      <span style={{ fontSize: 13, color: COLORS.textSecondary }}>Phone</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>{airtimeForm.recipientPhone || "—"}</span>
+                    </div>
+                    <div style={{
+                      borderTop: `1px solid #DC2626`,
+                      paddingTop: 10,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.text }}>Amount</span>
+                      <p style={{ margin: 0, fontFamily: 'Menlo, monospace', fontSize: 22, fontWeight: 800, color: "#DC2626", letterSpacing: "-1px" }}>
+                        ₦{airtimeForm.amount.toLocaleString()}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Confirm Button */}
                 <motion.button
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
+                    if (!airtimeForm.recipientPhone || !airtimeForm.amount || !airtimeForm.network) {
+                      toast.error("Please fill all fields");
+                      return;
+                    }
                     toast.success("Airtime feature coming soon");
                   }}
                   style={{
-                    background: COLORS.primary,
+                    background: "#DC2626",
                     border: "none",
-                    borderRadius: 12,
-                    padding: "14px",
+                    borderRadius: 14,
+                    padding: "16px",
                     color: "white",
                     fontWeight: 700,
                     fontSize: 16,
                     cursor: "pointer",
                     width: "100%",
-                    boxShadow: "0 4px 12px rgba(0, 102, 204, 0.2)",
+                    boxShadow: "0 6px 20px rgba(220, 38, 38, 0.3)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 10,
                   }}
                 >
-                  Buy Airtime
+                  <Check size={20} />
+                  Confirm & Pay
                 </motion.button>
               </div>
             </motion.div>

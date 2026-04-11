@@ -13,75 +13,99 @@ const purchaseSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
+  const requestStartTime = Date.now();
+  
   try {
-    console.log("[AIRTIME PURCHASE] Starting purchase request");
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`📱 [AIRTIME PURCHASE] New Request Started`);
+    console.log(`📅 Timestamp: ${new Date().toISOString()}`);
+    console.log(`🔗 Endpoint: /api/airtime/purchase`);
     
     const body = await req.json()
-    console.log("[AIRTIME PURCHASE] Request body received:", { buyerPhone: body.buyerPhone, recipientPhone: body.recipientPhone, amount: body.amount, network: body.network });
+    console.log(`\n📋 [REQUEST PAYLOAD] Received:`);
+    console.log(`   • Buyer Phone: ${body.buyerPhone}`);
+    console.log(`   • Recipient Phone: ${body.recipientPhone}`);
+    console.log(`   • Amount: ₦${body.amount}`);
+    console.log(`   • Network: ${body.network}`);
     
     const { buyerPhone, recipientPhone, amount, network, pin } = purchaseSchema.parse(body)
 
+    console.log(`✅ [VALIDATION] All fields validated successfully`);
+
     // DIRECT AUTH: Look up user by buyerPhone
-    console.log("[AIRTIME PURCHASE] Looking up buyer by phone:", buyerPhone);
+    console.log(`\n🔍 [DATABASE] Looking up buyer by phone: ${buyerPhone}`);
     const userData = await prisma.user.findUnique({
       where: { phone: buyerPhone },
     })
 
     if (!userData) {
-      console.error("[AIRTIME PURCHASE] ❌ User not found by phone:", buyerPhone);
+      console.error(`❌ [DATABASE] User not found by phone: ${buyerPhone}`);
       return NextResponse.json(
         { success: false, error: "User not found" },
         { status: 404 }
       )
     }
 
-    console.log("[AIRTIME PURCHASE] ✅ User found:", { userId: userData.id, phone: userData.phone });
+    console.log(`✅ [DATABASE] User found:`, {
+      userId: userData.id,
+      name: userData.fullName,
+      email: userData.email,
+      balance: userData.balance,
+      phone: userData.phone,
+    });
 
     if (userData.isBanned) {
-      console.error("[AIRTIME PURCHASE] ❌ Account banned:", userData.id);
+      console.error(`❌ [SECURITY] Account banned: ${userData.id}`);
       return NextResponse.json(
         { success: false, error: "Account is banned" },
         { status: 403 }
       )
     }
 
+    console.log(`✅ [SECURITY] Account is active and not banned`);
+
     // Verify PIN
     if (!userData.pinHash) {
-      console.error("[AIRTIME PURCHASE] ❌ PIN not set for user:", userData.id);
+      console.error(`❌ [AUTH] PIN not set for user: ${userData.id}`);
       return NextResponse.json(
         { success: false, error: "PIN not set" },
         { status: 400 }
       )
     }
 
-    console.log("[AIRTIME PURCHASE] Verifying PIN...");
+    console.log(`🔐 [AUTH] Verifying PIN...`);
     const isPinValid = await bcryptjs.compare(pin, userData.pinHash)
     
     if (!isPinValid) {
-      console.error("[AIRTIME PURCHASE] ❌ Invalid PIN for user:", userData.id);
+      console.error(`❌ [AUTH] Invalid PIN for user: ${userData.id}`);
       return NextResponse.json(
         { success: false, error: "Invalid PIN" },
         { status: 401 }
       )
     }
 
-    console.log("[AIRTIME PURCHASE] ✅ PIN verified successfully");
+    console.log(`✅ [AUTH] PIN verified successfully`);
 
     // Check balance (convert naira to kobo)
     const amountInKobo = amount * 100
-    console.log("[AIRTIME PURCHASE] Balance check:", { userBalance: userData.balance, amountNeeded: amountInKobo, sufficient: userData.balance >= amountInKobo });
+    console.log(`\n💰 [BALANCE CHECK] Required: ₦${amount} (${amountInKobo} kobo), Available: ${userData.balance} kobo (₦${userData.balance / 100})`);
     
     if (userData.balance < amountInKobo) {
-      console.error("[AIRTIME PURCHASE] ❌ Insufficient balance:", { have: userData.balance, need: amountInKobo });
+      const needed = amountInKobo - userData.balance;
+      console.error(`❌ [BALANCE] Insufficient balance! Needed: ${needed} kobo (₦${needed / 100}), Have: ${userData.balance} kobo (₦${userData.balance / 100})`);
       return NextResponse.json(
         { success: false, error: "Insufficient balance" },
         { status: 400 }
       )
     }
 
+    console.log(`✅ [BALANCE] Sufficient balance confirmed`);
+
     // Deduct balance and create transaction atomically
     const reference = `AIRTIME-${userData.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    console.log(`\n🆔 [REFERENCE] Generated: ${reference}`);
 
+    console.log(`💾 [DATABASE] Creating PENDING transaction...`);
     await prisma.$transaction(async (tx) => {
       // Deduct balance (in kobo)
       await tx.user.update({
@@ -103,6 +127,10 @@ export async function POST(req: NextRequest) {
       })
     })
 
+    console.log(`✅ [DATABASE] Transaction created and balance deducted:`);
+    console.log(`   • Previous Balance: ₦${userData.balance / 100}`);
+    console.log(`   • New Balance: ₦${(userData.balance - amountInKobo) / 100}`);
+
     // Map network names to IDs
     const networkIds: { [key: string]: number } = {
       "mtn": 1,
@@ -114,7 +142,11 @@ export async function POST(req: NextRequest) {
     // Call airtime provider API
     let apiResult
     try {
-      console.log("[AIRTIME PURCHASE] Calling provider API...");
+      console.log(`\n🌐 [AIRTIME PROVIDER API] Calling Saiful API...`);
+      console.log(`   • Mobile Number: ${recipientPhone}`);
+      console.log(`   • Amount: ₦${amount}`);
+      console.log(`   • Network ID: ${networkIds[network.toLowerCase()] || 1}`);
+      
       apiResult = await purchaseAirtime({
         mobileNumber: recipientPhone,
         amount,
@@ -128,7 +160,14 @@ export async function POST(req: NextRequest) {
           data: { status: "SUCCESS" },
         })
 
-        console.log("[AIRTIME PURCHASE] ✅ SUCCESS:", { userId: userData.id, recipientPhone, amount, reference });
+        const duration = Date.now() - requestStartTime;
+        console.log(`\n✅ [SUCCESS] Airtime purchased successfully!`);
+        console.log(`   • Recipient: ${recipientPhone}`);
+        console.log(`   • Amount: ₦${amount}`);
+        console.log(`   • Reference: ${reference}`);
+        console.log(`   • External Reference: ${apiResult.externalReference || 'N/A'}`);
+        console.log(`⏱️  Total request duration: ${duration}ms`);
+        console.log(`${'═'.repeat(80)}\n`);
 
         return NextResponse.json(
           {
@@ -140,6 +179,8 @@ export async function POST(req: NextRequest) {
         )
       } else {
         // API failed, refund balance
+        console.error(`❌ [AIRTIME API] API call failed: ${apiResult.message}`);
+        
         await prisma.$transaction(async (tx) => {
           await tx.user.update({
             where: { id: userData.id },
@@ -152,7 +193,8 @@ export async function POST(req: NextRequest) {
           })
         })
 
-        console.error("[AIRTIME PURCHASE] ❌ API FAILED:", { error: apiResult.message });
+        console.log(`💾 [DATABASE] Balance refunded due to API failure`);
+        console.log(`   • Refunded: ₦${amount}`);
 
         return NextResponse.json(
           { success: false, error: apiResult.message || "Purchase failed" },
@@ -160,9 +202,10 @@ export async function POST(req: NextRequest) {
         )
       }
     } catch (error) {
-      console.error("[AIRTIME PURCHASE API ERROR]", error)
+      console.error(`\n❌ [AIRTIME API ERROR] Exception during API call:`, error)
 
       // Refund on API error
+      console.log(`💾 [DATABASE] Refunding balance due to exception...`);
       await prisma.$transaction(async (tx) => {
         await tx.user.update({
           where: { id: userData.id },
@@ -175,22 +218,32 @@ export async function POST(req: NextRequest) {
         })
       })
 
-      console.error("[AIRTIME PURCHASE] ❌ API exception, balance refunded:", { userId: userData.id });
+      console.error(`❌ [AIRTIME PURCHASE] Exception handled, balance refunded: ${userData.id}`);
+      console.error(`${'═'.repeat(80)}\n`);
+
       return NextResponse.json(
         { success: false, error: "Purchase failed. Balance refunded." },
         { status: 500 }
       )
     }
-  } catch (error) {
-    console.error("[AIRTIME PURCHASE ERROR]", error);
+  } catch (error: any) {
+    const duration = Date.now() - requestStartTime;
+    console.error(`\n❌ [ERROR] Request failed after ${duration}ms`);
+    console.error(`📍 Error Type: ${error.name}`);
+    console.error(`💬 Error Message: ${error.message}`);
+    
     if (error instanceof z.ZodError) {
-      console.error("[AIRTIME PURCHASE] ❌ Validation error:", error.issues[0].message);
+      console.error(`❌ [VALIDATION] Validation error:`, error.issues[0].message);
+      console.error(`${'═'.repeat(80)}\n`);
       return NextResponse.json(
         { success: false, error: error.issues[0].message },
         { status: 400 }
       )
     }
-    console.error("[AIRTIME PURCHASE] ❌ Unhandled error:", { error: error instanceof Error ? error.message : error });
+    
+    console.error(`📋 Error Details:`, error);
+    console.error(`${'═'.repeat(80)}\n`);
+    
     return NextResponse.json(
       { success: false, error: "Server error" },
       { status: 500 }

@@ -166,73 +166,135 @@ interface AirtimePurchaseParams {
 }
 
 export async function purchaseAirtime(params: AirtimePurchaseParams): Promise<SaifulResponse> {
+  const startTime = Date.now();
   try {
     const { mobileNumber, amount, network } = params;
+
+    console.log(`\n🔄 [SAIFUL SERVICE] purchaseAirtime() called`);
+    console.log(`   • mobileNumber: ${mobileNumber}`);
+    console.log(`   • amount: ₦${amount}`);
+    console.log(`   • network: ${network}`);
 
     // Saiful API endpoint and authentication
     const SAIFUL_API_URL = process.env.SAIFUL_API_URL || "https://app.saifulegendconnect.com/api";
     const SAIFUL_API_KEY = process.env.SAIFUL_API_KEY;
 
     if (!SAIFUL_API_KEY) {
+      console.error(`❌ [SAIFUL] API key not configured in environment`);
       throw new Error("Saiful API key not configured");
     }
 
+    console.log(`✅ [SAIFUL] API key loaded`);
+
+    const requestUrl = `${SAIFUL_API_URL}/topup`;
+    const requestBody = {
+      mobile_number: mobileNumber,
+      amount,
+      network,
+    };
+
+    console.log(`\n📤 [SAIFUL API] Sending POST request:`);
+    console.log(`   URL: ${requestUrl}`);
+    console.log(`   Headers: Authorization: Bearer [REDACTED], Content-Type: application/json`);
+    console.log(`   Body:`, JSON.stringify(requestBody, null, 2));
+    console.log(`   Timestamp: ${new Date().toISOString()}`);
+
     const response = await axios.post(
-      `${SAIFUL_API_URL}/topup`,
-      {
-        mobile_number: mobileNumber,
-        amount,
-        network,
-      },
+      requestUrl,
+      requestBody,
       {
         headers: {
           "Authorization": `Bearer ${SAIFUL_API_KEY}`,
           "Content-Type": "application/json",
         },
-        timeout: 30000, // 30 seconds
+        timeout: 30000,
       }
     );
+
+    const duration = Date.now() - startTime;
+    console.log(`\n📥 [SAIFUL API] Response received (${duration}ms):`);
+    console.log(`   HTTP Status: ${response.status}`);
+    console.log(`   Response Data:`, JSON.stringify(response.data, null, 2));
 
     // Parse response - Saiful returns data nested under 'data' key
     const responseData = response.data?.data || response.data;
     
     // Check for successful status - can be "successful" or "pending"
     if (responseData && (responseData.Status === "successful" || responseData.status === "successful")) {
-      return {
+      const returnData = {
         success: true,
         message: responseData.description || "Airtime purchase successful",
         externalReference: responseData.ident,
       };
-    } else if (responseData?.Status === "pending") {
+      
+      console.log(`✅ [SAIFUL SUCCESS] Airtime purchase confirmed:`);
+      console.log(`   Message: ${returnData.message}`);
+      console.log(`   External Reference: ${returnData.externalReference}`);
+      return returnData;
+    } else if (responseData?.Status === "pending" || responseData?.status === "pending") {
       // Pending transactions should be treated as success for now
-      return {
+      const returnData = {
         success: true,
         message: responseData.description || "Airtime purchase pending",
         externalReference: responseData.ident,
       };
+      
+      console.log(`⏳ [SAIFUL PENDING] Airtime purchase is pending:`);
+      console.log(`   Message: ${returnData.message}`);
+      console.log(`   External Reference: ${returnData.externalReference}`);
+      return returnData;
     } else {
+      const errorMsg = responseData?.description || responseData?.message || "Airtime purchase failed";
+      console.log(`❌ [SAIFUL FAILED] Airtime purchase unsuccessful:`);
+      console.log(`   Message: ${errorMsg}`);
+      console.log(`   Full Response:`, responseData);
+      
       return {
         success: false,
-        message: responseData?.description || responseData?.message || "Airtime purchase failed",
+        message: errorMsg,
       };
     }
   } catch (error: any) {
-    console.error("[SAIFUL AIRTIME ERROR]", error);
+    const duration = Date.now() - startTime;
+    
+    console.error(`\n❌ [SAIFUL ERROR] Exception caught (${duration}ms)`);
+    console.error(`   Error Type: ${error.name}`);
+    console.error(`   Error Message: ${error.message}`);
 
     if (error.response) {
       // API returned an error response
+      console.error(`   HTTP Status: ${error.response.status}`);
+      console.error(`   Response Headers:`, error.response.headers);
+      console.error(`   Response Body:`, JSON.stringify(error.response.data, null, 2));
+      
+      const errorMessage = error.response.data?.message || `API Error: ${error.response.status}`;
+      console.error(`❌ [SAIFUL] API Error Details: ${errorMessage}`);
+      
       return {
         success: false,
         message: error.response.data?.message || `API Error: ${error.response.status}`,
       };
     } else if (error.code === "ECONNABORTED") {
       // Timeout
+      console.error(`   Type: Request Timeout (30s)`);
+      console.error(`   Code: ECONNABORTED`);
       return {
         success: false,
         message: "Request timeout - please try again",
       };
+    } else if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+      // Network error
+      console.error(`   Type: Network Error`);
+      console.error(`   Code: ${error.code}`);
+      return {
+        success: false,
+        message: "Network error - please try again",
+      };
     } else {
-      // Network or other error
+      // Other error
+      console.error(`   Type: Other Error`);
+      console.error(`   Code: ${error.code}`);
+      console.error(`   Full Error:`, error);
       return {
         success: false,
         message: "Network error - please try again",
