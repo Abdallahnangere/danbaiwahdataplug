@@ -34,7 +34,13 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Account suspended" }, { status: 403 })
     }
 
-    return NextResponse.json({ success: true, data: user })
+    return NextResponse.json({ 
+      id: user.id,
+      fullName: user.fullName,
+      phone: user.phone,
+      balance: user.balance,
+      tier: user.tier
+    })
   } catch (error) {
     console.error("[me]", error)
     return NextResponse.json({ success: false, error: "Server error" }, { status: 500 })

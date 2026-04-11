@@ -27,11 +27,11 @@ export async function GET(req: NextRequest) {
       orderBy: { price: "asc" },
     });
 
-    return NextResponse.json({ success: true, data: plans }, { status: 200 });
+    return NextResponse.json({ plans }, { status: 200 });
   } catch (error) {
     console.error("[DATA PLANS ERROR]", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", plans: [] },
       { status: 500 }
     );
   }

@@ -105,7 +105,9 @@ export default function AppDashboard() {
         const data = await res.json();
         setUser(data);
         toast.success(`Welcome back, ${data.fullName}! 👋`);
-      } catch {
+      } catch (error) {
+        console.error("Auth error:", error);
+        toast.error("Authentication failed");
         router.push("/app/auth");
       }
     };
@@ -113,12 +115,16 @@ export default function AppDashboard() {
     const fetchPlans = async () => {
       try {
         const res = await fetch("/api/data/plans");
+        if (!res.ok) {
+          throw new Error("Failed to fetch plans");
+        }
         const data = await res.json();
-        setPlans(data.plans || []);
-        setLoading(false);
+        setPlans(Array.isArray(data.plans) ? data.plans : []);
       } catch (error) {
         console.error("Failed to fetch plans:", error);
+        setPlans([]);
         toast.error("Failed to load plans");
+      } finally {
         setLoading(false);
       }
     };
@@ -150,6 +156,19 @@ export default function AppDashboard() {
   };
 
   const filteredPlans = plans.filter(p => p.network.toLowerCase() === selectedNetwork.toLowerCase());
+
+  if (loading || !user) {
+    return (
+      <div style={{ background: COLORS.bg, color: COLORS.text, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} style={{ margin: "0 auto 16px", display: "flex", justifyContent: "center" }}>
+            <Loader2 size={48} />
+          </motion.div>
+          <p style={{ fontSize: 16, fontWeight: 500 }}>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: COLORS.bg, color: COLORS.text, minHeight: "100vh", display: "flex", fontFamily: "'DM Sans', sans-serif" }}>
