@@ -8,7 +8,6 @@ import {
   Smartphone,
   Shield,
 } from "lucide-react";
-import { BrandColors } from "@/lib/brand";
 
 const features = [
   {

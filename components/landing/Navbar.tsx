@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { Logo, LogoIcon } from "@/components/Logo";
-import { BrandColors, BrandGradients } from "@/lib/brand";
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
