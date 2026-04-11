@@ -33,6 +33,8 @@ export function HeroSection() {
               fill
               className="object-contain"
               priority
+              sizes="(max-width: 640px) 128px, 160px"
+              quality={90}
             />
           </div>
         </div>

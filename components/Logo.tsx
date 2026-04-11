@@ -31,6 +31,8 @@ export function Logo({
           fill
           className="object-contain"
           priority
+          sizes={`${dimensions.logo}px`}
+          quality={90}
         />
       </div>
       {variant !== "compact" && (
@@ -67,6 +69,8 @@ export function LogoIcon({ size = "md", className = "" }: Omit<LogoProps, "varia
         fill
         className="object-contain"
         priority
+        sizes={`${dimensions.logo}px`}
+        quality={90}
       />
     </div>
   );
