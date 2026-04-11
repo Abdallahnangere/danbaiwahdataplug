@@ -16,14 +16,16 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "DANBAIWA DATA PLUG — Buy Data Instantly",
+  title: "DANBAIWA DATA PLUG — Buy Data Instantly | Best Prices NGN",
   description:
-    "Affordable, always connected. Buy data and airtime for all Nigerian networks at the best prices. Fast delivery, zero hassle.",
-  keywords: ["buy data", "cheap data", "MTN data", "GLO data", "Airtel data", "9mobile data", "Nigeria data", "airtime"],
+    "🚀 Ultimate data & airtime platform. Buy data for MTN, GLO, Airtel & 9Mobile instantly. Electricity, Cable TV & Exam PINs too!",
+  keywords: ["buy data", "cheap data", "MTN data", "GLO data", "Airtel data", "9mobile data", "Nigeria data", "airtime", "cable tv", "electricity"],
   viewport: "width=device-width, initial-scale=1, maximum-scale=5",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  themeColor: "#06b6d4",
   icons: {
     icon: [
+      { url: "/logo.png", type: "image/png" },
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
       { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" },

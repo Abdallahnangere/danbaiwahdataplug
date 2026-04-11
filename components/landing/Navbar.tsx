@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
+import { Logo, LogoIcon } from "@/components/Logo";
 import { BrandColors, BrandGradients } from "@/lib/brand";
 
 export function Navbar() {
@@ -15,23 +16,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 flex-shrink-0 hover:opacity-80 transition-opacity">
-            <div className="relative w-10 h-10">
-              {/* DB Logo Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-orange-500 rounded-lg opacity-20 blur-lg" />
-              <div className="relative w-10 h-10 bg-gradient-to-r from-cyan-400 to-orange-500 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-lg shadow-orange-500/50">
-                DB
-              </div>
-            </div>
-            <div className="hidden sm:block">
-              <div className="text-sm font-bold bg-gradient-to-r from-cyan-500 to-orange-500 bg-clip-text text-transparent">
-                DANBAIWA
-              </div>
-              <div className="text-xs text-gray-500 font-semibold">
-                DATA PLUG
-              </div>
-            </div>
-          </Link>
+          <Logo href="/" size="sm" variant="horizontal" className="hover:opacity-80 transition-opacity" />
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-8">

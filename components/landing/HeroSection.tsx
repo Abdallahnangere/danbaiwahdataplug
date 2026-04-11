@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { BrandColors } from "@/lib/brand";
 
 export function HeroSection() {
@@ -23,6 +24,19 @@ export function HeroSection() {
 
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
+        {/* Logo Section */}
+        <div className="flex justify-center mb-8">
+          <div className="relative w-32 h-32 sm:w-40 sm:h-40 drop-shadow-2xl hover:scale-105 transition-transform duration-300">
+            <Image
+              src="/logo.png"
+              alt="Danbaiwa Data Plug Logo"
+              fill
+              className="object-contain"
+              priority
+            />
+          </div>
+        </div>
+
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-100 to-orange-100 border border-cyan-200 mb-8">
           <span className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-400 to-orange-500 animate-pulse" />
