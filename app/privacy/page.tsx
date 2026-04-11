@@ -41,7 +41,7 @@ export default function PrivacyPage() {
     {
       icon: <Users size={24} />,
       title: "Third-Party Services",
-      content: "We use Flutterwave for payment processing. Visit their privacy policy for details on how they handle your data. Network providers may receive your phone number for service delivery."
+      content: "We use a secure payment processor for payment processing. Visit their privacy policy for details on how they handle your data. Network providers may receive your phone number for service delivery."
     },
     {
       icon: <FileText size={24} />,
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
     {
       icon: <AlertCircle size={24} />,
       title: "Your Rights",
-      content: "You have the right to access, correct, or delete your personal data. Contact support@sydatasub.com for data access requests or privacy concerns."
+      content: "You have the right to access, correct, or delete your personal data. Contact support@danbaiwa.com for data access requests or privacy concerns."
     },
   ];
 
@@ -113,7 +113,7 @@ export default function PrivacyPage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "20px", textAlign: "center" }}>
           <p style={{ fontFamily: T.font, fontSize: 12, color: T.textDim, margin: 0, lineHeight: 1.6 }}>
             Last updated: April 2026 | For questions, contact{" "}
-            <span style={{ fontWeight: 600, color: T.blue }}>privacy@sydatasub.com</span>
+            <span style={{ fontWeight: 600, color: T.blue }}>privacy@danbaiwa.com</span>
           </p>
         </motion.div>
       </div>

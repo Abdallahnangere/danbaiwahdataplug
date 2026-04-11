@@ -33,7 +33,7 @@ export async function requireAdmin(req: NextRequest): Promise<AdminUser> {
     // Admin is authenticated via password header only
     return {
       userId: "admin",
-      email: "admin@sydatasub.com",
+      email: "admin@danbaiwa.com",
       role: "ADMIN",
     };
   } catch (error: any) {

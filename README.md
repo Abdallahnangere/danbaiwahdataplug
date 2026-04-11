@@ -1,4 +1,4 @@
-# SY DATA SUB 📱 — Buy Data Instantly
+# DANBAIWA DATA PLUG 📱 — Buy Data Instantly
 
 Nigeria's fastest data delivery platform. Buy data for all networks at competitive prices with instant delivery.
 
@@ -21,7 +21,7 @@ Nigeria's fastest data delivery platform. Buy data for all networks at competiti
 
 ## Overview
 
-**SY DATA SUB** is a comprehensive fintech platform for purchasing mobile data and airtime in Nigeria. It features:
+**DANBAIWA DATA PLUG** is a comprehensive fintech platform for purchasing mobile data and airtime in Nigeria. It features:
 
 - ✅ **Multi-Network Support** - MTN, Airtel, Glo, 9Mobile
 - ✅ **Real-Time Balance Management** - Instant balance updates
@@ -66,7 +66,7 @@ Nigeria's fastest data delivery platform. Buy data for all networks at competiti
 1. **Clone the repository**
 ```bash
 git clone <your-repo-url>
-cd sy-data-sub
+cd danbaiwa-data-plug
 ```
 
 2. **Install dependencies**
@@ -610,7 +610,7 @@ Error: connect ENOTFOUND neon.tech
 ## Support & Contribution
 
 For issues, feature requests, or contributions:
-- Email: support@sydatasub.com
+- Email: support@danbaiwa.com
 - GitHub Issues: [your-repo-issues](about:blank)
 - Slack: [sy-data-sub channel](about:blank)
 

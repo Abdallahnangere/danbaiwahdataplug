@@ -1,13 +1,13 @@
 # Environment Variables Setup Guide
 
-This guide explains every environment variable needed for **SY Data Sub** application deployment on Vercel and local development.
+This guide explains every environment variable needed for **DANBAIWA DATA PLUG** application deployment on Vercel and local development.
 
 ---
 
 ## Table of Contents
 1. [Database Configuration](#database-configuration)
 2. [JWT Authentication](#jwt-authentication)
-3. [Flutterwave Payment Gateway](#flutterwave-payment-gateway)
+3. [Payment Gateway (TBD)](#payment-gateway) 
 4. [Third-Party APIs](#third-party-apis)
 5. [Public Configuration](#public-configuration)
 6. [Vercel Deployment](#vercel-deployment)
@@ -32,7 +32,7 @@ postgresql://username:password@host:port/database_name
 
 **Example:**
 ```
-postgresql://postgres:mypassword123@db.example.com:5432/sy_data_sub
+postgresql://postgres:mypassword123@db.example.com:5432/danbaiwa_data_plug
 ```
 
 **How to Get:**
@@ -159,120 +159,127 @@ vercel env add ADMIN_PASSWORD
 
 ---
 
-## Flutterwave Payment Gateway
+## Wiaxy/BillStack Payment Gateway
 
-Flutterwave is the payment processing service for data/airtime purchases. You need a Flutterwave account to get these credentials.
+Wiaxy (BillStack) is the payment processing service for virtual account creation and fund collection. You need a Wiaxy account to get these credentials.
 
-### `FLUTTERWAVE_SECRET_KEY`
+### `WIAXY_BASE_URL`
 **Required:** ✅ Yes  
 **Environment:** Production & Development  
-**Type:** API Key
+**Type:** API Endpoint URL
 
 **Description:**
-Your Flutterwave Secret Key used for server-side API calls. This should be kept **confidential**.
+The base URL for Wiaxy/BillStack API endpoints. This is where all virtual account creation requests are sent.
+
+**Production URL:**
+```
+https://api.billstack.co/v2
+```
 
 **Vercel Setup:**
 ```bash
-vercel env add FLUTTERWAVE_SECRET_KEY
-# Paste your secret key
+vercel env add WIAXY_BASE_URL
+# Paste: https://api.billstack.co/v2
 # Select: Production, Preview, Development
 ```
 
 ---
 
-### `FLUTTERWAVE_PUBLIC_KEY`
+### `WIAXY_SECRET_KEY`
 **Required:** ✅ Yes  
 **Environment:** Production & Development  
-**Type:** API Key (Public)
+**Type:** API Key (Bearer Token)
 
 **Description:**
-Your Flutterwave Public Key used for client-side operations and webhooks verification.
+Your Wiaxy API Secret Key used for server-side authentication. This should be kept **confidential** and used in the `Authorization: Bearer` header for all API requests.
 
-**Vercel Setup:**
-```bash
-vercel env add FLUTTERWAVE_PUBLIC_KEY
-# Paste your public key
-# Select: Production, Preview, Development
-```
-
----
-
-### `FLUTTERWAVE_WEBHOOK_SECRET`
-**Required:** ✅ Yes  
-**Environment:** Production & Development  
-**Type:** Webhook Secret
-
-**Description:**
-A secret used to verify that webhook requests are genuinely from Flutterwave. This prevents unauthorized webhook calls.
-
-**Location in Flutterwave:**
-1. Log in to [Flutterwave Dashboard](https://dashboard.flutterwave.com)
-2. Go to Settings → Webhooks
-3. Copy the Webhook Secret Hash
-
-**Vercel Setup:**
-```bash
-vercel env add FLUTTERWAVE_WEBHOOK_SECRET
-# Paste your webhook secret
-# Select: Production, Preview, Development
-```
-
----
-
-### `FLW_ACCOUNT_EMAIL`
-**Required:** ✅ Yes  
-**Environment:** Production & Development  
-**Type:** Email Address
-
-**Description:**
-The email address associated with your Flutterwave business account. This is used for virtual account creation and settlement.
-
-**Example:**
-```
-business@sydatasub.com
-```
-
-**Where to Find:**
-- In Flutterwave Dashboard under Account Settings
-
-**Vercel Setup:**
-```bash
-vercel env add FLW_ACCOUNT_EMAIL
-# Paste your account email
-# Select: Production, Preview, Development
-```
-
----
-
-### `FLW_BVN`
-**Required:** ✅ Yes  
-**Environment:** Production & Development  
-**Type:** Bank Verification Number (Nigeria)
-
-**Description:**
-Your BVN (Bank Verification Number) from your Nigerian bank. This is required by Flutterwave for KYC compliance and virtual account creation in Nigeria.
-
-**How to Get Your BVN:**
-1. **Dial USSD:** `*565*0#` on any Nigerian mobile network
-2. **Online:** Visit your bank's app/website and request BVN
-3. **Physical:** Visit your bank branch with valid ID
+**How to Get:**
+1. Visit [Wiaxy Dashboard](https://dashboard.billstack.co)
+2. Log in to your account
+3. Go to Settings → API Keys or developer section
+4. Copy your API Secret Key
 
 **Format:**
 ```
-11-digit number (e.g., 12345678901)
-```
-
-**Example:**
-```
-12345678901
+Bearer token format (starts with typical API key prefix)
 ```
 
 **Vercel Setup:**
 ```bash
-vercel env add FLW_BVN
-# Paste your 11-digit BVN
+vercel env add WIAXY_SECRET_KEY
+# Paste your Wiaxy API secret key
 # Select: Production, Preview, Development
 ```
+
+**Important:**
+- Keep this key secret - never commit to Git
+- This key is used in Authorization headers
+- Different from webhook signature verification
+
+---
+
+### `WIAXY_BANK`
+**Required:** ✅ Yes (Optional - defaults to PALMPAY)  
+**Environment:** Production & Development  
+**Type:** Bank Code
+
+**Description:**
+The default bank to use when creating virtual accounts. This determines which bank issues the account number for users.
+
+**Supported Banks:**
+- `9PSB` - 9 Payment Service Bank
+- `SAFEHAVEN` - Safe Haven Microfinance Bank
+- `PROVIDUS` - Providus Bank
+- `BANKLY` - Bankly (formerly Integrated Payroll and MIS Solutions Limited)
+- `PALMPAY` - Palmpay (Recommended for reliability)
+
+**Default Value:**
+```
+PALMPAY
+```
+
+**Recommendation:**
+Use `PALMPAY` for best reliability and lowest fees.
+
+**Vercel Setup:**
+```bash
+vercel env add WIAXY_BANK
+# Paste one of: 9PSB, SAFEHAVEN, PROVIDUS, BANKLY, PALMPAY
+# Select: Production, Preview, Development
+```
+
+---
+
+### `WIAXY_WEBHOOK_URL`
+**Required:** ✅ Yes (For Webhook Configuration)  
+**Environment:** Production only (once deployed)  
+**Type:** URL
+
+**Description:**
+The public URL of your webhook endpoint. This must be set in the Wiaxy dashboard to receive payment notifications.
+
+**Format:**
+```
+https://yourdomain.com/api/wiaxy/webhook
+```
+
+**Examples:**
+```
+Development:  https://abc123.ngrok.io/api/wiaxy/webhook (using ngrok for local testing)
+Production:   https://yourdomain.com/api/wiaxy/webhook
+```
+
+**How to Configure:**
+1. Get this URL after deploying to Vercel
+2. Log in to Wiaxy Dashboard
+3. Go to Settings → Webhooks
+4. Add webhook URL: `https://yourdomain.com/api/wiaxy/webhook`
+5. Test webhook delivery from dashboard
+
+**Note:**
+- This is configured in Wiaxy dashboard, not necessarily as an env variable
+- Your webhook endpoint is at `POST /api/wiaxy/webhook`
+- Include the `/api/wiaxy/webhook` path exactly
 
 ---
 
@@ -480,16 +487,14 @@ vercel deploy --prod
 | `DATABASE_URL` | ✅ | All | String | `postgresql://...` |
 | `JWT_SECRET` | ✅ | All | String | 64+ char random string |
 | `ADMIN_PASSWORD` | ✅ | All | String | Strong password 12+ chars |
-| `FLUTTERWAVE_SECRET_KEY` | ✅ | All | String | SK... |
-| `FLUTTERWAVE_PUBLIC_KEY` | ✅ | All | String | PK... |
-| `FLUTTERWAVE_WEBHOOK_SECRET` | ✅ | All | String | Hash string |
-| `FLW_ACCOUNT_EMAIL` | ✅ | All | Email | business@example.com |
-| `FLW_BVN` | ✅ | All | String | 11 digits |
+| `WIAXY_BASE_URL` | ✅ | All | URL | `https://api.billstack.co/v2` |
+| `WIAXY_SECRET_KEY` | ✅ | All | String | API Secret Key |
+| `WIAXY_BANK` | ✅ | All | String | PALMPAY (or 9PSB, SAFEHAVEN, PROVIDUS, BANKLY) |
 | `SMEPLUG_API_KEY` | ✅ | All | String | API key |
 | `SMEPLUG_BASE_URL` | ✅ | All | URL | https://smeplug.ng/api/v1 |
 | `SAIFUL_API_KEY` | ✅ | All | String | API key |
 | `SAIFUL_BASE_URL` | ✅ | All | URL | https://app.saifulegendconnect.com/api |
-| `NEXT_PUBLIC_APP_URL` | ✅ | All | URL | https://sydatasub.com |
+| `NEXT_PUBLIC_APP_URL` | ✅ | All | URL | https://danbaiwa-data-plug.com |
 
 ---
 
@@ -526,9 +531,16 @@ cat .env.local
 - ✓ Verify credentials are correct
 
 **Issue: "Payment gateway errors"**
-- ✓ Verify Flutterwave keys are correct
+- ✓ Verify Wiaxy API keys are correct
 - ✓ Check if using test vs. live keys consistently
-- ✓ Ensure webhook secret is properly set in Flutterwave dashboard
+- ✓ Ensure webhook endpoint is configured in Wiaxy dashboard
+- ✓ Verify signature verification header matches (x-wiaxy-signature)
+
+**Issue: "Virtual account creation fails"**
+- ✓ Ensure WIAXY_SECRET_KEY is correct
+- ✓ Check WIAXY_BASE_URL is set to correct endpoint
+- ✓ Verify WIAXY_BANK is one of: 9PSB, SAFEHAVEN, PROVIDUS, BANKLY, PALMPAY
+- ✓ Check Wiaxy API status page for service issues
 
 **Issue: "JWT token errors"**
 - ✓ Ensure JWT_SECRET is at least 32 characters
@@ -557,7 +569,8 @@ cat .env.local
 
 ## Support & Resources
 
-- **Flutterwave Docs:** https://developer.flutterwave.com
+- **Wiaxy/BillStack Docs:** https://developers.billstack.co
+- **Wiaxy Dashboard:** https://dashboard.billstack.co
 - **Vercel Docs:** https://vercel.com/docs
 - **Prisma Docs:** https://www.prisma.io/docs
 - **Next.js Docs:** https://nextjs.org/docs
@@ -565,4 +578,4 @@ cat .env.local
 ---
 
 **Last Updated:** April 9, 2026  
-**Version:** 1.0.0
+**Version:** 2.0.0 (Updated with Wiaxy/BillStack Integration)

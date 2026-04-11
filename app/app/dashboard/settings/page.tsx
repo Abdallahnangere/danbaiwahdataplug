@@ -352,7 +352,7 @@ export default function SettingsPage() {
             <p>
               <strong>1. Acceptance of Terms</strong>
               <br />
-              By using SY DATA SUB, you agree to these Terms of Service and all applicable laws and regulations.
+              By using DANBAIWA DATA PLUG, you agree to these Terms of Service and all applicable laws and regulations.
             </p>
             <p>
               <strong>2. Use License</strong>
@@ -362,17 +362,17 @@ export default function SettingsPage() {
             <p>
               <strong>3. Disclaimer</strong>
               <br />
-              The materials on SY DATA SUB are provided without warranties of any kind, either expressed or implied.
+              The materials on DANBAIWA DATA PLUG are provided without warranties of any kind, either expressed or implied.
             </p>
             <p>
               <strong>4. Limitation of Liability</strong>
               <br />
-              In no case shall SY DATA SUB or its suppliers be liable for any damages resulting from use or inability to use the materials.
+              In no case shall DANBAIWA DATA PLUG or its suppliers be liable for any damages resulting from use or inability to use the materials.
             </p>
             <p>
               <strong>5. Accuracy of Materials</strong>
               <br />
-              The materials appearing on SY DATA SUB could include technical, typographical, or photographic errors. We do not warrant that any materials are accurate, complete, or current.
+              The materials appearing on DANBAIWA DATA PLUG could include technical, typographical, or photographic errors. We do not warrant that any materials are accurate, complete, or current.
             </p>
           </div>
         </SheetContent>

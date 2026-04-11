@@ -1,0 +1,181 @@
+// This is your Prisma schema file.
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ====================================================================
+// ENUMS
+// ====================================================================
+
+enum UserRole {
+  USER
+  AGENT
+  ADMIN
+}
+
+enum TransactionType {
+  data
+  airtime
+  electricity
+  cable
+  exampin
+}
+
+enum TransactionStatus {
+  pending
+  completed
+  failed
+}
+
+// ====================================================================
+// MODELS
+// ====================================================================
+
+/// User model for authentication and profile
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  email     String?  @unique
+  fullName  String
+  pinHash   String? // 6-digit PIN hashed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      UserRole @default(USER)
+
+  // Relations
+  account      Account?
+  transactions Transaction[]
+  adminAuth    AdminAuth?
+
+  @@map("users")
+}
+
+/// Account model for wallet balance
+model Account {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("accounts")
+}
+
+/// Data Plans with API assignment
+model DataPlan {
+  id              String   @id @default(cuid())
+  name            String
+  dataSize        String // e.g., "500MB", "1GB"
+  price           Float
+  validityDays    Int
+  apiAssignment   String // "API_A", "API_B", or "BOTH"
+  network         String // "MTN", "GLO", "AIRTEL", "NINEMOBILE"
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("data_plans")
+}
+
+/// Cable Plans with pricing
+model CablePlan {
+  id       String  @id @default(cuid())
+  provider String  // "DSTV", "GOTV", "STARTIME"
+  planName String
+  planId   Int     @unique
+  price    Float
+  isActive Boolean @default(true)
+
+  @@map("cable_plans")
+}
+
+/// Electricity Distributors (DISCO)
+model Disco {
+  id    String  @id @default(cuid())
+  name  String  @unique
+  code  String  @unique
+  discoId Int   @unique
+  isActive Boolean @default(true)
+
+  @@map("discos")
+}
+
+/// Transaction history for all services
+model Transaction {
+  id            String            @id @default(cuid())
+  userId        String
+  type          TransactionType
+  service       String // "MTN", "DSTV", "IKEJA_ELECTRIC", etc.
+  amount        Float
+  status        TransactionStatus
+  externalId    String? // Reference from API provider
+  phoneNumber   String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  // Metadata for different transaction types (stored as JSON)
+  metadata      Json?
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+/// Admin Authentication
+model AdminAuth {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  username  String   @unique
+  passwordHash String
+  lastLogin DateTime?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_auth")
+}
+
+/// Rewards system
+model Reward {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // "signup_bonus", "first_deposit", "referral"
+  amount    Float
+  status    String   @default("earned") // "earned", "claimed"
+  createdAt DateTime @default(now())
+  claimedAt DateTime?
+
+  @@index([userId])
+  @@map("rewards")
+}
+
+/// Wallet Funding Requests
+model WalletFunding {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Float
+  status      String   @default("pending") // "pending", "completed", "failed"
+  reference   String?
+  paymentMethod String? // "transfer", "card", "wiaxy"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@map("wallet_fundings")
+}

@@ -1,4 +1,9 @@
-﻿"use client";
+﻿import { redirect } from "next/navigation";
+
+// Redirect to the new redesigned dashboard
+export default function AppPage() {
+  redirect("/app/dashboard");
+}
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";

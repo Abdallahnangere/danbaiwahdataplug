@@ -209,7 +209,7 @@ export default function AuthPage() {
           >
             <img
               src="/logo.jpeg"
-              alt="SY DATA SUB"
+              alt="DANBAIWA DATA PLUG"
               style={{
                 width: "100%",
                 height: "100%",

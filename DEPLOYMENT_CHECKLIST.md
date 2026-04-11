@@ -1,6 +1,6 @@
 # Quick Deployment Checklist
 
-Fast reference checklist to deploy **SY Data Sub** on Vercel in 15 minutes.
+Fast reference checklist to deploy **DANBAIWA DATA PLUG** on Vercel in 15 minutes.
 
 ---
 
@@ -12,22 +12,19 @@ Copy your credentials and prepare them:
 ```
 □ DATABASE_URL = postgresql://...
 □ JWT_SECRET = (64+ char random string) 
-□ FLUTTERWAVE_SECRET_KEY = SK_LIVE_...
-□ FLUTTERWAVE_PUBLIC_KEY = PK_LIVE_...
-□ FLUTTERWAVE_WEBHOOK_SECRET = (hash from FLW dashboard)
-□ FLW_ACCOUNT_EMAIL = your-email@company.com
-□ FLW_BVN = 12345678901
 □ SMEPLUG_API_KEY = your-key
 □ SMEPLUG_BASE_URL = https://smeplug.ng/api/v1
 □ SAIFUL_API_KEY = your-key
 □ SAIFUL_BASE_URL = https://app.saifulegendconnect.com/api
-□ NEXT_PUBLIC_APP_URL = https://sydatasub.vercel.app
+□ NEXT_PUBLIC_APP_URL = https://danbaiwa-data-plug.vercel.app
 ```
+
+**Note:** Payment gateway integration needs to be configured (Flutterwave has been removed)
 
 ### 2. **Connect to Vercel**
 1. Go to [vercel.com](https://vercel.com)
 2. Click "Add New" → "Project"
-3. Paste: `https://github.com/syabdallah018/sydatasub.git`
+3. Paste: `https://github.com/danbaiwa/danbaiwa-data-plug.git`
 4. Click "Import"
 
 ### 3. **Add Environment Variables**
@@ -44,7 +41,7 @@ For **each variable above**:
 ### 4. **Deploy**
 1. Click "Deploy" button
 2. Wait for ✓ "Ready" status (2-5 minutes)
-3. Click generated URL (e.g., `https://sydatasub.vercel.app`)
+3. Click generated URL (e.g., `https://danbaiwa-data-plug.vercel.app`)
 
 ### 5. **Test**
 - [ ] Homepage loads
@@ -62,9 +59,9 @@ For **each variable above**:
 |---------|-------------|
 | **Database** | Vercel Postgres or Neon.tech |
 | **JWT Secret** | `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-| **Flutterwave** | dashboard.flutterwave.com → Settings |
 | **SME Plug** | smeplug.ng → API Settings |
 | **Saiful** | app.saifulegendconnect.com → API |
+| **Payment Gateway** | ⚠️ TBD - Configure your chosen gateway |
 
 ### Step B: Vercel Setup (8 min)
 
@@ -72,7 +69,7 @@ For **each variable above**:
 1. Visit: https://vercel.com
 2. Login with GitHub
 3. Click: "Add New" → "Project"
-4. Paste: https://github.com/syabdallah018/sydatasub.git
+4. Paste: https://github.com/danbaiwa/danbaiwa-data-plug.git
 5. Click: "Import"
 6. Wait for auto-detection (Framework: Next.js)
 7. Click: "Continue"
@@ -83,34 +80,29 @@ For **each variable above**:
 **In Vercel Settings → Environment Variables:**
 
 ```
-Variable 1/12:
+Variable 1/7:
 Name: DATABASE_URL
 Value: postgresql://...
 Environments: ✓ ✓ ✓
 Click: Add
 
-Variable 2/12:
+Variable 2/7:
 Name: JWT_SECRET
 Value: (64-char random)
 Environments: ✓ ✓ ✓
 Click: Add
 
-... repeat for all 12 variables ...
+... repeat for remaining 5 variables ...
 ```
 
-**All 12 variables needed:**
+**All 7 variables needed:**
 1. DATABASE_URL
 2. JWT_SECRET
-3. FLUTTERWAVE_SECRET_KEY
-4. FLUTTERWAVE_PUBLIC_KEY
-5. FLUTTERWAVE_WEBHOOK_SECRET
-6. FLW_ACCOUNT_EMAIL
-7. FLW_BVN
-8. SMEPLUG_API_KEY
-9. SMEPLUG_BASE_URL
-10. SAIFUL_API_KEY
-11. SAIFUL_BASE_URL
-12. NEXT_PUBLIC_APP_URL
+3. SMEPLUG_API_KEY
+4. SMEPLUG_BASE_URL
+5. SAIFUL_API_KEY
+6. SAIFUL_BASE_URL
+7. NEXT_PUBLIC_APP_URL
 
 ### Step D: Deploy! (2 min)
 
@@ -130,9 +122,9 @@ After deployment, verify:
 - [ ] **Sign Up Works** → Click button → Form loads
 - [ ] **Admin Panel** → Visit `/admin` → Dashboard shows
 - [ ] **No Errors** → Browser console clean (F12)
-- [ ] **API Works** → Can login (check network tab)
+- [ ] **API Works** → Can logindanbaiwa-data-plugetwork tab)
 - [ ] **Database Connected** → No "DB error" messages
-- [ ] **Payments Ready** → Flutterwave widget loads
+- [ ] **Payments Ready** → Payment gateway integration status
 
 ---
 
@@ -159,7 +151,7 @@ After deployment, verify:
 
 **If payments not working:**
 ```
-→ Check: Flutterwave keys not switched
+→ Check: Payment gateway keys verified
 → Check: Using TEST keys for testing, LIVE for production
 ```
 

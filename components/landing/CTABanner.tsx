@@ -11,7 +11,7 @@ export function CTABanner() {
         </h2>
 
         <p className="text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
-          Join thousands of Nigerians who trust SY DATA SUB for fast, affordable mobile data.
+          Join thousands of Nigerians who trust DANBAIWA DATA PLUG for fast, affordable mobile data.
         </p>
 
         {/* CTA Buttons */}
@@ -23,7 +23,7 @@ export function CTABanner() {
             Open App
           </Link>
           <a
-            href="https://play.google.com/store/apps/details?id=com.sydatasub"
+            href="https://play.google.com/store/apps/details?id=com.danbaiwa"
             target="_blank"
             rel="noopener noreferrer"
             className="px-8 py-3 border border-white text-white rounded-lg font-semibold hover:bg-white/10 transition-colors flex items-center justify-center gap-2"

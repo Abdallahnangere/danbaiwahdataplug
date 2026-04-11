@@ -2,7 +2,7 @@
 
 **Status:** ✅ **PRODUCTION READY FOR VERCEL**
 
-Your **SY Data Sub** application is fully configured and ready to deploy on Vercel.  
+Your **DANBAIWA DATA PLUG** application is fully configured and ready to deploy on Vercel.  
 **Build Status:** Clean ✓ | **TypeScript:** Strict Mode ✓ | **All Tests:** Passing ✓
 
 ---
@@ -52,7 +52,7 @@ Your **SY Data Sub** application is fully configured and ready to deploy on Verc
 - [x] **README.md** - Project overview
 
 ### ✅ GitHub Setup
-- [x] Code pushed to https://github.com/syabdallah018/sydatasub.git
+- [x] Code pushed to https://github.com/danbaiwa/danbaiwa-data-plug.git
 - [x] All 96 files committed on `main` branch
 - [x] Latest deployment guides added
 - [x] Token authentication configured
@@ -78,7 +78,7 @@ You'll need these **12 environment variables**:
 | 9 | `SMEPLUG_BASE_URL` | `https://smeplug.ng/api/v1` |
 | 10 | `SAIFUL_API_KEY` | app.saifulegendconnect.com API |
 | 11 | `SAIFUL_BASE_URL` | `https://app.saifulegendconnect.com/api` |
-| 12 | `NEXT_PUBLIC_APP_URL` | `https://sydatasub.vercel.app` |
+| 12 | `NEXT_PUBLIC_APP_URL` | `https://danbaiwa-data-plug.vercel.app` |
 
 👉 **See ENV_SETUP.md for detailed explanation of each variable**
 
@@ -87,7 +87,7 @@ You'll need these **12 environment variables**:
 ```bash
 1. Visit https://vercel.com/dashboard
 2. Click "Add New" → "Project"
-3. Select repository: syabdallah018/sydatasub
+3. Select repository: danbaiwa/danbaiwa-data-plug
 4. Click "Import"
 ```
 
@@ -103,7 +103,7 @@ In Vercel Settings → Environment Variables:
 ```bash
 Click "Deploy" button
 Wait for ✓ "Ready" status (2-5 minutes)
-Visit: https://sydatasub.vercel.app
+Visit: https://danbaiwa-data-plug.vercel.app
 ```
 
 ### Step 5: Verify (2 min)

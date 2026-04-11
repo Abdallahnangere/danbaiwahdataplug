@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { signToken } from "@/lib/auth";
+import { createVirtualAccount } from "@/lib/wiaxy";
 import bcryptjs from "bcryptjs";
 import { z } from "zod";
-import { createFlutterwaveVirtualAccount } from "@/lib/flutterwave";
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -56,36 +56,66 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Create Flutterwave virtual account (with fallback if it fails)
+    // Create virtual account via Wiaxy
     let virtualAccount = null;
+    let wiaxyReference = null;
+    
     try {
-      virtualAccount = await createFlutterwaveVirtualAccount({
-        userId: user.id,
-        email: process.env.FLW_ACCOUNT_EMAIL || "noreply@sydatasub.local",
-        firstName,
-        lastName,
-        phone,
+      const wiaxyBank = (process.env.WIAXY_BANK || "PALMPAY") as any;
+      
+      const wiaxyResponse = await createVirtualAccount({
+        reference: user.id,
+        email: `user-${user.id}@danbaiwa.app`,
+        phone: user.phone,
+        firstName: firstName,
+        lastName: lastName,
+        bank: wiaxyBank,
       });
-    } catch (flwError) {
-      console.warn("[FLUTTERWAVE WARNING] Virtual account creation failed, continuing without it", flwError);
-      // Fallback: create a placeholder virtual account
+
+      if (wiaxyResponse.success && wiaxyResponse.data) {
+        virtualAccount = wiaxyResponse.data;
+        wiaxyReference = user.id;
+        
+        console.log("[SIGNUP] Wiaxy account created", {
+          userId: user.id,
+          accountNumber: virtualAccount.account_number,
+          bank: virtualAccount.bank_name,
+        });
+      } else {
+        console.warn("[SIGNUP] Wiaxy account creation failed", {
+          userId: user.id,
+          error: wiaxyResponse.error,
+        });
+        
+        // Fallback to placeholder if Wiaxy fails
+        virtualAccount = {
+          account_number: `DBDA-${user.id.slice(0, 8)}`,
+          bank_name: "DANBAIWA WALLET",
+          bank_id: "000001",
+          created_at: new Date().toISOString(),
+        };
+      }
+    } catch (error) {
+      console.error("[SIGNUP] Virtual account creation error", error);
+      
+      // Fallback to placeholder
       virtualAccount = {
-        id: Math.floor(Math.random() * 999999),
-        account_number: `PLACEHOLDER-${user.id.slice(0, 8)}`,
-        bank_name: "SY DATA WALLET",
-        bank_code: "000001",
+        account_number: `DBDA-${user.id.slice(0, 8)}`,
+        bank_name: "DANBAIWA WALLET",
+        bank_id: "000001",
+        created_at: new Date().toISOString(),
       };
     }
 
-    // Save virtual account to DB if created successfully
+    // Save virtual account to DB
     if (virtualAccount) {
       await prisma.virtualAccount.create({
         data: {
           userId: user.id,
-          accountNumber: virtualAccount.account_number || `PLACEHOLDER-${user.id.slice(0, 8)}`,
-          bankName: virtualAccount.bank_name || "SY DATA WALLET",
-          flwRef: String(virtualAccount.id || Math.floor(Math.random() * 999999)),
-          orderRef: `SYDATA-VA-${user.id}-${Date.now()}`,
+          accountNumber: virtualAccount.account_number,
+          bankName: virtualAccount.bank_name,
+          flwRef: wiaxyReference || `PLACEHOLDER-${user.id.slice(0, 8)}`,
+          orderRef: `DDP-VA-${user.id}-${Date.now()}`,
         },
       });
     }
@@ -168,8 +198,8 @@ export async function POST(req: NextRequest) {
           balance: updatedUser.balance,
         },
         virtualAccount: {
-          accountNumber: virtualAccount.account_number,
-          bankName: virtualAccount.bank_name,
+          accountNumber: virtualAccount?.account_number || `DBDA-${updatedUser.id.slice(0, 8)}`,
+          bankName: virtualAccount?.bank_name || "DANBAIWA WALLET",
         },
       },
       { status: 201 }

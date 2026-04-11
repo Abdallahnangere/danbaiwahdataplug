@@ -1,69 +1,99 @@
 "use client";
 
 import Link from "next/link";
+import { BrandColors } from "@/lib/brand";
 
 export function HeroSection() {
   return (
-    <section className="relative bg-white pt-20 pb-16 sm:pt-28 sm:pb-20 overflow-hidden">
+    <section className="relative bg-gradient-to-br from-white via-cyan-50/30 to-orange-50/20 pt-28 pb-20 sm:pt-40 sm:pb-32 overflow-hidden">
+      {/* Animated gradient background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* Cyan glow */}
+        <div className="absolute top-20 left-10 w-96 h-96 bg-cyan-400/20 rounded-full blur-3xl animate-pulse" />
+        {/* Orange glow */}
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-orange-400/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: "1s" }} />
+        {/* Purple accent */}
+        <div className="absolute top-40 right-1/3 w-64 h-64 bg-purple-400/10 rounded-full blur-3xl" />
+        
+        {/* Particle effects */}
+        <div className="absolute top-1/4 left-1/4 w-1 h-1 bg-cyan-400 rounded-full animate-bounce" />
+        <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: "0.5s" }} />
+        <div className="absolute bottom-1/3 left-1/3 w-1 h-1 bg-yellow-400 rounded-full animate-bounce" style={{ animationDelay: "1s" }} />
+      </div>
+
       {/* Content */}
       <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
-        {/* Main headline */}
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-black leading-tight mb-8">
-          Get data instantly.
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-cyan-100 to-orange-100 border border-cyan-200 mb-8">
+          <span className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-400 to-orange-500 animate-pulse" />
+          <span className="text-sm font-semibold bg-gradient-to-r from-cyan-600 to-orange-600 bg-clip-text text-transparent">
+            🚀 Ultimate Data & Airtime Platform
+          </span>
+        </div>
+
+        {/* Main headline with gradient */}
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black leading-tight mb-6">
+          <span className="bg-gradient-to-r from-cyan-600 via-blue-600 to-orange-600 bg-clip-text text-transparent">
+            Lightning-Fast Data
+          </span>
           <br />
-          <span className="text-gray-600">No waiting. No delays.</span>
+          <span className="text-gray-900">at Best Prices</span>
         </h1>
 
         {/* Subheadline */}
-        <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto mb-10 leading-relaxed">
-          Buy mobile data for MTN, Glo, Airtel & 9Mobile at the best prices. 
-          Delivered in seconds with zero hassle.
+        <p className="text-lg sm:text-xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed font-medium">
+          Get mobile data for <strong>MTN, Glo, Airtel & 9Mobile</strong>. Instant delivery, reliable service, unbeatable prices. 
+          From data & airtime to electricity & cable TV—everything in one app.
         </p>
 
         {/* Trust indicators - stats row */}
-        <div className="flex flex-col sm:flex-row justify-center gap-8 mb-12 py-8 border-y border-gray-200/50">
+        <div className="grid grid-cols-3 gap-6 mb-12 py-8 px-6 rounded-2xl bg-gradient-to-r from-white/60 to-white/40 backdrop-blur-md border border-cyan-200/30 shadow-lg">
           <div className="flex flex-col items-center">
-            <div className="text-2xl sm:text-3xl font-bold text-black">50K+</div>
-            <div className="text-sm text-gray-600">Happy Customers</div>
+            <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-cyan-600 to-orange-600 bg-clip-text text-transparent">
+              100K+
+            </div>
+            <div className="text-sm text-gray-600 font-semibold">Happy Users</div>
+          </div>
+          <div className="flex flex-col items-center border-l border-r border-cyan-200/30">
+            <div className="text-3xl sm:text-4xl font-black bg-gradient-to-r from-cyan-600 to-orange-600 bg-clip-text text-transparent">
+              5M+
+            </div>
+            <div className="text-sm text-gray-600 font-semibold">Transactions</div>
           </div>
           <div className="flex flex-col items-center">
-            <div className="text-2xl sm:text-3xl font-bold text-black">1M+</div>
-            <div className="text-sm text-gray-600">Transactions</div>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="text-2xl sm:text-3xl font-bold text-black">4.9★</div>
-            <div className="text-sm text-gray-600">Rated on Stores</div>
+            <div className="text-3xl sm:text-4xl font-black text-emerald-500">4.9★</div>
+            <div className="text-sm text-gray-600 font-semibold">App Rating</div>
           </div>
         </div>
 
         {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
           <Link
             href="/app"
-            className="px-8 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition-colors duration-200 text-center"
+            className="px-8 py-3.5 bg-gradient-to-r from-cyan-400 to-orange-500 text-white rounded-xl font-semibold hover:shadow-2xl hover:shadow-orange-500/50 transition-all duration-300 transform hover:scale-105 text-center"
           >
-            Get Started
+            Get Started Now
           </Link>
-          <button className="px-8 py-3 border border-gray-300 text-black rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-200">
-            Learn More
+          <button className="px-8 py-3.5 border-2 border-cyan-300 text-cyan-700 rounded-xl font-semibold hover:bg-cyan-50 transition-all duration-300 hover:shadow-lg">
+            See Features →
           </button>
         </div>
 
-        {/* Google Play Badge */}
-        <div className="mt-6">
-          <p className="text-xs text-gray-600 mb-3">Available on</p>
-          <img 
-            src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" 
-            alt="Get it on Google Play" 
-            className="h-12 mx-auto"
-          />
+        {/* Trust badges */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-6 text-sm text-gray-600">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✓</span>
+            <span>Instant Delivery</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✓</span>
+            <span>Secure Transactions</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-lg">✓</span>
+            <span>24/7 Support</span>
+          </div>
         </div>
-      </div>
-
-      {/* Soft background accent */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gray-100/50 rounded-full -mr-48 -mt-48 blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gray-100/30 rounded-full -ml-48 mb-96 blur-3xl"></div>
       </div>
     </section>
   );

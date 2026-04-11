@@ -1,4 +1,4 @@
-# 🚀 SY DATA SUB - DEPLOY NOW!
+# 🚀 DANBAIWA DATA PLUG - DEPLOY NOW!
 
 **Your app is ready. Here's how to go live in 15 minutes.**
 

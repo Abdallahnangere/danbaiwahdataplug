@@ -19,9 +19,9 @@ const faqs = [
       "We support all major Nigerian networks: MTN, Glo, Airtel, and 9Mobile. Each network has a wide range of plans from daily to monthly packages.",
   },
   {
-    question: "Is my money safe on SY DATA SUB?",
+    question: "Is my money safe on DANBAIWA DATA PLUG?",
     answer:
-      "Yes! All payments are secured by Flutterwave, one of Africa's leading payment processors. Your funds are protected with industry-standard encryption and security protocols.",
+      "Yes! All payments are secured by our payment processor, one of Africa's leading payment providers. Your funds are protected with industry-standard encryption and security protocols.",
   },
   {
     question: "How do I create an account?",
@@ -45,7 +45,7 @@ export function FAQSection() {
             Frequently Asked Questions
           </h2>
           <p className="text-lg text-gray-600">
-            Find answers to common questions about SY DATA SUB.
+            Find answers to common questions about DANBAIWA DATA PLUG.
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export function FAQSection() {
             Can't find what you're looking for?
           </p>
           <a
-            href="mailto:support@sydatasub.com"
+            href="mailto:support@danbaiwa.com"
             className="inline-block text-black font-semibold hover:text-gray-700 transition-colors"
           >
             Contact our support team

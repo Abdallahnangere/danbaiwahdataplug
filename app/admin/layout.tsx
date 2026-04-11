@@ -156,7 +156,7 @@ export default function AdminLayout({
                 className="h-12 w-12 object-contain"
               />
               <div>
-                <h2 className="text-lg font-bold text-white">SY DATA</h2>
+                <h2 className="text-lg font-bold text-white">DANBAIWA DATA</h2>
                 <p className="text-xs text-slate-400">Admin Panel</p>
               </div>
             </div>
@@ -206,7 +206,7 @@ export default function AdminLayout({
                   {SIDEBAR_ITEMS.find((item) => pathname === item.href || pathname.startsWith(item.href))?.label ||
                     "Dashboard"}
                 </h1>
-                <p className="text-sm text-slate-500 mt-1">Manage your SY DATA application</p>
+                <p className="text-sm text-slate-500 mt-1">Manage your DANBAIWA DATA application</p>
               </div>
               <div className="text-sm text-slate-600">
                 {new Date().toLocaleDateString("en-US", {

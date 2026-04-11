@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "SY DATA SUB — Buy Data Instantly",
+  title: "DANBAIWA DATA PLUG — Buy Data Instantly",
   description:
     "Affordable, always connected. Buy data and airtime for all Nigerian networks at the best prices. Fast delivery, zero hassle.",
   keywords: ["buy data", "cheap data", "MTN data", "GLO data", "Airtel data", "9mobile data", "Nigeria data", "airtime"],
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SY DATA SUB",
+    title: "DANBAIWA DATA PLUG",
   },
   formatDetection: {
     telephone: true,
@@ -47,15 +47,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_NG",
     url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    siteName: "SY DATA SUB",
-    title: "SY DATA SUB — Buy Data Instantly",
+    siteName: "DANBAIWA DATA PLUG",
+    title: "DANBAIWA DATA PLUG — Buy Data Instantly",
     description: "Affordable, always connected. Buy data and airtime for all Nigerian networks at the best prices.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "SY DATA SUB - Buy Data Instantly",
+        alt: "DANBAIWA DATA PLUG - Buy Data Instantly",
         type: "image/png",
       },
     ],
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     title: "SY DATA SUB — Buy Data Instantly",
     description: "Affordable, always connected. Buy data and airtime for all Nigerian networks.",
     images: ["/og-image.png"],
-    creator: "@sydatasub",
+    creator: "@danbaiwa",
   },
 };
 

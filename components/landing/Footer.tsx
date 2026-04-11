@@ -15,10 +15,10 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-2 mb-6">
               <img 
                 src="/logo.jpeg" 
-                alt="SY DATA" 
+                alt="DANBAIWA DATA" 
                 className="h-7 w-7 object-contain"
               />
-              <span className="font-semibold text-sm">SY DATA SUB</span>
+              <span className="font-semibold text-sm">DANBAIWA DATA PLUG</span>
             </Link>
             <p className="text-gray-400 text-sm mb-4">
               Fast, reliable, affordable mobile data for Nigeria.
@@ -109,7 +109,7 @@ export function Footer() {
               </span>
             </div>
             <p>
-              © {currentYear} SY DATA SUB. All rights reserved.
+              © {currentYear} DANBAIWA DATA PLUG. All rights reserved.
             </p>
           </div>
         </div>
