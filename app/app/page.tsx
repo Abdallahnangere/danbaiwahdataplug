@@ -386,12 +386,12 @@ export default function DanbaiwaApp() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
                 style={{
-                  background: COLORS.bgSecondary,
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: 16,
+                  background: `linear-gradient(135deg, ${COLORS.bgSecondary} 0%, #F5F8FF 100%)`,
+                  border: `2px solid ${COLORS.primary}`,
+                  borderRadius: 20,
                   padding: "24px",
                   marginBottom: 28,
-                  boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                  boxShadow: "0 8px 24px rgba(0, 102, 204, 0.12)",
                 }}
               >
                 <p style={{ margin: "0 0 12px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -403,18 +403,20 @@ export default function DanbaiwaApp() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.1 }}
-                    style={{ display: "flex", alignItems: "baseline", gap: 6 }}
+                    style={{ display: "flex", alignItems: "baseline", gap: 0 }}
                   >
-                    <span style={{ fontSize: 14, color: COLORS.textTertiary, fontWeight: 600 }}>₦</span>
                     <h2 style={{
                       margin: 0,
-                      fontSize: 48,
-                      fontWeight: 700,
-                      color: COLORS.text,
+                      fontSize: 52,
+                      fontWeight: 800,
+                      color: COLORS.primary,
                       fontFamily: 'Menlo, monospace',
-                      letterSpacing: "-1px",
+                      letterSpacing: "-2px",
+                      display: "flex",
+                      alignItems: "baseline",
                     }}>
-                      {balanceVisible ? user.balance.toLocaleString() : "•••••"}
+                      <span style={{ marginRight: 4, fontSize: 28 }}>₦</span>
+                      <span>{balanceVisible ? user.balance.toLocaleString() : "•••••"}</span>
                     </h2>
                   </motion.div>
 
@@ -490,7 +492,8 @@ export default function DanbaiwaApp() {
                   return (
                     <motion.button
                       key={service.id}
-                      whileTap={{ scale: 0.95 }}
+                      whileTap={{ scale: 0.92 }}
+                      whileHover={{ y: -4 }}
                       onClick={() => {
                         if (service.id === "data") {
                           handleDataClick();
@@ -503,30 +506,31 @@ export default function DanbaiwaApp() {
                       viewport={{ once: true }}
                       transition={{ delay: 0.05 }}
                       style={{
-                        background: COLORS.bgSecondary,
-                        border: `1px solid ${COLORS.border}`,
-                        borderRadius: 16,
-                        padding: "18px",
+                        background: `linear-gradient(135deg, ${service.color.bg} 0%, rgba(255,255,255,0.5) 100%)`,
+                        border: `2px solid ${service.color.color}`,
+                        borderRadius: 18,
+                        padding: "22px 16px",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        gap: 10,
+                        gap: 12,
                         cursor: "pointer",
-                        boxShadow: "0 1px 3px rgba(0, 0, 0, 0.05)",
+                        boxShadow: `0 4px 16px ${service.color.color}22`,
                       }}
                     >
                       <div style={{
-                        width: 52,
-                        height: 52,
-                        borderRadius: 12,
-                        background: service.color.bg,
+                        width: 56,
+                        height: 56,
+                        borderRadius: 14,
+                        background: service.color.color,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        boxShadow: `0 4px 12px ${service.color.color}40`,
                       }}>
-                        <Icon size={28} color={service.color.color} strokeWidth={2} />
+                        <Icon size={28} color="white" strokeWidth={2.5} />
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 600, textAlign: "center", color: COLORS.text }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, textAlign: "center", color: COLORS.text }}>
                         {service.label}
                       </span>
                     </motion.button>
@@ -790,32 +794,34 @@ export default function DanbaiwaApp() {
 
                   {/* Order Summary Card */}
                   <div style={{
-                    background: COLORS.bgSecondary,
-                    border: `1px solid ${COLORS.border}`,
-                    borderRadius: 14,
-                    padding: "20px",
+                    background: `linear-gradient(135deg, #F5F8FF 0%, ${COLORS.bgSecondary} 100%)`,
+                    border: `2px solid ${COLORS.primary}`,
+                    borderRadius: 16,
+                    padding: "22px",
                     marginBottom: 28,
+                    boxShadow: "0 4px 12px rgba(0, 102, 204, 0.1)",
                   }}>
                     <p style={{ margin: "0 0 16px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
                       Order Summary
                     </p>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                      <span style={{ color: COLORS.textSecondary, fontSize: 14 }}>Plan</span>
-                      <span style={{ color: COLORS.text, fontWeight: 600, fontSize: 14 }}>{dataFlow.selectedPlan?.name}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+                      <span style={{ color: COLORS.textSecondary, fontSize: 14, fontWeight: 500 }}>Plan</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>{dataFlow.selectedPlan?.name}</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                      <span style={{ color: COLORS.textSecondary, fontSize: 14 }}>Phone</span>
-                      <span style={{ color: COLORS.text, fontWeight: 600, fontSize: 14 }}>{dataFlow.phone}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+                      <span style={{ color: COLORS.textSecondary, fontSize: 14, fontWeight: 500 }}>Phone</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>{dataFlow.phone}</span>
                     </div>
                     <div style={{
-                      borderTop: `1px solid ${COLORS.border}`,
-                      paddingTop: 12,
+                      borderTop: `2px solid ${COLORS.border}`,
+                      paddingTop: 16,
                       display: "flex",
                       justifyContent: "space-between",
+                      alignItems: "center",
                     }}>
-                      <span style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>Total</span>
+                      <span style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>Total Amount</span>
                       <div style={{ textAlign: "right" }}>
-                        <p style={{ margin: 0, fontFamily: 'Menlo, monospace', fontSize: 24, fontWeight: 800, color: COLORS.primary }}>
+                        <p style={{ margin: 0, fontFamily: 'Menlo, monospace', fontSize: 28, fontWeight: 800, color: COLORS.primary, letterSpacing: "-1px" }}>
                           ₦{(dataFlow.selectedPlan?.price || 0).toLocaleString()}
                         </p>
                       </div>
@@ -823,8 +829,8 @@ export default function DanbaiwaApp() {
                   </div>
 
                   {/* PIN Input */}
-                  <p style={{ margin: "0 0 8px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                    Enter PIN to Confirm
+                  <p style={{ margin: "0 0 12px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Enter Your PIN
                   </p>
                   <input
                     type="password"
@@ -835,50 +841,57 @@ export default function DanbaiwaApp() {
                     style={{
                       width: "100%",
                       background: COLORS.bgSecondary,
-                      border: `1.5px solid ${COLORS.border}`,
-                      borderRadius: 12,
-                      padding: "16px",
-                      fontSize: 24,
-                      letterSpacing: 8,
+                      border: `2px solid ${COLORS.border}`,
+                      borderRadius: 14,
+                      padding: "18px",
+                      fontSize: 28,
+                      letterSpacing: 12,
                       textAlign: "center",
                       boxSizing: "border-box",
                       color: COLORS.text,
-                      marginBottom: 24,
-                      fontWeight: 600,
+                      marginBottom: 28,
+                      fontWeight: 700,
+                      transition: "all 0.2s ease",
                     }}
                   />
 
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={handleExecutePurchase}
-                    disabled={dataFlow.isLoading}
+                    disabled={dataFlow.isLoading || !dataFlow.pin}
                     style={{
                       background: dataFlow.isLoading ? COLORS.textTertiary : COLORS.primary,
                       border: "none",
-                      borderRadius: 12,
-                      padding: "16px",
+                      borderRadius: 14,
+                      padding: "18px",
                       color: "white",
                       fontWeight: 700,
                       fontSize: 16,
-                      cursor: dataFlow.isLoading ? "not-allowed" : "pointer",
+                      cursor: dataFlow.isLoading || !dataFlow.pin ? "not-allowed" : "pointer",
                       width: "100%",
-                      boxShadow: dataFlow.isLoading ? "none" : "0 4px 12px rgba(0, 102, 204, 0.2)",
+                      boxShadow: dataFlow.isLoading ? "0 4px 12px rgba(114, 127, 157, 0.2)" : "0 6px 20px rgba(0, 102, 204, 0.3)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      gap: 8,
-                      opacity: dataFlow.isLoading ? 0.7 : 1,
+                      gap: 10,
+                      opacity: dataFlow.isLoading || !dataFlow.pin ? 0.7 : 1,
+                      transition: "all 0.2s ease",
                     }}
                   >
                     {dataFlow.isLoading ? (
                       <>
-                        <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
-                        Processing...
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        >
+                          <Loader2 size={20} />
+                        </motion.div>
+                        <span>Processing Payment...</span>
                       </>
                     ) : (
                       <>
-                        <Check size={18} />
-                        Confirm Purchase
+                        <Check size={20} />
+                        <span>Confirm & Pay</span>
                       </>
                     )}
                   </motion.button>

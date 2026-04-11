@@ -14,15 +14,25 @@ interface SaifulResponse {
 }
 
 export async function purchaseData(params: SaifulPurchaseParams): Promise<SaifulResponse> {
+  const startTime = Date.now();
   try {
     const { plan, mobileNumber, network, reference } = params;
+
+    console.log(`\n🔄 [SAIFUL SERVICE] purchaseData() called`);
+    console.log(`   • plan: ${plan}`);
+    console.log(`   • mobileNumber: ${mobileNumber}`);
+    console.log(`   • network: ${network}`);
+    console.log(`   • reference: ${reference}`);
 
     const SAIFUL_API_URL = process.env.SAIFUL_API_URL || "https://app.saifulegendconnect.com/api";
     const SAIFUL_API_KEY = process.env.SAIFUL_API_KEY;
 
     if (!SAIFUL_API_KEY) {
+      console.error(`❌ [SAIFUL] API key not configured in environment`);
       throw new Error("Saiful API key not configured");
     }
+
+    console.log(`✅ [SAIFUL] API key loaded`);
 
     // Convert network enum to number for API
     const networkMap: { [key: string]: number } = {
@@ -33,6 +43,7 @@ export async function purchaseData(params: SaifulPurchaseParams): Promise<Saiful
     };
     
     const networkId = networkMap[network.toUpperCase()] || 1;
+    console.log(`🔄 [SAIFUL] Network conversion: ${network} → ${networkId}`);
 
     const requestBody = {
       plan: plan,  // Send plan as integer ID, not string
@@ -40,16 +51,17 @@ export async function purchaseData(params: SaifulPurchaseParams): Promise<Saiful
       network: networkId,
     };
 
-    console.log("[SAIFUL REQUEST]", {
-      url: `${SAIFUL_API_URL}/data/${reference}`,
-      body: requestBody,
-      timestamp: new Date().toISOString(),
-      reference,
-    });
+    const requestUrl = `${SAIFUL_API_URL}/data/${reference}`;
+    
+    console.log(`\n📤 [SAIFUL API] Sending POST request:`);
+    console.log(`   URL: ${requestUrl}`);
+    console.log(`   Headers: Authorization: Bearer [REDACTED], Content-Type: application/json`);
+    console.log(`   Body:`, JSON.stringify(requestBody, null, 2));
+    console.log(`   Timestamp: ${new Date().toISOString()}`);
 
     // Append reference to URL for idempotency
     const response = await axios.post(
-      `${SAIFUL_API_URL}/data/${reference}`,
+      requestUrl,
       requestBody,
       {
         headers: {
@@ -60,12 +72,10 @@ export async function purchaseData(params: SaifulPurchaseParams): Promise<Saiful
       }
     );
 
-    console.log("[SAIFUL RESPONSE]", {
-      status: response.status,
-      data: response.data,
-      timestamp: new Date().toISOString(),
-      reference,
-    });
+    const duration = Date.now() - startTime;
+    console.log(`\n📥 [SAIFUL API] Response received (${duration}ms):`);
+    console.log(`   HTTP Status: ${response.status}`);
+    console.log(`   Response Data:`, JSON.stringify(response.data, null, 2));
 
     // Parse response - Saiful returns data nested under 'data' key
     const responseData = response.data?.data || response.data;
@@ -76,7 +86,9 @@ export async function purchaseData(params: SaifulPurchaseParams): Promise<Saiful
         message: responseData.description || "Data purchase successful",
         externalReference: responseData.ident,
       };
-      console.log("[SAIFUL SUCCESS]", returnData);
+      console.log(`✅ [SAIFUL SUCCESS] Purchase confirmed:`);
+      console.log(`   Message: ${returnData.message}`);
+      console.log(`   External Reference: ${returnData.externalReference}`);
       return returnData;
     } else if (responseData?.Status === "pending" || responseData?.status === "pending") {
       const returnData = {
@@ -84,43 +96,61 @@ export async function purchaseData(params: SaifulPurchaseParams): Promise<Saiful
         message: responseData.description || "Data purchase pending",
         externalReference: responseData.ident,
       };
-      console.log("[SAIFUL PENDING]", returnData);
+      console.log(`⏳ [SAIFUL PENDING] Purchase is pending:`);
+      console.log(`   Message: ${returnData.message}`);
+      console.log(`   External Reference: ${returnData.externalReference}`);
       return returnData;
     } else {
       const errorMsg = responseData?.description || responseData?.message || "Data purchase failed";
-      console.log("[SAIFUL FAILED]", { message: errorMsg, response: responseData });
+      console.log(`❌ [SAIFUL FAILED] Purchase unsuccessful:`);
+      console.log(`   Message: ${errorMsg}`);
+      console.log(`   Full Response:`, responseData);
       return {
         success: false,
         message: errorMsg,
       };
     }
   } catch (error: any) {
-    console.error("[SAIFUL API ERROR]", {
-      message: error.message,
-      response: error.response?.data,
-      status: error.response?.status,
-      timestamp: new Date().toISOString(),
-    });
+    const duration = Date.now() - startTime;
+    
+    console.error(`\n❌ [SAIFUL ERROR] Exception caught (${duration}ms)`);
+    console.error(`   Error Type: ${error.name}`);
+    console.error(`   Error Message: ${error.message}`);
 
     if (error.response) {
       // API returned an error response
+      console.error(`   HTTP Status: ${error.response.status}`);
+      console.error(`   Response Headers:`, error.response.headers);
+      console.error(`   Response Body:`, JSON.stringify(error.response.data, null, 2));
+      
       const errorMessage = error.response.data?.description || error.response.data?.message || `API Error: ${error.response.status}`;
-      console.error("[SAIFUL API DETAILS]", {
-        errorMessage,
-        apiResponse: error.response.data,
-      });
+      console.error(`❌ [SAIFUL] API Error Details: ${errorMessage}`);
+      
       return {
         success: false,
         message: error.response.data?.message || `API Error: ${error.response.status}`,
       };
     } else if (error.code === "ECONNABORTED") {
       // Timeout
+      console.error(`   Type: Request Timeout (30s)`);
+      console.error(`   Code: ECONNABORTED`);
       return {
         success: false,
         message: "Request timeout - please try again",
       };
+    } else if (error.code === "ENOTFOUND" || error.code === "ECONNREFUSED") {
+      // Network error
+      console.error(`   Type: Network Error`);
+      console.error(`   Code: ${error.code}`);
+      return {
+        success: false,
+        message: "Network error - please try again",
+      };
     } else {
-      // Network or other error
+      // Other error
+      console.error(`   Type: Other Error`);
+      console.error(`   Code: ${error.code}`);
+      console.error(`   Full Error:`, error);
       return {
         success: false,
         message: "Network error - please try again",
