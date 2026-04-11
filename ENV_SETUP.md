@@ -1,3 +1,336 @@
+# Environment Setup Guide
+
+This document outlines all required and optional environment variables for DANBAIWA DATA PLUG.
+
+## Quick Start
+
+1. Copy the template:
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Update `.env.local` with your actual values (never commit this file)
+
+3. Verify all required variables are set:
+   ```bash
+   npm run verify-env  # Optional: add this script to package.json
+   ```
+
+## Environment Variables
+
+### 🔐 Core Authentication
+
+#### JWT_SECRET
+- **Required**: Yes
+- **Type**: String
+- **Description**: Secret key for signing JWT tokens (authentication)
+- **Minimum Length**: 32 characters
+- **Example**: `your-super-secret-jwt-key-min-32-chars-1234567890`
+- **Notes**: 
+  - Used for signing tokens (expires in 7 days)
+  - Must be at least 32 characters for security
+  - Keep secure, never share or commit
+
+#### ADMIN_PASSWORD
+- **Required**: Yes
+- **Type**: String
+- **Description**: Password for admin dashboard access
+- **Minimum Length**: 8 characters
+- **Example**: `secure-admin-password-123`
+- **Notes**:
+  - Used for X-Admin-Password header in admin API calls
+  - Not hashed (sent as-is), so keep secure
+  - Change regularly in production
+
+### 🗄️ Database
+
+#### DATABASE_URL
+- **Required**: Yes
+- **Type**: PostgreSQL Connection String
+- **Description**: Neon PostgreSQL database connection
+- **Format**: `postgresql://user:password@host/dbname`
+- **Example With Pooler**: `postgresql://user:password@ep-xyz.us-east-1.neon.tech/dbname?sslmode=require`
+- **Where to Get**:
+  1. Go to https://console.neon.tech
+  2. Create new project
+  3. Copy connection string from "Connection details"
+- **Notes**:
+  - Include `?sslmode=require` for Neon
+  - Use Pooler endpoint for serverless apps
+  - Never commit to Git
+
+### 🚀 Application
+
+#### NEXT_PUBLIC_APP_URL
+- **Required**: Yes
+- **Type**: URL
+- **Description**: Public URL of your application
+- **Example**: 
+  - Development: `http://localhost:3000`
+  - Production: `https://app.danbaiwa.com`
+- **Notes**:
+  - `NEXT_PUBLIC_` prefix means it's exposed to client
+  - Used in emails, redirects, virtual account references
+  - Must be publicly accessible for webhook callbacks
+
+### 📊 Saiful API Integration
+
+Saiful handles: Data, Airtime, Electricity, Cable, Exam PINs
+
+#### SAIFUL_API_KEY
+- **Required**: Yes
+- **Type**: String (API Key)
+- **Description**: API authentication key for Saiful
+- **Where to Get**: Contact Saiful support or admin dashboard
+- **Example**: `saiful_live_xxxxx` or `saiful_test_xxxxx`
+- **Notes**:
+  - Keep separate test and live keys
+  - Store in Vercel secrets, not .env
+
+#### SAIFUL_API_URL
+- **Required**: Yes
+- **Type**: URL
+- **Description**: Base URL for Saiful API
+- **Example**:
+  - Development: `https://api-staging.saiful.ng`
+  - Production: `https://api.saiful.ng`
+- **Notes**:
+  - Ensure correct environment (staging vs live)
+  - Include base path if applicable
+
+### 📱 SMEPlug API Integration
+
+SMEPlug handles: Data purchases (Alternative to Saiful)
+
+#### SMEPLUG_API_KEY
+- **Required**: Yes
+- **Type**: String (API Key)
+- **Description**: API authentication key for SMEPlug
+- **Where to Get**: SMEPlug dashboard or support
+- **Example**: `sk_live_xxxxx` or `sk_test_xxxxx`
+- **Notes**:
+  - Used for data purchases when `apiSource = API_A`
+  - Keep test and live keys separate
+
+#### SMEPLUG_BASE_URL
+- **Required**: Yes
+- **Type**: URL
+- **Description**: Base URL for SMEPlug API
+- **Example**: `https://api.smeplug.ng/api/v1`
+- **Notes**:
+  - Version in URL may change
+
+### 💳 Wiaxy Integration
+
+Wiaxy handles: Virtual account creation, payment processing
+
+#### WIAXY_SECRET_KEY
+- **Required**: Yes
+- **Type**: String (Secret Key)
+- **Description**: Secret key for Wiaxy authentication
+- **Where to Get**: Wiaxy/BillStack dashboard
+- **Example**: `sk_live_xxxxx` or `sk_test_xxxxx`
+- **Notes**:
+  - Used for VM creation and webhook signature verification
+  - Use Bearer token auth in API calls
+  - Keep secure
+
+#### WIAXY_BASE_URL
+- **Required**: Yes
+- **Type**: URL
+- **Description**: Base URL for Wiaxy API
+- **Example**: `https://api.billstack.co/v2`
+- **Notes**:
+  - Endpoint path varies by operation
+
+#### WIAXY_WEBHOOK_SECRET
+- **Optional**: No (Required for production)
+- **Type**: String
+- **Description**: Secret for verifying webhook signatures
+- **Where to Get**: Wiaxy dashboard → Webhooks → Copy signing key
+- **Notes**:
+  - Used to verify requests from Wiaxy
+  - Must match Wiaxy dashboard setting
+  - HMAC-SHA256 signature verification
+
+## Example .env.local
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@ep-xyz.us-east-1.neon.tech/danbaiwa_db?sslmode=require
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters-here-1234567890ab
+ADMIN_PASSWORD=secure-admin-password-123
+
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# APIs
+SAIFUL_API_KEY=saiful_test_abc123xyz789
+SAIFUL_API_URL=https://api-staging.saiful.ng
+
+SMEPLUG_API_KEY=sk_test_abc123xyz789
+SMEPLUG_BASE_URL=https://api.smeplug.ng/api/v1
+
+WIAXY_SECRET_KEY=sk_test_abc123xyz789
+WIAXY_BASE_URL=https://api.billstack.co/v2
+WIAXY_WEBHOOK_SECRET=whsec_test_abc123xyz789
+```
+
+## Example .env.example
+
+This is the template committed to Git (containing no secrets):
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@host/dbname?sslmode=require
+
+# Authentication
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters
+ADMIN_PASSWORD=your-secure-admin-password
+
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Saiful API (Data, Airtime, Electricity, Cable, Exam PIN)
+SAIFUL_API_KEY=your-saiful-api-key
+SAIFUL_API_URL=https://api.saiful.ng
+
+# SMEPlug API (Alternative Data Provider)
+SMEPLUG_API_KEY=your-smeplug-api-key
+SMEPLUG_BASE_URL=https://api.smeplug.ng/api/v1
+
+# Wiaxy (Virtual Accounts & Payment Gateway)
+WIAXY_SECRET_KEY=your-wiaxy-secret-key
+WIAXY_BASE_URL=https://api.billstack.co/v2
+WIAXY_WEBHOOK_SECRET=your-wiaxy-webhook-secret
+```
+
+## Setup by Environment
+
+### Local Development
+
+```bash
+# .env.local
+DATABASE_URL=postgresql://localhost/danbaiwa_dev
+JWT_SECRET=dev-secret-key-at-least-32-characters-long-12345678
+ADMIN_PASSWORD=dev-admin-password
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Use staging/test API keys
+SAIFUL_API_KEY=saiful_test_...
+SMEPLUG_API_KEY=sk_test_...
+WIAXY_SECRET_KEY=sk_test_...
+```
+
+### Staging/Testing
+
+```bash
+# .env.staging
+DATABASE_URL=postgresql://user:pass@staging-db.neon.tech/danbaiwa_staging
+JWT_SECRET=staging-secret-key-min-32-chars-unique-random-value
+ADMIN_PASSWORD=staging-admin-password-secure
+NEXT_PUBLIC_APP_URL=https://staging.danbaiwa.com
+
+# Use testing API keys (if available) or staging live keys
+SAIFUL_API_KEY=saiful_test_...
+SMEPLUG_API_KEY=sk_test_...
+WIAXY_SECRET_KEY=sk_test_...
+```
+
+### Production
+
+```bash
+# Set via Vercel Dashboard (NOT in .env file)
+DATABASE_URL=postgresql://user:pass@prod-db.neon.tech/danbaiwa_prod
+JWT_SECRET=production-secret-very-long-random-string-change-regularly
+ADMIN_PASSWORD=production-admin-password-change-regularly
+NEXT_PUBLIC_APP_URL=https://app.danbaiwa.com
+
+# Use live API keys only
+SAIFUL_API_KEY=saiful_live_...
+SMEPLUG_API_KEY=sk_live_...
+WIAXY_SECRET_KEY=sk_live_...
+WIAXY_WEBHOOK_SECRET=whsec_live_...
+```
+
+## Vercel Deployment
+
+### Setting Environment Variables
+
+1. **Push code to GitHub** (without .env.local)
+2. **Go to Vercel Dashboard** → Your Project
+3. **Settings** → **Environment Variables**
+4. **Add** each variable as key-value pair
+5. Select environment(s): Production / Preview / Development
+6. **Save and redeploy**
+
+### Example Vercel Dashboard
+
+| Key | Value (Production) | Development |
+|-----|-------------------|-------------|
+| DATABASE_URL | `postgresql://...prod...` | `postgresql://...test...` |
+| JWT_SECRET | `long-random-prod-secret` | `dev-secret` |
+| ADMIN_PASSWORD | `prod-password` | `dev-password` |
+| SAIFUL_API_KEY | `saiful_live_...` | `saiful_test_...` |
+
+## Validation Checklist
+
+Before deploying, verify:
+
+- [ ] `DATABASE_URL` is correct and accessible
+- [ ] `JWT_SECRET` is at least 32 characters
+- [ ] `ADMIN_PASSWORD` is secure (8+ characters)
+- [ ] `NEXT_PUBLIC_APP_URL` is publicly accessible
+- [ ] `SAIFUL_API_KEY` and `SAIFUL_API_URL` match environment
+- [ ] `SMEPLUG_API_KEY` and `SMEPLUG_BASE_URL` match environment
+- [ ] `WIAXY_SECRET_KEY` and `WIAXY_BASE_URL` are correct
+- [ ] All API keys are from the same environment (test or live)
+- [ ] No sensitive values in `.env.example`
+- [ ] `.env.local` is in `.gitignore`
+- [ ] Database connection is tested (run migrations)
+
+## Troubleshooting
+
+### "Database connection failed"
+1. Verify `DATABASE_URL` format is correct
+2. Check credentials (user, password)
+3. Verify Neon project is active
+4. Try connection string with Pooler endpoint
+
+### "API key rejected"
+1. Verify key is not expired
+2. Check key is for correct environment (test vs live)
+3. Verify API URL is correct for that key
+4. Check key has required permissions (contact provider)
+
+### "Webhook verification failed"
+1. Verify `WIAXY_WEBHOOK_SECRET` matches Wiaxy dashboard
+2. Check webhook URL in Wiaxy is set to: `{NEXT_PUBLIC_APP_URL}/api/wiaxy/webhook`
+3. Verify signature algorithm is HMAC-SHA256
+
+### "JWT token rejected"
+1. Verify `JWT_SECRET` hasn't changed since token was issued
+2. Clear cookies and try login again
+3. Check token expiry (7 days)
+
+## Security Best Practices
+
+1. **Never commit secrets**: Add `.env.local` to `.gitignore`
+2. **Rotate keys**: Change `JWT_SECRET` and `ADMIN_PASSWORD` quarterly
+3. **Use strong values**: Min 32 chars for secrets, random + complex
+4. **Staging vs Production**: Keep separate API keys
+5. **Monitor access**: Log who accesses admin dashboard
+6. **Vercel secrets**: Use Vercel's secret management for production
+7. **Backup credentials**: Store in secure password manager
+
+## Reference
+
+- Neon Docs: https://neon.tech/docs
+- Prisma Docs: https://www.prisma.io/docs
+- Next.js Env Docs: https://nextjs.org/docs/basic-features/environment-variables
+- Vercel Env Docs: https://vercel.com/docs/concepts/projects/environment-variables
 # Environment Variables Setup Guide
 
 Complete guide for setting up environment variables for **DANBAIWA DATA PLUG**.

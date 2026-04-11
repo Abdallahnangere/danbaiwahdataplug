@@ -1,3 +1,472 @@
+# DANBAIWA DATA PLUG 🚀
+
+A comprehensive Next.js fintech platform for purchasing digital services in Nigeria. Users can buy data, airtime, pay electricity bills, subscribe to cable TV, and purchase exam PINs—all with seamless wallet funding through virtual accounts.
+
+## 🌟 Features
+
+### 5 Core Services
+
+1. **📱 Data Purchase**
+   - Multiple networks: MTN, Airtel, GLO, 9Mobile
+   - Flexible plans with various data amounts and validity periods
+   - Dual API support (SMEPlug & Saiful) for reliability
+   - Guest purchase option without account
+
+2. **📞 Airtime Top-up**
+   - Quick airtime purchase for all Nigerian networks
+   - Flexible amounts from ₦50 to ₦50,000
+   - Real-time balance deduction
+
+3. **⚡ Electricity Bill Payment**
+   - 11 Nigerian DISCOs (Distribution Companies)
+   - Prepaid & postpaid meter support
+   - Meter number validation
+   - Minimum payment ₦1,000
+
+4. **📺 Cable TV Subscription**
+   - DSTV, GOtv, and Startimes
+   - Multiple subscription tiers per provider
+   - Plan information display with pricing
+
+5. **📚 Exam PINs**
+   - WAEC, NECO, NABTEB support
+   - Bulk purchase (1-5 units)
+   - Fixed pricing per exam body
+
+### Wallet & Funding
+
+- **Virtual Accounts**: Auto-generated per user via Wiaxy/BillStack
+- **Instant Funding**: Multiple bank support (9PSB, SafeHaven, Providus, Bankly, PalmPay)
+- **Balance Tracking**: Real-time kobo-based balance system
+- **Transaction History**: Complete log of all purchases and deposits
+
+### User Management
+
+- **Phone-based Authentication**: 11-digit Nigerian phone + 6-digit PIN
+- **Role System**: USER (standard), AGENT (verified resellers), ADMIN (platform management)
+- **Account Tiers**: Different pricing for users vs. agents
+- **Reward System**: First deposit bonuses and tier upgrades
+- **Account Security**: PIN hashing with bcryptjs, ban/suspension capability
+
+### Admin Dashboard
+
+- Analytics & insights
+- User management
+- Plan management (add/edit pricing)
+- Transaction monitoring
+- Agent management
+- Revenue tracking by network
+
+## 🏗️ Tech Stack
+
+### Frontend
+- **Framework**: Next.js 16 (React 19)
+- **Language**: TypeScript
+- **Styling**: TailwindCSS 4
+- **UI Components**: shadcn/ui
+- **Animations**: Framer Motion
+- **Charts**: Recharts
+- **State Management**: Zustand, TanStack React Query
+- **Notifications**: Sonner, React Hot Toast
+
+### Backend
+- **Runtime**: Node.js (Next.js API Routes)
+- **Language**: TypeScript
+- **ORM**: Prisma 6.19.3
+- **Database**: PostgreSQL (Neon)
+- **Authentication**: JWT (jose), bcryptjs
+- **Validation**: Zod
+
+### External Services
+- **Data APIs**: SMEPlug (API_A), Saiful (API_B)
+- **Virtual Accounts**: Wiaxy/BillStack
+- **Payment Gateway**: Wiaxy webhooks
+- **Database**: Neon PostgreSQL
+
+## 📦 Installation
+
+### Prerequisites
+- Node.js 18+
+- npm/yarn
+- PostgreSQL database (Neon account)
+
+### Setup
+
+```bash
+# Clone repository
+git clone <repo-url>
+cd DANBAIWA-DATA-PLUG
+
+# Install dependencies
+npm install
+
+# Setup environment variables (see ENV_SETUP.md)
+cp .env.example .env.local
+# Edit .env.local with your actual values
+
+# Setup database
+npx prisma generate
+npx prisma migrate deploy
+
+# Seed initial data (optional)
+npm run seed
+
+# Start development server
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 📚 Project Structure
+
+```
+app/
+├── api/                      # Backend API Routes
+│   ├── admin/               # Admin endpoints (plans, users, analytics)
+│   ├── airtime/             # Airtime purchase
+│   ├── auth/                # Authentication (signup, login, PIN management)
+│   ├── cable/               # Cable TV subscription
+│   ├── data/                # Data plans & purchase
+│   ├── electricity/         # Electricity payment & validation
+│   ├── exampin/             # Exam PIN purchase
+│   ├── rewards/             # Reward retrieval
+│   ├── transactions/        # Transaction history
+│   └── wiaxy/               # Virtual account webhooks
+├── admin/                   # Admin dashboard pages
+├── auth/                    # Authentication pages (login, signup)
+├── checkout/                # Checkout dashboard
+├── dashboard/               # User dashboard
+└── page.tsx                 # Landing page
+
+components/
+├── admin/                   # Admin UI components
+├── app/                     # User app components
+├── landing/                 # Homepage components
+└── ui/                      # Reusable UI components
+
+lib/
+├── auth.ts                  # JWT & session management
+├── adminAuth.ts             # Admin authentication
+├── db.ts                    # Prisma singleton
+├── saiful.ts                # Saiful API integration
+├── smeplug.ts               # SMEPlug API integration
+├── wiaxy.ts                 # Wiaxy virtual account integration
+├── rewards.ts               # Reward logic
+├── validators.ts            # Zod schemas
+└── utils.ts                 # Helper functions
+
+prisma/
+└── schema.prisma            # Database schema
+
+public/                      # Static assets
+styles/                      # Global styles
+```
+
+## 🔐 Authentication
+
+### Login Flow
+1. User enters phone (11 digits) + PIN (6 digits)
+2. System looks up user by phone
+3. PIN verified using bcryptjs.compare()
+4. JWT token issued (7 days expiry)
+5. Token stored in `sy_session` cookie
+
+### Signup Flow
+1. User provides fullName, phone, PIN
+2. PIN hashed with bcryptjs (12 rounds)
+3. User record created
+4. Virtual account created via Wiaxy
+5. VirtualAccount linked to User
+6. JWT token issued
+
+### Admin Authentication
+- Simple password-based (ADMIN_PASSWORD env var)
+- Passed via `X-Admin-Password` header
+- No JWT validation (stateless)
+
+## 💳 Payment Flow
+
+### Service Purchase (Authenticated User)
+```
+1. User selects service (data/airtime/etc)
+2. System retrieves user by phone
+3. PIN verified
+4. Balance checked (kobo units)
+5. Plan details fetched
+6. Transaction created (PENDING status)
+7. External API called (SMEPlug or Saiful)
+8. Transaction updated (SUCCESS/FAILED)
+9. Balance updated (decremented)
+10. User notified
+```
+
+### Guest Data Purchase
+```
+1. User selects plan
+2. No authentication required
+3. Phone number provided
+4. Transaction created
+5. External API called immediately
+6. Returns transaction reference
+7. User can check status later
+```
+
+### Wallet Funding (Virtual Account)
+```
+1. User's virtual account created at signup
+2. User transfers ₦X to account
+3. Wiaxy webhook notifies system
+4. Transaction created (DEPOSIT type)
+5. User balance credited
+6. Reward system triggered
+7. User notified
+```
+
+## 🎯 API Endpoints
+
+### Authentication
+- `POST /api/auth/signup` - Register new user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/verify-pin` - Verify PIN
+- `POST /api/auth/change-pin` - Change PIN
+- `GET /api/auth/me` - Get current user
+
+### Services
+- `GET /api/data/plans` - Get data plans
+- `POST /api/data/purchase` - Purchase data
+- `POST /api/data/guest-purchase` - Guest data purchase
+- `POST /api/airtime/purchase` - Purchase airtime
+- `POST /api/electricity/validate` - Validate meter
+- `POST /api/electricity/pay` - Pay electricity bill
+- `POST /api/cable/subscribe` - Subscribe to cable
+- `POST /api/exampin/purchase` - Purchase exam PIN
+
+### Wallet
+- `GET /api/rewards` - Get user rewards
+- `GET /api/transactions` - Get transaction history
+- `POST /api/wiaxy/webhook` - Wiaxy payment webhook
+
+### Admin
+- `POST /api/admin/login` - Admin authentication
+- `POST /api/admin/verify` - Verify admin password
+- `GET /api/admin/plans` - Get all plans
+- `POST /api/admin/plans` - Create plan
+- `GET /api/admin/users` - Get all users
+- `GET /api/admin/analytics` - Get analytics data
+
+## 🔧 Configuration
+
+See `ENV_SETUP.md` for detailed environment variable configuration.
+
+### Key Variables
+```bash
+# Database
+DATABASE_URL=postgresql://...
+
+# Authentication
+JWT_SECRET=your-secret-key-min-32-chars
+ADMIN_PASSWORD=your-admin-password
+
+# APIs
+SAIFUL_API_KEY=your-saiful-key
+SAIFUL_API_URL=https://api.saiful.com
+SMEPLUG_API_KEY=your-smeplug-key
+SMEPLUG_BASE_URL=https://api.smeplug.ng
+
+# Virtual Accounts
+WIAXY_SECRET_KEY=your-wiaxy-key
+WIAXY_BASE_URL=https://api.billstack.co/v2
+
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+## 🚀 Deployment
+
+### Vercel (Recommended)
+
+```bash
+# Push to Git
+git add .
+git commit -m "Your message"
+git push origin main
+
+# Import to Vercel
+# 1. Go to vercel.com
+# 2. Connect GitHub repo
+# 3. Set environment variables in Vercel dashboard
+# 4. Deploy
+```
+
+### Neon Database Deployment
+- Vercel can auto-connect to Neon
+- Or manually add DATABASE_URL in Vercel env vars
+
+See `VERCEL_DEPLOYMENT.md` for detailed steps.
+
+## 📊 Data Models
+
+### User
+- Phone-based unique identity
+- PIN-based authentication (6 digits)
+- Role-based access (USER/AGENT/ADMIN)
+- Balance tracking in kobo
+- Virtual account relationship
+
+### Plan
+- Network-specific (MTN/GLO/AIRTEL/9MOBILE)
+- Dual API support (SMEPlug/Saiful)
+- External API ID mapping
+- User/Agent pricing tiers
+- Validity periods
+
+### Transaction
+- Complete history logging
+- Multiple transaction types
+- Success/failure status tracking
+- API reference for traceability
+- JSON metadata for service-specific data
+- Phone number tracking (user or guest)
+
+### VirtualAccount
+- One-per-user relationship with Wiaxy
+- Multiple bank support
+- Account number & name
+- Used for wallet funding
+
+## 🔄 API Integration
+
+### SMEPlug (API_A) - Data
+- Endpoint: `/data/purchase`
+- Networks: MTN, GLO, AIRTEL, 9MOBILE
+- Phone format: `09xxxxxxx` (local)
+- Reference for idempotency
+
+### Saiful (API_B) - Multi-service
+- Data: `/data/{reference}`
+- Airtime: `/airtime/{reference}`
+- Electricity: `/electricity/meter/{reference}`, `/electricity/pay/{reference}`
+- Cable: `/cable/{reference}`
+- Exam PINs: `/exampin/{reference}`
+- Token-based auth
+- 30s timeout
+
+### Wiaxy (Virtual Accounts & Webhooks)
+- VA Creation: POST `/thirdparty/generateVirtualAccount/`
+- Webhook: Receives payment notifications
+- Signature verification required
+- Multiple bank support
+
+## 📈 Analytics & Monitoring
+
+Admin dashboard provides:
+- Total users and transactions
+- Revenue (total & daily)
+- Transaction trends (7-day graph)
+- Revenue by network (pie chart)
+- User and transaction counts by type
+
+## ⚠️ Error Handling
+
+All API responses follow this pattern:
+
+**Success**:
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Operation successful"
+}
+```
+
+**Error**:
+```json
+{
+  "error": "Error message",
+  "status": 400
+}
+```
+
+Status codes:
+- `401` - Unauthorized
+- `402` - Payment Required (insufficient balance)
+- `403` - Forbidden (banned account)
+- `404` - Not Found
+- `429` - Too Many Requests (rate limit)
+- `500` - Server Error
+
+## 🧪 Testing
+
+```bash
+# Run tests
+npm test
+
+# Run with coverage
+npm test -- --coverage
+
+# Run specific test file
+npm test -- path/to/test.ts
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**"User not found"**
+- Verify phone format: 11 digits starting with 0
+- Check database has user record
+
+**"Insufficient balance"**
+- Balance tracked in kobo (1 naira = 100 kobo)
+- Ensure user has funded wallet
+
+**"Invalid PIN"**
+- PIN must be exactly 6 digits
+- PIN is case-sensitive hash comparison
+
+**"Plan not found"**
+- Ensure plan is marked `isActive: true`
+- Check apiSource and external IDs match
+
+**API timeouts**
+- Check external API status
+- Verify API keys are valid
+- Check network connectivity
+
+See `DATABASE_SETUP.md` for database troubleshooting.
+
+## 🤝 Contributing
+
+1. Create feature branch: `git checkout -b feature/your-feature`
+2. Make changes and commit: `git commit -m "Add feature"`
+3. Push to branch: `git push origin feature/your-feature`
+4. Open pull request
+
+## 📄 License
+
+Proprietary - DANBAIWA DATA PLUG
+
+## 📞 Support
+
+For issues or questions:
+- Check issue tracker
+- Review documentation
+- Contact development team
+
+## 📝 Changelog
+
+### Version 0.1.0
+- Initial release
+- 5 core services
+- Admin dashboard
+- Virtual account integration
+- Reward system
+
+---
+
+**Last Updated**: 2024
+**Status**: Production Ready
 # DANBAIWA DATA PLUG 📱 — Buy Data Instantly
 
 Nigeria's fastest data delivery platform. Buy data for all networks at competitive prices with instant delivery.

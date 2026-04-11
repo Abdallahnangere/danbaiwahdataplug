@@ -1,5 +1,5 @@
-// This is your Prisma schema file.
-// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
   provider = "prisma-client-js"
@@ -10,9 +10,171 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ====================================================================
-// ENUMS
-// ====================================================================
+// ============ User Models ============
+
+model User {
+  id        String    @id @default(cuid())
+  fullName  String
+  phone     String    @unique // 11 digits, e.g., 08012345678
+  pinHash   String?   // Hashed 6-digit PIN using bcryptjs
+  email     String?   @unique
+  role      UserRole  @default(USER) // USER, AGENT, ADMIN
+  tier      String    @default("user") // user, agent
+  balance   Int       @default(0) // In kobo (divide by 100 for naira)
+  isBanned  Boolean   @default(false)
+  isActive  Boolean   @default(true)
+  joinedAt  DateTime  @default(now())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relationships
+  virtualAccount VirtualAccount?
+  transactions   Transaction[]
+  userRewards    UserReward[]
+  account        Account?
+
+  @@index([phone])
+  @@index([role])
+}
+
+model VirtualAccount {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  accountNumber String
+  bankName      String
+  accountName   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Int      @default(0) // In kobo
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ============ Plan Models ============
+
+model Plan {
+  id                String   @id @default(cuid())
+  name              String   // e.g., "MTN 1GB 7 Days"
+  network           Network  // MTN, GLO, AIRTEL, NINEMOBILE
+  sizeLabel         String   // e.g., "1GB"
+  validity          String   // e.g., "7 days"
+  price             Int      // Price in naira (will be multiplied by 100 for kobo in code)
+  agentPrice        Int      @default(0) // Agent discount price
+  apiSource         ApiSource // API_A (SMEPlug) or API_B (Saiful)
+  externalPlanId    Int      // Plan ID from external API
+  externalNetworkId Int      // Network ID from external API
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  transactions Transaction[]
+
+  @@unique([apiSource, externalPlanId, externalNetworkId])
+  @@index([network])
+  @@index([isActive])
+}
+
+model CablePlan {
+  id        String   @id @default(cuid())
+  provider  String   // DSTV, GOTV, STARTIME
+  planId    Int      // Provider's plan ID
+  name      String   // Plan name
+  amount    Int      // Price in naira
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, planId])
+  @@index([provider])
+}
+
+model Disco {
+  id         String   @id @default(cuid())
+  name       String   // Display name: "Ikeja Electric"
+  slug       String   @unique // URL-friendly slug: "ikeja-electric"
+  externalId Int      // Saiful's DISCO ID (1-11)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([externalId])
+}
+
+// ============ Transaction Models ============
+
+model Transaction {
+  id                String      @id @default(cuid())
+  userId            String? // Null for guest purchases
+  type              TransactionType
+  method            String?     // WIAXY, API, MANUAL
+  amount            Int         // In naira (for display/calculation)
+  status            TransactionStatus @default(PENDING) // PENDING, SUCCESS, FAILED, COMPLETED
+  reference         String      @unique // Transaction reference for idempotency
+  externalReference String?     // External API reference
+  description       String?     // What was purchased/credited
+  phone             String?     // Recipient phone number
+  guestPhone        String?     // For guest purchases
+  planId            String?     // For data purchases
+  apiUsed           ApiSource?  // Which API was used
+  metadata          Json?       // Service-specific metadata
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  user User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+  plan Plan?  @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+  @@index([phone])
+}
+
+// ============ Reward Models ============
+
+model Reward {
+  id          String   @id @default(cuid())
+  type        String   // FIRST_DEPOSIT_2K, DEPOSIT_10K_UPGRADE, etc.
+  title       String   // Display title
+  description String?  // Description
+  amount      Int      // Reward amount in naira
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userRewards UserReward[]
+
+  @@index([type])
+}
+
+model UserReward {
+  id        String   @id @default(cuid())
+  userId    String
+  rewardId  String
+  status    RewardStatus @default(IN_PROGRESS) // IN_PROGRESS, EARNED, CLAIMED
+  claimedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, rewardId])
+  @@index([userId])
+  @@index([status])
+}
+
+// ============ Enums ============
 
 enum UserRole {
   USER
@@ -21,161 +183,37 @@ enum UserRole {
 }
 
 enum TransactionType {
-  data
-  airtime
-  electricity
-  cable
-  exampin
+  DATA_PURCHASE
+  AIRTIME_PURCHASE
+  CABLE_SUBSCRIPTION
+  ELECTRICITY_PAYMENT
+  EXAMPIN_PURCHASE
+  DEPOSIT
+  WALLET_FUNDING
+  REWARD_CREDIT
 }
 
 enum TransactionStatus {
-  pending
-  completed
-  failed
+  PENDING
+  SUCCESS
+  FAILED
+  COMPLETED
 }
 
-// ====================================================================
-// MODELS
-// ====================================================================
-
-/// User model for authentication and profile
-model User {
-  id        String   @id @default(cuid())
-  phone     String   @unique
-  email     String?  @unique
-  fullName  String
-  pinHash   String? // 6-digit PIN hashed
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  role      UserRole @default(USER)
-
-  // Relations
-  account      Account?
-  transactions Transaction[]
-  adminAuth    AdminAuth?
-
-  @@map("users")
+enum ApiSource {
+  API_A // SMEPlug
+  API_B // Saiful
 }
 
-/// Account model for wallet balance
-model Account {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  balance   Float    @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("accounts")
+enum Network {
+  MTN
+  GLO
+  AIRTEL
+  NINEMOBILE
 }
 
-/// Data Plans with API assignment
-model DataPlan {
-  id              String   @id @default(cuid())
-  name            String
-  dataSize        String // e.g., "500MB", "1GB"
-  price           Float
-  validityDays    Int
-  apiAssignment   String // "API_A", "API_B", or "BOTH"
-  network         String // "MTN", "GLO", "AIRTEL", "NINEMOBILE"
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("data_plans")
-}
-
-/// Cable Plans with pricing
-model CablePlan {
-  id       String  @id @default(cuid())
-  provider String  // "DSTV", "GOTV", "STARTIME"
-  planName String
-  planId   Int     @unique
-  price    Float
-  isActive Boolean @default(true)
-
-  @@map("cable_plans")
-}
-
-/// Electricity Distributors (DISCO)
-model Disco {
-  id    String  @id @default(cuid())
-  name  String  @unique
-  code  String  @unique
-  discoId Int   @unique
-  isActive Boolean @default(true)
-
-  @@map("discos")
-}
-
-/// Transaction history for all services
-model Transaction {
-  id            String            @id @default(cuid())
-  userId        String
-  type          TransactionType
-  service       String // "MTN", "DSTV", "IKEJA_ELECTRIC", etc.
-  amount        Float
-  status        TransactionStatus
-  externalId    String? // Reference from API provider
-  phoneNumber   String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-
-  // Metadata for different transaction types (stored as JSON)
-  metadata      Json?
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("transactions")
-}
-
-/// Admin Authentication
-model AdminAuth {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  username  String   @unique
-  passwordHash String
-  lastLogin DateTime?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("admin_auth")
-}
-
-/// Rewards system
-model Reward {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String   // "signup_bonus", "first_deposit", "referral"
-  amount    Float
-  status    String   @default("earned") // "earned", "claimed"
-  createdAt DateTime @default(now())
-  claimedAt DateTime?
-
-  @@index([userId])
-  @@map("rewards")
-}
-
-/// Wallet Funding Requests
-model WalletFunding {
-  id          String   @id @default(cuid())
-  userId      String
-  amount      Float
-  status      String   @default("pending") // "pending", "completed", "failed"
-  reference   String?
-  paymentMethod String? // "transfer", "card", "wiaxy"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([userId])
-  @@map("wallet_fundings")
+enum RewardStatus {
+  IN_PROGRESS
+  EARNED
+  CLAIMED
 }
