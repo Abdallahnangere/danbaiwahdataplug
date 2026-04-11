@@ -99,18 +99,18 @@ export function PlansSection() {
                       {service.category === "Mobile Data" && (
                         <>
                           <h4 className={`text-2xl font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            {plan.size}
+                            {(plan as any).size}
                           </h4>
                           <p className={`text-xs ${plan.featured ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {plan.validity}
+                            {(plan as any).validity}
                           </p>
                           <span className={`text-xs px-2 py-1 rounded-full inline-block ${
                             plan.featured ? 'bg-white/10 text-gray-300' : 'bg-gray-100 text-gray-700'
                           }`}>
-                            {plan.network}
+                            {(plan as any).network}
                           </span>
                           <div className={`text-3xl font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            ₦{plan.price.toLocaleString()}
+                            ₦{(plan as any).price.toLocaleString()}
                           </div>
                         </>
                       )}
@@ -118,13 +118,13 @@ export function PlansSection() {
                       {service.category === "Airtime Top-up" && (
                         <>
                           <h4 className={`text-2xl font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            {plan.amount}
+                            {(plan as any).amount}
                           </h4>
                           <p className={`text-sm ${plan.featured ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {plan.networks}
+                            {(plan as any).networks}
                           </p>
                           <div className={`text-3xl font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            ₦{plan.price?.toLocaleString()}
+                            ₦{(plan as any).price?.toLocaleString()}
                           </div>
                         </>
                       )}
@@ -132,10 +132,10 @@ export function PlansSection() {
                       {service.category === "Electricity & Bills" && (
                         <>
                           <h4 className={`text-lg font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            {plan.disco}
+                            {(plan as any).disco}
                           </h4>
                           <p className={`text-sm ${plan.featured ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {plan.min}
+                            {(plan as any).min}
                           </p>
                         </>
                       )}
@@ -143,13 +143,13 @@ export function PlansSection() {
                       {service.category === "Cable TV Subscription" && (
                         <>
                           <h4 className={`text-lg font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            {plan.provider}
+                            {(plan as any).provider}
                           </h4>
                           <p className={`text-sm ${plan.featured ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {plan.plan}
+                            {(plan as any).plan}
                           </p>
                           <div className={`text-2xl font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            ₦{plan.price?.toLocaleString()}
+                            ₦{(plan as any).price?.toLocaleString()}
                           </div>
                         </>
                       )}
@@ -157,13 +157,13 @@ export function PlansSection() {
                       {service.category === "Exam PINs" && (
                         <>
                           <h4 className={`text-lg font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            {plan.exam}
+                            {(plan as any).exam}
                           </h4>
                           <p className={`text-sm ${plan.featured ? 'text-gray-300' : 'text-gray-600'}`}>
-                            {plan.quantity}
+                            {(plan as any).quantity}
                           </p>
                           <div className={`text-2xl font-bold ${plan.featured ? 'text-white' : 'text-black'}`}>
-                            ₦{plan.price?.toLocaleString()}
+                            ₦{(plan as any).price?.toLocaleString()}
                           </div>
                         </>
                       )}
@@ -194,59 +194,6 @@ export function PlansSection() {
             className="inline-block px-8 py-3 bg-gradient-to-r from-cyan-400 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
           >
             Start Shopping Now
-          </Link>
-        </div>
-      </div>
-    </section>
-  );
-}
-                  </div>
-                </div>
-
-                {/* Features */}
-                <div className="space-y-3 mb-8 py-6 border-t border-b" style={{
-                  borderColor: plan.featured ? "rgba(255,255,255,0.1)" : "rgb(229, 231, 235)"
-                }}>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 flex-shrink-0" />
-                    Instant delivery
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 flex-shrink-0" />
-                    Valid for {plan.validity.toLowerCase()}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="w-4 h-4 flex-shrink-0" />
-                    Best market rate
-                  </div>
-                </div>
-
-                {/* CTA Button */}
-                <Link
-                  href={`/app?plan=${encodeURIComponent(plan.size)}`}
-                  className={`w-full px-4 py-2 rounded-lg font-semibold text-center block transition-colors ${
-                    plan.featured
-                      ? "bg-white text-black hover:bg-gray-100"
-                      : "bg-black text-white hover:bg-gray-900"
-                  }`}
-                >
-                  Get {plan.size}
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* CTA */}
-        <div className="text-center mt-12">
-          <p className="text-gray-600 mb-4">
-            All plans available in-app with more options
-          </p>
-          <Link
-            href="/app"
-            className="inline-block px-8 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition-colors"
-          >
-            View All Plans
           </Link>
         </div>
       </div>
