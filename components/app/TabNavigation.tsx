@@ -629,8 +629,6 @@ export function ElectricityTabContent() {
     </motion.div>
   );
 }
-  );
-}
 
 interface CableReceipt {
   id: string;

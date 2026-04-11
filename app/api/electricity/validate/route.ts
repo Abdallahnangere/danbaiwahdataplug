@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { validateMeter } from "@/lib/saiful";
 
 // Map DISCO names to consistent format

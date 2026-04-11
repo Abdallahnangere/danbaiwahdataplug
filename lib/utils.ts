@@ -43,6 +43,10 @@ export function generateTransactionRef(): string {
   return `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
+export function generateReference(prefix: string = "REF"): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
 export function getNetworkFromPhone(phone: string): string {
   const formatted = formatPhoneNumber(phone);
   const firstDigits = formatted.slice(-10, -7);

@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     for (const update of updates) {
       const plan = await prisma.plan.update({
         where: { id: update.planId },
-        data: { agent_price: update.agent_price },
+        data: { agentPrice: update.agent_price },
       });
 
       console.log("[ADMIN] Updated agent price for plan:", {

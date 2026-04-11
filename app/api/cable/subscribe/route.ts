@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { getSessionUser } from "@/lib/auth";
+import { prisma as db } from "@/lib/db";
 import { subscribeToCable } from "@/lib/saiful";
-import { generateReference } from "@/lib/utils";
+import { generateReference, generateTransactionRef } from "@/lib/utils";
 
 // Cable provider info
 const CABLE_PROVIDERS = {
@@ -45,7 +45,7 @@ function getPlanAmount(provider: string, planId: number): number | null {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await auth();
+    const user = await getSessionUser(req);
     if (!user) {
       return NextResponse.json(
         { error: "Unauthorized" },

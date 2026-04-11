@@ -30,9 +30,9 @@ export async function GET(req: NextRequest) {
           sizeLabel: plan.sizeLabel,
           validity: plan.validity,
           network: plan.network,
-          user_price: plan.user_price,
-          agent_price: plan.agent_price,
-          margin: plan.agent_price > 0 ? plan.user_price - plan.agent_price : 0,
+          user_price: plan.price,
+          agent_price: plan.agentPrice,
+          margin: plan.agentPrice > 0 ? plan.price - plan.agentPrice : 0,
           externalPlanId: plan.externalPlanId,
         });
         return acc;
