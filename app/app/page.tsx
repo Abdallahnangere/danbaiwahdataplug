@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
-  Eye, EyeOff, Copy, Loader2, ChevronRight,
+  Eye, EyeOff, Copy, Loader2, ChevronRight, X, Lock, Check, AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -141,6 +141,21 @@ export default function NativeIOSDashboard() {
   const [electricityForm, setElectricityForm] = useState({ meterNumber: "", disco: "Ikeja Electric", meterType: "prepaid" });
   const [examForm, setExamForm] = useState({ exam: "WAEC", quantity: 1 });
 
+  // Modal states
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [showDataPurchaseModal, setShowDataPurchaseModal] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  
+  // Data purchase flow states
+  const [dataPurchaseForm, setDataPurchaseForm] = useState({
+    phone: "",
+    selectedPlan: null as any,
+    pin: "",
+  });
+  const [isPurchasing, setIsPurchasing] = useState(false);
+
   // ============ EFFECTS ============
   useEffect(() => {
     const checkAuth = async () => {
@@ -177,7 +192,154 @@ export default function NativeIOSDashboard() {
     fetchPlans();
   }, [router]);
 
+  // Fetch transactions
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        const res = await fetch("/api/transactions");
+        if (res.ok) {
+          const data = await res.json();
+          setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
+        }
+      } catch (error) {
+        console.error("Transactions error:", error);
+        setTransactions([]);
+      }
+    };
+    if (showTransactionsModal) {
+      fetchTransactions();
+    }
+  }, [showTransactionsModal]);
+
   // ============ HANDLERS ============
+  const handleDataPurchase = async () => {
+    try {
+      // Validate inputs
+      if (!dataPurchaseForm.phone) {
+        toast.error("Please enter a valid phone number");
+        return;
+      }
+      if (!dataPurchaseForm.selectedPlan) {
+        toast.error("Please select a data plan");
+        return;
+      }
+      if (!dataPurchaseForm.pin) {
+        toast.error("Please enter your PIN");
+        return;
+      }
+
+      setIsPurchasing(true);
+
+      // Show loading toast
+      const loadingToastId = toast.loading("Validating PIN and checking balance...");
+
+      // Step 1: Validate PIN (mock for now - in production, this would be hashed server-side)
+      if (dataPurchaseForm.pin !== "000000") {
+        toast.dismiss(loadingToastId);
+        toast.error("❌ Incorrect PIN", {
+          description: "Please check your PIN and try again",
+          duration: 4000,
+        });
+        setIsPurchasing(false);
+        return;
+      }
+
+      // Step 2: Check balance
+      if (!user || user.balance < dataPurchaseForm.selectedPlan.price) {
+        toast.dismiss(loadingToastId);
+        toast.error("❌ Insufficient Balance", {
+          description: `You need ₦${(dataPurchaseForm.selectedPlan.price - user!.balance).toLocaleString()} more`,
+          duration: 4000,
+        });
+        setIsPurchasing(false);
+        return;
+      }
+
+      // Step 3: Call data delivery API
+      toast.dismiss(loadingToastId);
+      toast.loading("Processing data purchase...");
+
+      const apiSource = dataPurchaseForm.selectedPlan.apiSource || "API_A";
+      const apiEndpoint = apiSource === "API_A" ? "/api/data/purchase-api-a" : "/api/data/purchase-api-b";
+
+      const purchaseRes = await fetch(apiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phoneNumber: dataPurchaseForm.phone,
+          planId: dataPurchaseForm.selectedPlan.id,
+          plan: dataPurchaseForm.selectedPlan.name,
+          network: selectedNetwork.toUpperCase(),
+          amount: dataPurchaseForm.selectedPlan.price,
+          userId: user?.id,
+        }),
+      });
+
+      if (!purchaseRes.ok) {
+        const error = await purchaseRes.json();
+        toast.error("❌ Purchase Failed", {
+          description: error.error || "Failed to deliver data. Please try again.",
+          duration: 4000,
+        });
+        setIsPurchasing(false);
+        return;
+      }
+
+      // Success!
+      const result = await purchaseRes.json();
+      
+      toast.success("✅ Data Purchase Successful!", {
+        description: `${dataPurchaseForm.selectedPlan.name} delivered to ${dataPurchaseForm.phone}`,
+        duration: 4000,
+      });
+
+      // Refresh user balance
+      const userRes = await fetch("/api/auth/me");
+      if (userRes.ok) {
+        const updatedUser = await userRes.json();
+        setUser(updatedUser);
+      }
+
+      // Close modal and reset form
+      setShowDataPurchaseModal(false);
+      setShowPinModal(false);
+      setDataPurchaseForm({
+        phone: "",
+        selectedPlan: null,
+        pin: "",
+      });
+    } catch (error: any) {
+      toast.error("❌ Request Error", {
+        description: error.message || "Something went wrong. Please try again.",
+        duration: 4000,
+      });
+      console.error("Data purchase error:", error);
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleSelectDataPlan = (plan: DataPlan) => {
+    setDataPurchaseForm({ ...dataPurchaseForm, selectedPlan: plan });
+    setShowDataPurchaseModal(true);
+    toast.success(`${plan.name} selected`, {
+      description: `Price: ₦${plan.price.toLocaleString()}`,
+      duration: 2000,
+    });
+  };
+
+  const handleDataPurchasePhoneSubmit = () => {
+    if (!dataPurchaseForm.phone) {
+      toast.error("Please enter your phone number");
+      return;
+    }
+    if (dataPurchaseForm.phone.length < 10) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+    setShowPinModal(true);
+  };
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
@@ -570,8 +732,8 @@ export default function NativeIOSDashboard() {
                       key={item.id}
                       whileTap={{ scale: 0.97 }}
                       onClick={() => {
-                        if (item.id === "transactions") router.push("/app/dashboard/transactions");
-                        else if (item.id === "settings") router.push("/app/dashboard/settings");
+                        if (item.id === "transactions") setShowTransactionsModal(true);
+                        else if (item.id === "settings") setShowSettingsModal(true);
                       }}
                       style={{
                         background: "transparent",
@@ -663,10 +825,7 @@ export default function NativeIOSDashboard() {
                     <motion.button
                       key={plan.id}
                       whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        toast.loading("Processing...");
-                        router.push(`/app/checkout?plan=${plan.id}&network=${selectedNetwork}`);
-                      }}
+                      onClick={() => handleSelectDataPlan(plan)}
                       style={{
                         background: COLORS.bgSecondary,
                         border: `1px solid ${COLORS.separator}`,
@@ -1084,8 +1243,8 @@ export default function NativeIOSDashboard() {
               whileTap={{ scale: 0.85 }}
               onClick={() => {
                 if (tab.id === "home") setActiveTab("home");
-                else if (tab.id === "transactions") router.push("/app/dashboard/transactions");
-                else if (tab.id === "settings") router.push("/app/dashboard/settings");
+                else if (tab.id === "transactions") setShowTransactionsModal(true);
+                else if (tab.id === "settings") setShowSettingsModal(true);
               }}
               style={{
                 background: "transparent",
@@ -1132,6 +1291,522 @@ export default function NativeIOSDashboard() {
           );
         })}
       </div>
+
+      {/* DATA PURCHASE PHONE MODAL */}
+      <AnimatePresence>
+        {showDataPurchaseModal && !showPinModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              display: "flex",
+              alignItems: "flex-end",
+              zIndex: 100,
+            }}
+            onClick={() => setShowDataPurchaseModal(false)}
+          >
+            <motion.div
+              initial={{ y: 300, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: COLORS.bgSecondary,
+                borderRadius: "24px 24px 0 0",
+                padding: "32px 20px 40px",
+                width: "100%",
+                maxWidth: "100%",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.text }}>
+                  Enter Phone Number
+                </h2>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => setShowDataPurchaseModal(false)}
+                  style={{
+                    background: COLORS.bgMain,
+                    border: "none",
+                    borderRadius: 10,
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: COLORS.text,
+                  }}
+                >
+                  <X size={20} />
+                </motion.button>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: COLORS.text }}>
+                  Recipient Phone Number
+                </p>
+                <input
+                  type="tel"
+                  placeholder="08012345678"
+                  value={dataPurchaseForm.phone}
+                  onChange={(e) => setDataPurchaseForm({ ...dataPurchaseForm, phone: e.target.value })}
+                  style={{
+                    width: "100%",
+                    background: COLORS.bgMain,
+                    border: `1.5px solid ${COLORS.separator}`,
+                    borderRadius: 12,
+                    padding: "14px",
+                    color: COLORS.text,
+                    fontSize: 16,
+                    boxSizing: "border-box",
+                    fontWeight: 500,
+                  }}
+                  autoFocus
+                />
+                <p style={{ margin: "8px 0 0", fontSize: 12, color: COLORS.textTertiary }}>
+                  Plan: {dataPurchaseForm.selectedPlan?.name}
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 12, color: COLORS.primary, fontWeight: 600 }}>
+                  Amount: ₦{dataPurchaseForm.selectedPlan?.price.toLocaleString()}
+                </p>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDataPurchasePhoneSubmit}
+                style={{
+                  background: `linear-gradient(135deg, ${COLORS.primary}, #0066FF)`,
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "16px",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  cursor: "pointer",
+                  width: "100%",
+                  boxShadow: "0 8px 24px rgba(0, 122, 255, 0.2)",
+                }}
+              >
+                Continue to PIN Verification
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PIN VERIFICATION MODAL */}
+      <AnimatePresence>
+        {showPinModal && showDataPurchaseModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              display: "flex",
+              alignItems: "flex-end",
+              zIndex: 101,
+            }}
+            onClick={() => setShowPinModal(false)}
+          >
+            <motion.div
+              initial={{ y: 300, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: COLORS.bgSecondary,
+                borderRadius: "24px 24px 0 0",
+                padding: "32px 20px 40px",
+                width: "100%",
+                maxWidth: "100%",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.text }}>
+                  <Lock size={20} style={{ display: "inline", marginRight: 8, marginBottom: -2 }} />
+                  Verify PIN
+                </h2>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => {
+                    setShowPinModal(false);
+                    setDataPurchaseForm({ ...dataPurchaseForm, pin: "" });
+                  }}
+                  style={{
+                    background: COLORS.bgMain,
+                    border: "none",
+                    borderRadius: 10,
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: COLORS.text,
+                  }}
+                >
+                  <X size={20} />
+                </motion.button>
+              </div>
+
+              <div style={{
+                background: `${COLORS.primary}10`,
+                border: `1px solid ${COLORS.primary}30`,
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 24,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}>
+                <AlertCircle size={20} color={COLORS.primary} />
+                <p style={{ margin: 0, fontSize: 13, color: COLORS.text, fontWeight: 500 }}>
+                  Enter your 6-digit PIN to confirm purchase
+                </p>
+              </div>
+
+              <div style={{ marginBottom: 24 }}>
+                <p style={{ margin: "0 0 8px", fontSize: 13, fontWeight: 600, color: COLORS.text }}>
+                  Your PIN
+                </p>
+                <input
+                  type="password"
+                  placeholder="••••••"
+                  value={dataPurchaseForm.pin}
+                  onChange={(e) => setDataPurchaseForm({ ...dataPurchaseForm, pin: e.target.value })}
+                  maxLength={6}
+                  style={{
+                    width: "100%",
+                    background: COLORS.bgMain,
+                    border: `1.5px solid ${COLORS.separator}`,
+                    borderRadius: 12,
+                    padding: "14px",
+                    color: COLORS.text,
+                    fontSize: 20,
+                    letterSpacing: 6,
+                    boxSizing: "border-box",
+                    fontWeight: 500,
+                    textAlign: "center",
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div style={{
+                background: COLORS.bgMain,
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 24,
+              }}>
+                <p style={{ margin: "0 0 8px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600 }}>
+                  Purchase Summary
+                </p>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ color: COLORS.text, fontSize: 14 }}>Phone:</span>
+                  <span style={{ color: COLORS.text, fontWeight: 600, fontSize: 14 }}>{dataPurchaseForm.phone}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ color: COLORS.text, fontSize: 14 }}>Plan:</span>
+                  <span style={{ color: COLORS.text, fontWeight: 600, fontSize: 14 }}>{dataPurchaseForm.selectedPlan?.name}</span>
+                </div>
+                <div style={{ borderTop: `1px solid ${COLORS.separator}`, paddingTop: 8, display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ color: COLORS.text, fontWeight: 700, fontSize: 14 }}>Amount:</span>
+                  <span style={{ color: COLORS.primary, fontWeight: 800, fontSize: 16 }}>₦{dataPurchaseForm.selectedPlan?.price.toLocaleString()}</span>
+                </div>
+              </div>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleDataPurchase}
+                disabled={isPurchasing}
+                style={{
+                  background: isPurchasing ? COLORS.textTertiary : `linear-gradient(135deg, ${COLORS.primary}, #0066FF)`,
+                  border: "none",
+                  borderRadius: 12,
+                  padding: "16px",
+                  color: "white",
+                  fontWeight: 700,
+                  fontSize: 16,
+                  cursor: isPurchasing ? "not-allowed" : "pointer",
+                  width: "100%",
+                  boxShadow: isPurchasing ? "none" : "0 8px 24px rgba(0, 122, 255, 0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 8,
+                  opacity: isPurchasing ? 0.7 : 1,
+                }}
+              >
+                {isPurchasing ? (
+                  <>
+                    <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} />
+                    Confirm Purchase
+                  </>
+                )}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* TRANSACTIONS MODAL */}
+      <AnimatePresence>
+        {showTransactionsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              display: "flex",
+              alignItems: "flex-end",
+              zIndex: 100,
+            }}
+            onClick={() => setShowTransactionsModal(false)}
+          >
+            <motion.div
+              initial={{ y: 300, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: COLORS.bgSecondary,
+                borderRadius: "24px 24px 0 0",
+                padding: "32px 20px 40px",
+                width: "100%",
+                maxWidth: "100%",
+                maxHeight: "80vh",
+                overflowY: "auto",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.text }}>
+                  Transaction History
+                </h2>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => setShowTransactionsModal(false)}
+                  style={{
+                    background: COLORS.bgMain,
+                    border: "none",
+                    borderRadius: 10,
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: COLORS.text,
+                  }}
+                >
+                  <X size={20} />
+                </motion.button>
+              </div>
+
+              {transactions.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                  <History size={48} color={COLORS.textTertiary} style={{ marginBottom: 16, opacity: 0.5 }} />
+                  <p style={{ margin: 0, color: COLORS.textTertiary, fontSize: 14 }}>
+                    No transactions yet
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {transactions.map((tx: any, idx: number) => (
+                    <div
+                      key={idx}
+                      style={{
+                        background: COLORS.bgMain,
+                        borderRadius: 12,
+                        padding: 16,
+                        border: `1px solid ${COLORS.separator}`,
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <p style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 600, color: COLORS.text }}>
+                            {tx.description || tx.type}
+                          </p>
+                          <p style={{ margin: 0, fontSize: 12, color: COLORS.textTertiary }}>
+                            {new Date(tx.createdAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <p style={{
+                            margin: 0,
+                            fontSize: 14,
+                            fontWeight: 700,
+                            color: tx.status === "success" ? "#34C759" : COLORS.textSecondary,
+                          }}>
+                            ₦{tx.amount.toLocaleString()}
+                          </p>
+                          <p style={{
+                            margin: "4px 0 0",
+                            fontSize: 12,
+                            fontWeight: 600,
+                            color: tx.status === "success" ? "#34C759" : "#FF3B30",
+                            textTransform: "capitalize",
+                          }}>
+                            {tx.status}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* SETTINGS MODAL */}
+      <AnimatePresence>
+        {showSettingsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              display: "flex",
+              alignItems: "flex-end",
+              zIndex: 100,
+            }}
+            onClick={() => setShowSettingsModal(false)}
+          >
+            <motion.div
+              initial={{ y: 300, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 400 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: COLORS.bgSecondary,
+                borderRadius: "24px 24px 0 0",
+                padding: "32px 20px 40px",
+                width: "100%",
+                maxWidth: "100%",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: COLORS.text }}>
+                  Settings
+                </h2>
+                <motion.button
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => setShowSettingsModal(false)}
+                  style={{
+                    background: COLORS.bgMain,
+                    border: "none",
+                    borderRadius: 10,
+                    width: 36,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    color: COLORS.text,
+                  }}
+                >
+                  <X size={20} />
+                </motion.button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={{ background: COLORS.bgMain, borderRadius: 12, padding: 16, borderBottom: `1px solid ${COLORS.separator}` }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600 }}>
+                    Account Information
+                  </p>
+                  <p style={{ margin: "0 0 4px", fontSize: 14, color: COLORS.textTertiary }}>
+                    Name
+                  </p>
+                  <p style={{ margin: "0 0 12px", fontSize: 16, fontWeight: 600, color: COLORS.text }}>
+                    {user?.fullName}
+                  </p>
+                  <p style={{ margin: "0 0 4px", fontSize: 14, color: COLORS.textTertiary }}>
+                    Phone
+                  </p>
+                  <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: COLORS.text }}>
+                    {user?.phone}
+                  </p>
+                </div>
+
+                <div style={{ background: COLORS.bgMain, borderRadius: 12, padding: 16 }}>
+                  <p style={{ margin: "0 0 8px", fontSize: 12, color: COLORS.textTertiary, fontWeight: 600 }}>
+                    Account Tier
+                  </p>
+                  <div style={{
+                    background: COLORS.primary + "20",
+                    border: `1.5px solid ${COLORS.primary}40`,
+                    borderRadius: 8,
+                    padding: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}>
+                    <span style={{ textTransform: "uppercase", fontWeight: 700, color: COLORS.primary, fontSize: 13 }}>
+                      {user?.tier}
+                    </span>
+                  </div>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleLogout}
+                  style={{
+                    background: "#FF3B30",
+                    border: "none",
+                    borderRadius: 12,
+                    padding: "16px",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: 16,
+                    cursor: "pointer",
+                    width: "100%",
+                    boxShadow: "0 8px 24px rgba(255, 59, 48, 0.2)",
+                    marginTop: 12,
+                  }}
+                >
+                  Logout
+                </motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
