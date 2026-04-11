@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
         isActive: true,
         joinedAt: true,
         virtualAccount: {
-          select: { accountNumber: true, bankName: true, flwRef: true }
+          select: { accountNumber: true, bankName: true, accountName: true }
         },
       },
     })

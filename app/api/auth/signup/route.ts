@@ -114,8 +114,7 @@ export async function POST(req: NextRequest) {
           userId: user.id,
           accountNumber: virtualAccount.account_number,
           bankName: virtualAccount.bank_name,
-          flwRef: wiaxyReference || `PLACEHOLDER-${user.id.slice(0, 8)}`,
-          orderRef: `DDP-VA-${user.id}-${Date.now()}`,
+          accountName: user.fullName,
         },
       });
     }

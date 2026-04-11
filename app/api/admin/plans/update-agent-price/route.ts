@@ -49,18 +49,18 @@ export async function POST(req: NextRequest) {
         planId: plan.id,
         network: plan.network,
         sizeLabel: plan.sizeLabel,
-        user_price: plan.user_price,
-        agent_price: plan.agent_price,
-        margin: plan.user_price - plan.agent_price,
+        price: plan.price,
+        agentPrice: plan.agentPrice,
+        margin: plan.price - plan.agentPrice,
       });
 
       results.push({
         planId: plan.id,
         network: plan.network,
         sizeLabel: plan.sizeLabel,
-        user_price: plan.user_price,
-        agent_price: plan.agent_price,
-        margin: plan.user_price - plan.agent_price,
+        price: plan.price,
+        agentPrice: plan.agentPrice,
+        margin: plan.price - plan.agentPrice,
       });
     }
 
