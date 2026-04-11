@@ -21,15 +21,16 @@ Nigeria's fastest data delivery platform. Buy data for all networks at competiti
 
 ## Overview
 
-**DANBAIWA DATA PLUG** is a comprehensive fintech platform for purchasing mobile data and airtime in Nigeria. It features:
+**DANBAIWA DATA PLUG** is a comprehensive digital services platform for Nigeria. Buy data, airtime, pay bills, subscribe to cable, and purchase exam PINs instantly with secure payments. It features:
 
-- ✅ **Multi-Network Support** - MTN, Airtel, Glo, 9Mobile
-- ✅ **Real-Time Balance Management** - Instant balance updates
-- ✅ **Payment Integration** - Flutterwave payment gateway
-- ✅ **Automatic Rewards** - Bonus credits on deposits
-- ✅ **Admin Dashboard** - Complete management panel
-- ✅ **Agent Program** - Affiliate-style earning model
-- ✅ **Guest Checkout** - One-time purchases without registration
+- ✅ **Data Purchase** - MTN data plans (500MB - 75GB) via dual APIs (SME Plug & Saiful)
+- ✅ **Airtime Top-up** - Quick airtime purchase across all networks
+- ✅ **Electricity Payments** - Pay bills for all 11 Nigerian DISCOs with meter validation
+- ✅ **Cable Subscriptions** - DSTV, GOtv, Startimes with 11+ plans
+- ✅ **Exam PINs** - WAEC, NECO, NABTEB result checker PINs
+- ✅ **Instant Delivery** - Real-time service activation and balance updates
+- ✅ **Admin Dashboard** - Complete management, analytics, and transaction history
+- ✅ **Authentication** - Secure JWT + 6-digit PIN-based login
 
 ---
 
@@ -39,11 +40,11 @@ Nigeria's fastest data delivery platform. Buy data for all networks at competiti
 |----------|------------|
 | **Frontend** | Next.js 16, React 19, TypeScript |
 | **Styling** | TailwindCSS 4, Framer Motion |
-| **Database** | PostgreSQL (Neon Serverless), Prisma 7 |
-| **Authentication** | JWT (jose), next-themes |
-| **Data Fetching** | React Query, axios |
-| **Payment Gateway** | Flutterwave API |
-| **UI Components** | shadcn/ui, Recharts |
+| **Database** | PostgreSQL (Neon), Prisma 6.19.3 ORM |
+| **Authentication** | JWT (jose) + 6-digit PIN |
+| **Data Fetching** | TanStack Query, axios |
+| **APIs Integrated** | Saiful, SME Plug (data & airtime) |
+| **UI Components** | shadcn/ui, Recharts, Framer Motion |
 | **Validation** | Zod |
 | **Hashing** | bcryptjs |
 | **State Management** | Zustand |
@@ -57,9 +58,9 @@ Nigeria's fastest data delivery platform. Buy data for all networks at competiti
 
 - **Node.js** ≥ 18.0.0
 - **npm** or **yarn**
-- PostgreSQL database (or Neon account)
-- Flutterwave account
-- API A and API B data delivery partners
+- PostgreSQL database (Neon recommended: free tier at neon.tech)
+- Saiful API credentials
+- SME Plug API credentials
 
 ### Installation
 
@@ -82,8 +83,11 @@ cp .env.example .env.local
 
 4. **Setup database**
 ```bash
-npx prisma migrate dev --name init
-npx prisma db seed
+# Generate Prisma Client
+npx prisma generate
+
+# Push schema to database (Neon)
+npx prisma db push
 ```
 
 5. **Run development server**
@@ -93,52 +97,72 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Default Admin Credentials (After Seeding)
+### Demo User Credentials
 
-- **Phone**: `08000000000`
-- **PIN**: `000000`
+- **Phone**: `08101234567`
+- **Email**: `demo@danbaiwa.com`
+- **Balance**: ₦10,000
+- **PIN**: Set via signup
+
+### Admin User
+
+- **Phone**: `08000000001`
+- **Email**: `admin@danbaiwa.com`
 - **URL**: `http://localhost:3000/admin`
 
 ---
 
 ## Environment Variables
 
-Create a `.env.local` file with the following variables:
+Create a `.env.local` file in the root directory with the following variables:
 
-| Variable | Description | Example | Required |
-|----------|-------------|---------|----------|
-| **NODE_ENV** | Environment (development/production) | `development` | ✅ |
-| **DATABASE_URL** | Neon PostgreSQL connection string | `postgresql://user:pass@...` | ✅ |
-| **JWT_SECRET** | Secret key for JWT signing (min 32 chars) | `your-very-long-secret-key-min-32-chars` | ✅ |
-| **NEXT_PUBLIC_APP_URL** | Public application URL | `http://localhost:3000` | ✅ |
-| **FLUTTERWAVE_PUBLIC_KEY** | Flutterwave public key (test/live) | `FLWPUB_TEST_...` | ✅ |
-| **FLUTTERWAVE_SECRET_KEY** | Flutterwave secret key | `FLWSECK_TEST_...` | ✅ |
-| **FLUTTERWAVE_WEBHOOK_SECRET** | Webhook signature secret | `fs_test_webhook_...` | ✅ |
-| **FLW_ACCOUNT_EMAIL** | Flutterwave account email | `your-flw-email@example.com` | ✅ |
-| **FLW_BVN** | Flutterwave BVN (for virtual accounts) | `12345678901` | ✅ |
-| **SMEPLUG_API_KEY** | API A data provider key | `sk_test_...` | ✅ |
-| **SMEPLUG_BASE_URL** | API A base URL | `https://api.smeplug.com/` | ✅ |
-| **SAIFUL_API_KEY** | API B data provider key | `sk_...` | ✅ |
-| **SAIFUL_BASE_URL** | API B base URL | `https://api.saiful.com/` | ✅ |
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@host:port/database_name
 
-### Getting Credentials
+# Authentication
+JWT_SECRET=your-random-64-character-secret-key-here-min-32-chars
 
-**Flutterwave**:
-1. Visit [dashboard.flutterwave.com](https://dashboard.flutterwave.com)
-2. Sign up and verify your account
-3. Navigate to Settings → API → Keys
-4. Copy test/live keys to `.env.local`
-5. Add BVN from your Flutterwave account
+# Application
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-**API A (SMEPlug)**:
-1. Visit [smeplug.com](https://smeplug.com)
-2. Register and get API credentials
-3. Copy to `SMEPLUG_API_KEY` and `SMEPLUG_BASE_URL`
+# API Provider: SME Plug (Data & Airtime)
+SMEPLUG_API_KEY=your-smeplug-api-key-here
+SMEPLUG_BASE_URL=https://smeplug.ng/api/v1
 
-**API B (Saiful)**:
-1. Contact Saiful team for integration
-2. Get API credentials
-3. Copy to `SAIFUL_API_KEY` and `SAIFUL_BASE_URL`
+# API Provider: Saiful (Electricity, Cable, Exam PINs)
+SAIFUL_API_KEY=your-saiful-api-key-here
+SAIFUL_BASE_URL=https://app.saifulegendconnect.com/api
+```
+
+### Environment Variables Reference
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `DATABASE_URL` | PostgreSQL connection string (Neon recommended) | ✅ |
+| `JWT_SECRET` | Secret for JWT signing (generate with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) | ✅ |
+| `NEXT_PUBLIC_APP_URL` | Public app URL (`http://localhost:3000` for dev) | ✅ |
+| `SMEPLUG_API_KEY` | API key from SME Plug dashboard | ✅ |
+| `SMEPLUG_BASE_URL` | SME Plug API endpoint | ✅ |
+| `SAIFUL_API_KEY` | API key from Saiful dashboard | ✅ |
+| `SAIFUL_BASE_URL` | Saiful API endpoint | ✅ |
+
+### Getting API Credentials
+
+**Database (Neon)**:
+1. Visit [neon.tech](https://neon.tech) (free tier available)
+2. Create a PostgreSQL database
+3. Copy the connection string to `DATABASE_URL`
+
+**SME Plug (Data & Airtime)**:
+1. Visit [smeplug.ng](https://smeplug.ng)
+2. Register and navigate to API settings
+3. Copy API key to `SMEPLUG_API_KEY`
+
+**Saiful (Electricity, Cable, Exam PINs)**:
+1. Contact Saiful or visit [saifulegendconnect.com](https://saifulegendconnect.com)
+2. Get your API credentials
+3. Copy to `SAIFUL_API_KEY`
 
 ---
 
@@ -173,14 +197,11 @@ Create a `.env.local` file with the following variables:
 | Method | Route | Description | Protected |
 |--------|-------|-------------|-----------|
 | POST | `/api/flutterwave/create-temp-account` | Create virtual account (guest) | ❌ |
-| POST | `/api/flutterwave/webhook` | Webhook receiver (Flutterwave) | ❌ |
-
 ### Rewards
 
 | Method | Route | Description | Protected |
-|--------|-------|-------------|-----------|
+|--------|-------|-------------|----------|
 | GET | `/api/rewards` | Get user's rewards | ✅ |
-| GET | `/api/rewards/history` | Get reward history | ✅ |
 
 ### Admin Routes (Protected with ADMIN role)
 
@@ -280,52 +301,36 @@ npx prisma db seed
 ### Prerequisites
 
 - Vercel account
-- Neon PostgreSQL account
+- Neon PostgreSQL account (free tier available)
 - All environment variables ready
 
-### Step 1: Prepare Vercel
+### Step 1: Prepare Repository
 
-1. Push code to GitHub, GitLab, or Bitbucket
+1. Push code to GitHub
 2. Visit [vercel.com](https://vercel.com)
-3. Click "New Project" → Select your repository
-4. Vercel auto-detects Next.js → Click "Deploy"
+3. Click "Add New" → "Project"
+4. Select your repository
+5. Vercel auto-detects Next.js → Click "Continue"
 
 ### Step 2: Add Environment Variables
 
-In Vercel dashboard:
-1. Select your project
-2. Go to **Settings** → **Environment Variables**
-3. Add all variables from [Environment Variables](#environment-variables) section:
+In Vercel dashboard → Settings → Environment Variables, add:
 
 ```
 DATABASE_URL=postgresql://...
-JWT_SECRET=your-secure-key-32-chars-min
-FLUTTERWAVE_PUBLIC_KEY=FLWPUB_...
-FLUTTERWAVE_SECRET_KEY=FLWSECK_...
-FLUTTERWAVE_WEBHOOK_SECRET=fs_...
-FLW_ACCOUNT_EMAIL=your-email@example.com
-FLW_BVN=12345678901
-SMEPLUG_API_KEY=sk_...
-SMEPLUG_BASE_URL=https://api.smeplug.com/
-SAIFUL_API_KEY=sk_...
-SAIFUL_BASE_URL=https://api.saiful.com/
-NEXT_PUBLIC_APP_URL=https://your-domain.com
+JWT_SECRET=your-64-char-random-secret
+SMEPLUG_API_KEY=your-smeplug-key
+SMEPLUG_BASE_URL=https://smeplug.ng/api/v1
+SAIFUL_API_KEY=your-saiful-key
+SAIFUL_BASE_URL=https://app.saifulegendconnect.com/api
+NEXT_PUBLIC_APP_URL=https://your-danbaiwa-domain.com
 ```
 
-### Step 3: Run Migrations
+### Step 3: Deploy
 
-After environment variables are set:
-
-```bash
-# Via Vercel CLI
-vercel env pull .env.local
-
-# Run migrations on production database
-NODE_ENV=production npx prisma migrate deploy
-
-# Seed data
-NODE_ENV=production npx prisma db seed
-```
+1. Click "Deploy" button
+2. Wait for ✓ "Ready" status (2-5 minutes)
+3. Visit your deployed URL
 
 ### Step 4: Deploy
 
@@ -344,62 +349,7 @@ vercel deploy --prod
 - **Data purchase timeout**: 15 seconds
 - **Airtime purchase timeout**: 15 seconds
 
----
-
-## Flutterwave Integration
-
-### Webhook Setup
-
-1. **In your Flutterwave Dashboard**:
-   - Settings → Webhooks
-   - Add webhook endpoint: `https://your-domain.com/api/flutterwave/webhook`
-   - Enable these events:
-     - `charge.completed`
-     - `charge.updated`
-
-2. **Get Webhook Secret**:
-   - Dashboard → Settings → API
-   - Copy "Hash" value → `FLUTTERWAVE_WEBHOOK_SECRET`
-
-### Payment Flow
-
-**Guest User (Temp Virtual Account)**:
-```
-1. Guest fills phone & selects plan
-2. Endpoint: POST /api/flutterwave/create-temp-account
-   - Parameters: phone, planId, amount
-   - Returns: Virtual account details
-3. Guest transfers money to account
-4. Flutterwave webhook processes payment
-5. Data automatically delivered to phone
-```
-
-**Registered User (Permanent Virtual Account)**:
-```
-1. User funds wallet via virtual account
-2. Endpoint: POST /api/flutterwave/create-temp-account
-   - Creates permanent VA tied to user
-   - Returns: Account details
-3. User transfers money
-4. Webhook credits wallet + evaluates rewards
-5. User can now purchase data instantly
-```
-
-### Webhook Signature Verification
-
-Webhook requests include `verif-hash` header. Verification:
-```ts
-import { createHmac } from "crypto";
-
-const secretKey = process.env.FLUTTERWAVE_WEBHOOK_SECRET;
-const expectedHash = createHmac("sha256", secretKey)
-  .update(JSON.stringify(requestBody))
-  .digest("hex");
-
-const isValid = expectedHash === req.headers["verif-hash"];
-```
-
----
+---\n
 
 ## Admin Panel
 

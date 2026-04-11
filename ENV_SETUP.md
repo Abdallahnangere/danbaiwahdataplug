@@ -1,5 +1,370 @@
 # Environment Variables Setup Guide
 
+Complete guide for setting up environment variables for **DANBAIWA DATA PLUG**.
+
+---
+
+## Quick Reference
+
+```bash
+# .env.local file
+DATABASE_URL=postgresql://user:password@host:port/database_name
+JWT_SECRET=your-64-character-random-secret-key-here
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+SMEPLUG_API_KEY=your-smeplug-api-key
+SMEPLUG_BASE_URL=https://smeplug.ng/api/v1
+SAIFUL_API_KEY=your-saiful-api-key
+SAIFUL_BASE_URL=https://app.saifulegendconnect.com/api
+```
+
+---
+
+## Detailed Setup
+
+### 1. DATABASE_URL
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** PostgreSQL Connection String
+
+**Description:**
+Connection string for your PostgreSQL database (used by Prisma ORM).
+
+**Format:**
+```
+postgresql://username:password@host:port/database_name
+```
+
+**How to Get:**
+
+**Option A: Neon (Recommended - Free Tier)**
+1. Visit [neon.tech](https://neon.tech)
+2. Sign up with GitHub
+3. Create a new project
+4. Copy the connection string under "Connection String"
+5. Use the "Prisma" format
+6. Paste to `DATABASE_URL`
+
+**Option B: Railway**
+1. Visit [railway.app](https://railway.app)
+2. Create new project → PostgreSQL
+3. Copy the connection URL
+4. Paste to `DATABASE_URL`
+
+**Option C: Vercel Postgres**
+1. Go to Vercel Dashboard
+2. Select your project
+3. Storage → Create Postgres Database
+4. Copy connection string
+5. Paste to `DATABASE_URL`
+
+**Vercel Setup:**
+```bash
+vercel env add DATABASE_URL
+# Paste your connection string
+# Select: ✓ Production ✓ Preview ✓ Development
+```
+
+---
+
+### 2. JWT_SECRET
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** Encryption Secret
+
+**Description:**
+Secret key for signing JWT authentication tokens.
+
+**Requirements:**
+- Minimum 32 characters (recommended: 64+)
+- Random and unique
+- Same across all environments
+- Never share or commit to Git
+
+**How to Generate:**
+
+```bash
+# Using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Using OpenSSL
+openssl rand -hex 32
+```
+
+**Vercel Setup:**
+```bash
+vercel env add JWT_SECRET
+# Paste your generated secret
+# Select: ✓ Production ✓ Preview ✓ Development
+```
+
+---
+
+### 3. NEXT_PUBLIC_APP_URL
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** URL String
+
+**Description:**
+Public URL of your deployed application (used for redirects and links).
+
+**Format:**
+```
+http://localhost:3000          # Development
+https://your-domain.com        # Production
+```
+
+**Examples:**
+```
+# Local Development
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Production (Vercel)
+NEXT_PUBLIC_APP_URL=https://danbaiwa-data-plug.vercel.app
+
+# With Custom Domain
+NEXT_PUBLIC_APP_URL=https://danbaiwa.ng
+```
+
+---
+
+### 4. SMEPLUG_API_KEY
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** API Key String
+
+**Description:**
+API key from SME Plug for data and airtime purchases.
+
+**How to Get:**
+1. Visit [smeplug.ng](https://smeplug.ng)
+2. Register for a merchant account
+3. Navigate to API Settings
+4. Copy your API key
+5. Paste to `SMEPLUG_API_KEY`
+
+---
+
+### 5. SMEPLUG_BASE_URL
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** URL String
+
+**Description:**
+Base URL for SME Plug API endpoints.
+
+**Value:**
+```
+https://smeplug.ng/api/v1
+```
+
+---
+
+### 6. SAIFUL_API_KEY
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** API Key String
+
+**Description:**
+API key from Saiful Legend Connect for electricity, cable, and exam PINs.
+
+**How to Get:**
+1. Contact Saiful support or visit [saifulegendconnect.com](https://saifulegendconnect.com)
+2. Register as a merchant
+3. Get your API credentials
+4. Paste to `SAIFUL_API_KEY`
+
+---
+
+### 7. SAIFUL_BASE_URL
+
+**Required:** ✅ Yes  
+**Environment:** Production & Development  
+**Type:** URL String
+
+**Description:**
+Base URL for Saiful API endpoints.
+
+**Value:**
+```
+https://app.saifulegendconnect.com/api
+```
+
+---
+
+## Vercel Production Setup
+
+### Step 1: Add Variables to Vercel
+
+In your Vercel dashboard:
+
+1. Select your project
+2. Go to **Settings** → **Environment Variables**
+3. Click **Add New**
+4. For each variable:
+   - **Name:** `VARIABLE_NAME`
+   - **Value:** `your_value_here`
+   - **Environments:** Check all three (Production, Preview, Development)
+   - Click **Add**
+
+### Step 2: Deploy
+
+Push your code to GitHub:
+```bash
+git push origin main
+```
+
+Vercel will automatically deploy and use the variables.
+
+### Step 3: Verify
+
+Visit your deployed app and test:
+- Homepage loads
+- Data purchase form works
+- Admin panel accessible
+
+---
+
+## Local Development Setup
+
+### Step 1: Create `.env.local`
+
+In your project root:
+```bash
+cp .env.example .env.local
+# Or create manually
+touch .env.local
+```
+
+### Step 2: Add Variables
+
+Edit `.env.local` and add all 7 variables:
+
+```bash
+DATABASE_URL=postgresql://...
+JWT_SECRET=your-generated-secret
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+SMEPLUG_API_KEY=your-key-here
+SMEPLUG_BASE_URL=https://smeplug.ng/api/v1
+SAIFUL_API_KEY=your-key-here
+SAIFUL_BASE_URL=https://app.saifulegendconnect.com/api
+```
+
+### Step 3: Restart Development Server
+
+```bash
+npm run dev
+```
+
+Changes to `.env.local` require a restart.
+
+---
+
+## Validation Commands
+
+### Check if Variables are Loaded
+
+```bash
+# During development
+npm run dev
+# Environment variables are loaded automatically from .env.local
+
+# In production
+# Verify in Vercel dashboard → Settings → Environment Variables
+```
+
+### Test Database Connection
+
+```bash
+npx prisma db execute --stdin < /dev/null
+# Should not error if DATABASE_URL is valid
+```
+
+### Test API Keys
+
+Each API is tested when you use the service:
+- Data purchase → Tests SMEPLUG keys
+- Electricity payment → Tests SAIFUL keys
+- Cable subscription → Tests SAIFUL keys
+
+---
+
+## Troubleshooting
+
+### "Cannot find module 'postgres'"
+```
+Fix: DATABASE_URL is missing or invalid
+1. Check DATABASE_URL in .env.local
+2. Ensure it starts with "postgresql://"
+3. Test connection manually in database provider dashboard
+```
+
+### "Invalid JWT_SECRET"
+```
+Fix: JWT_SECRET is too short or not set
+1. Regenerate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+2. Paste to .env.local
+3. Restart development server
+```
+
+### "API authentication failed"
+```
+Fix: SMEPLUG_API_KEY or SAIFUL_API_KEY is incorrect
+1. Verify keys in dashboard
+2. Check for leading/trailing spaces
+3. Regenerate keys if needed
+4. Update .env.local
+5. Restart server
+```
+
+### "Vercel build fails"
+```
+Fix: Variables not set in Vercel
+1. Go to Vercel Dashboard
+2. Settings → Environment Variables
+3. Verify all 7 variables are present
+4. Check values match what you copied
+5. Redeploy
+```
+
+---
+
+## Security Best Practices
+
+✅ **DO:**
+- Generate JWT_SECRET randomly
+- Use unique API keys for each environment
+- Keep .env.local out of Git (.gitignore it)
+- Rotate API keys regularly
+- Use environment-specific keys
+
+❌ **DON'T:**
+- Share API keys via email or Slack
+- Commit .env.local to Git
+- Use same keys for dev and production
+- Use weak or predictable secrets
+- Log or print API keys
+
+---
+
+## Quick Deployment Checklist
+
+- [ ] All 7 variables added to Vercel
+- [ ] DATABASE_URL tested and connects
+- [ ] API keys verified in dashboards
+- [ ] JWT_SECRET is 64+ characters
+- [ ] NEXT_PUBLIC_APP_URL matches domain
+- [ ] Vercel deployment triggered
+- [ ] App loads at deployed URL
+- [ ] Data purchase test successful
+- [ ] Admin panel accessible
+# Environment Variables Setup Guide
+
 This guide explains every environment variable needed for **DANBAIWA DATA PLUG** application deployment on Vercel and local development.
 
 ---
