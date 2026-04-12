@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -95,6 +95,7 @@ export default function DanbaiwaApp() {
   const [buyDataLoading, setBuyDataLoading] = useState(false);
   const [buyDataError, setBuyDataError] = useState("");
   const [successData, setSuccessData] = useState<any | null>(null);
+  const phoneInputRef = useRef<HTMLInputElement>(null);
 
   // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
@@ -465,6 +466,7 @@ export default function DanbaiwaApp() {
           {/* Phone input with counter */}
           <div style={{ position: "relative", marginBottom: 24 }}>
             <input
+              ref={phoneInputRef}
               type="tel"
               inputMode="numeric"
               maxLength={11}
