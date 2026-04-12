@@ -77,6 +77,10 @@ export default function DanbaiwaApp() {
   const [transactions, setTransactions]         = useState<any[]>([]);
   const [showSettingsModal, setShowSettingsModal]         = useState(false);
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
+  const [showPinChangeModal, setShowPinChangeModal]       = useState(false);
+  const [pinChangeLoading, setPinChangeLoading]           = useState(false);
+  const [pinForm, setPinForm]                             = useState({ oldPin: "", newPin: "", confirmPin: "" });
+  const [pinError, setPinError]                           = useState("");
 
   // ── Auth ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -382,7 +386,7 @@ export default function DanbaiwaApp() {
                 transition={{ delay: 0.05, ease: "easeOut" }}
                 style={{
                   borderRadius: 28,
-                  padding: "28px 24px",
+                  padding: "20px 24px",
                   marginBottom: 28,
                   overflow: "hidden",
                   position: "relative",
@@ -412,7 +416,7 @@ export default function DanbaiwaApp() {
 
                 {/* Label */}
                 <p style={{
-                  margin: "0 0 18px", fontSize: 11, fontWeight: 700,
+                  margin: "0 0 12px", fontSize: 11, fontWeight: 700,
                   color: "rgba(255,255,255,0.65)", textTransform: "uppercase",
                   letterSpacing: "1.5px", position: "relative",
                 }}>
@@ -422,20 +426,20 @@ export default function DanbaiwaApp() {
                 {/* Amount row */}
                 <div style={{
                   display: "flex", justifyContent: "space-between",
-                  alignItems: "center", marginBottom: 28, position: "relative",
+                  alignItems: "center", marginBottom: 18, position: "relative",
                 }}>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
                     <span style={{
-                      fontSize: 26, fontWeight: 700, color: "rgba(255,255,255,0.8)",
-                      alignSelf: "flex-start", marginTop: 8,
+                      fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,0.8)",
+                      alignSelf: "flex-start", marginTop: 4,
                     }}>₦</span>
                     <motion.span
                       key={balanceVisible ? "vis" : "hid"}
                       initial={{ opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
                       style={{
-                        fontSize: 56, fontWeight: 900, color: "white",
-                        letterSpacing: "-3px",
+                        fontSize: 44, fontWeight: 900, color: "white",
+                        letterSpacing: "-2px",
                         fontVariantNumeric: "tabular-nums",
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
@@ -466,7 +470,7 @@ export default function DanbaiwaApp() {
                 {/* Phone row */}
                 <div style={{
                   borderTop: "1px solid rgba(255,255,255,0.2)",
-                  paddingTop: 20,
+                  paddingTop: 14,
                   display: "flex", justifyContent: "space-between",
                   alignItems: "center", position: "relative",
                 }}>
@@ -853,13 +857,31 @@ export default function DanbaiwaApp() {
 
         <div style={{ height: 24 }} />
 
+        {/* Change PIN */}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
+          onClick={() => { setPinForm({ oldPin: "", newPin: "", confirmPin: "" }); setPinError(""); setShowPinChangeModal(true); }}
+          style={{
+            width: "100%", border: "none", borderRadius: 18,
+            padding: "15px",
+            background: `linear-gradient(135deg, ${T.blue}, ${T.blueMid})`,
+            color: "white", fontWeight: 700, fontSize: 16,
+            cursor: "pointer", letterSpacing: "-0.2px",
+            fontFamily: font,
+            marginBottom: 12,
+            boxShadow: "0 8px 24px rgba(59,130,246,0.3)",
+          }}
+        >
+          Change PIN
+        </motion.button>
+
         {/* Logout */}
         <motion.button
           whileTap={{ scale: 0.96 }}
           onClick={handleLogout}
           style={{
             width: "100%", border: "none", borderRadius: 18,
-            padding: "17px",
+            padding: "15px",
             background: "linear-gradient(135deg, #EF4444, #DC2626)",
             color: "white", fontWeight: 700, fontSize: 16,
             cursor: "pointer", letterSpacing: "-0.2px",
@@ -869,6 +891,145 @@ export default function DanbaiwaApp() {
         >
           Sign Out
         </motion.button>
+      </Modal>
+
+      {/* ══════════════════ CHANGE PIN MODAL ══════════════════ */}
+      <Modal show={showPinChangeModal} onClose={() => setShowPinChangeModal(false)}>
+        <ModalHeader title="Change PIN" onClose={() => setShowPinChangeModal(false)} />
+
+        <div style={{ padding: "0 0 20px" }}>
+          {/* Current PIN */}
+          <label style={{ display: "block", marginBottom: 16, fontFamily: font }}>
+            <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>Current PIN</p>
+            <input
+              type="password"
+              maxLength={6}
+              value={pinForm.oldPin}
+              onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
+              placeholder="••••••"
+              style={{
+                width: "100%", padding: "14px 14px", borderRadius: 14,
+                border: `1px solid ${T.border}`, background: T.bgElevated,
+                color: T.textPrimary, fontSize: 16, fontFamily: font,
+                letterSpacing: "2px", textAlign: "center",
+                fontWeight: 600,
+              }}
+            />
+          </label>
+
+          {/* New PIN */}
+          <label style={{ display: "block", marginBottom: 16, fontFamily: font }}>
+            <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>New PIN</p>
+            <input
+              type="password"
+              maxLength={6}
+              value={pinForm.newPin}
+              onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, "") })}
+              placeholder="••••••"
+              style={{
+                width: "100%", padding: "14px 14px", borderRadius: 14,
+                border: `1px solid ${T.border}`, background: T.bgElevated,
+                color: T.textPrimary, fontSize: 16, fontFamily: font,
+                letterSpacing: "2px", textAlign: "center",
+                fontWeight: 600,
+              }}
+            />
+          </label>
+
+          {/* Confirm PIN */}
+          <label style={{ display: "block", marginBottom: 16, fontFamily: font }}>
+            <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>Confirm PIN</p>
+            <input
+              type="password"
+              maxLength={6}
+              value={pinForm.confirmPin}
+              onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value.replace(/\D/g, "") })}
+              placeholder="••••••"
+              style={{
+                width: "100%", padding: "14px 14px", borderRadius: 14,
+                border: `1px solid ${T.border}`, background: T.bgElevated,
+                color: T.textPrimary, fontSize: 16, fontFamily: font,
+                letterSpacing: "2px", textAlign: "center",
+                fontWeight: 600,
+              }}
+            />
+          </label>
+
+          {/* Error message */}
+          {pinError && (
+            <div style={{
+              padding: "12px 14px", borderRadius: 12,
+              background: "rgba(239,68,68,0.1)", border: `1px solid rgba(239,68,68,0.3)`,
+              marginBottom: 16,
+            }}>
+              <p style={{ margin: 0, fontSize: 13, color: T.red, fontWeight: 600 }}>{pinError}</p>
+            </div>
+          )}
+
+          {/* Update PIN button */}
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={async () => {
+              if (!pinForm.oldPin || !pinForm.newPin || !pinForm.confirmPin) {
+                setPinError("All fields are required");
+                return;
+              }
+              if (pinForm.newPin.length !== 6 || pinForm.oldPin.length !== 6) {
+                setPinError("PIN must be 6 digits");
+                return;
+              }
+              if (pinForm.newPin !== pinForm.confirmPin) {
+                setPinError("New PINs don't match");
+                return;
+              }
+              if (pinForm.oldPin === pinForm.newPin) {
+                setPinError("New PIN must be different from current PIN");
+                return;
+              }
+              setPinChangeLoading(true);
+              try {
+                const res = await fetch("/api/auth/change-pin", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ currentPin: pinForm.oldPin, newPin: pinForm.newPin }),
+                });
+                if (!res.ok) {
+                  const data = await res.json();
+                  setPinError(data.message || "Failed to change PIN");
+                  return;
+                }
+                toast.success("PIN changed successfully");
+                setShowPinChangeModal(false);
+                setPinForm({ oldPin: "", newPin: "", confirmPin: "" });
+                setPinError("");
+              } catch (err) {
+                setPinError("An error occurred. Please try again.");
+              } finally {
+                setPinChangeLoading(false);
+              }
+            }}
+            disabled={pinChangeLoading}
+            style={{
+              width: "100%", border: "none", borderRadius: 18,
+              padding: "15px",
+              background: pinChangeLoading ? T.textMuted : `linear-gradient(135deg, ${T.green}, #059669)`,
+              color: "white", fontWeight: 700, fontSize: 16,
+              cursor: pinChangeLoading ? "not-allowed" : "pointer", letterSpacing: "-0.2px",
+              fontFamily: font,
+              boxShadow: pinChangeLoading ? "none" : "0 8px 24px rgba(16,185,129,0.3)",
+              opacity: pinChangeLoading ? 0.6 : 1,
+            }}
+          >
+            {pinChangeLoading ? (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Loader2 size={18} />
+                Updating...
+              </div>
+            ) : (
+              "Update PIN"
+            )}
+          </motion.button>
+        </div>
       </Modal>
 
     </div>
