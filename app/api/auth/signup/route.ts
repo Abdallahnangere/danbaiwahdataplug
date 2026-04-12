@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { queryOne, execute } from "@/lib/database";
+import { randomUUID } from "crypto";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   try {
-    // Dynamic import
-    const { prisma } = await import("@/lib/db");
-
     const body = await request.json();
     const { fullName, email, phone, pin } = body;
 
@@ -47,9 +46,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email exists
-    const existingEmail = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingEmail = await queryOne<{ id: string }>(
+      "SELECT id FROM \"User\" WHERE email = $1",
+      [email]
+    );
 
     if (existingEmail) {
       return NextResponse.json(
@@ -59,9 +59,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if phone exists
-    const existingPhone = await prisma.user.findUnique({
-      where: { phone },
-    });
+    const existingPhone = await queryOne<{ id: string }>(
+      "SELECT id FROM \"User\" WHERE phone = $1",
+      [phone]
+    );
 
     if (existingPhone) {
       return NextResponse.json(
@@ -75,52 +76,50 @@ export async function POST(request: NextRequest) {
     const hashedPin = await bcrypt.hash(pin, salt);
 
     // Create user with initial balance
-    const user = await prisma.user.create({
-      data: {
-        name: fullName,
-        email,
-        phone,
-        pin: hashedPin,
-        balance: 0, // Users start with 0 balance, they fund their wallet
-        tier: "user", // Default tier
-        role: "USER", // Default role
-        isActive: true,
-      } as any,
-    });
+    const userId = randomUUID();
+    const now = new Date().toISOString();
+
+    await execute(
+      `INSERT INTO "User" (id, name, email, phone, "pin", balance, role, tier, "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [userId, fullName, email, phone, hashedPin, 0, "USER", "user", true, now, now]
+    );
 
     // Generate JWT token
     const token = await signToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role as "USER" | "AGENT" | "ADMIN",
+      userId,
+      email,
+      role: "USER" as const,
     });
 
-    // Set token in cookie
+    // Set secure cookie
     const cookieStore = await cookies();
-    cookieStore.set("sy_session", token, {
+    cookieStore.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60, // 7 days
-      path: "/",
     });
 
     return NextResponse.json(
       {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        phone: user.phone,
-        balance: user.balance,
-        tier: user.tier,
-        role: user.role,
+        message: "Account created successfully",
+        user: {
+          id: userId,
+          name: fullName,
+          email,
+          phone,
+          balance: 0,
+          role: "USER",
+        },
+        token,
       },
       { status: 201 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: "Failed to create account" },
+      { error: "Failed to create account", details: error.message },
       { status: 500 }
     );
   }
