@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 export const dynamic = 'force-dynamic';
-import bcrypt from "bcryptjs";
+export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   let transactionId: string | null = null;
@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Dynamic import to defer Prisma initialization
+    const { prisma } = await import("@/lib/db");
 
     const userId = sessionUser.userId;
 

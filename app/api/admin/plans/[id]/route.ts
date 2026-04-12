@@ -1,20 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAdminGuard } from "@/lib/adminGuard";
-import { prisma } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-async function patchHandler(request: NextRequest) {
+export async function PATCH(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") || (request.nextUrl.pathname.split("/").pop());
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Plan ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
     }
+
+    // Validate admin
+    const adminPassword = request.headers.get("x-admin-password");
+    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Dynamic import to defer Prisma initialization
+    const { prisma } = await import("@/lib/db");
 
     const body = await request.json();
     const {
@@ -67,15 +72,21 @@ async function patchHandler(request: NextRequest) {
   }
 }
 
-async function deleteHandler(request: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
+    // Validate admin
+    const adminPassword = request.headers.get("x-admin-password");
+    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Dynamic import to defer Prisma initialization
+    const { prisma } = await import("@/lib/db");
+
     const id = request.nextUrl.pathname.split("/").pop();
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Plan ID is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
     }
 
     await prisma.dataPlan.delete({
@@ -90,12 +101,4 @@ async function deleteHandler(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export async function PATCH(request: NextRequest) {
-  return withAdminGuard(request, patchHandler);
-}
-
-export async function DELETE(request: NextRequest) {
-  return withAdminGuard(request, deleteHandler);
 }

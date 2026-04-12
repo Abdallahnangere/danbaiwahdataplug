@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withAdminGuard } from "@/lib/adminGuard";
-import { prisma } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-async function handler(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Validate admin
+    const adminPassword = request.headers.get("x-admin-password");
+    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Dynamic import
+    const { prisma } = await import("@/lib/db");
+
     const plans = await prisma.dataPlan.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -23,10 +31,6 @@ async function handler(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export async function GET(request: NextRequest) {
-  return withAdminGuard(request, handler);
 }
 
 async function createHandler(request: NextRequest) {

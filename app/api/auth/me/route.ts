@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { getSessionUser } from "@/lib/auth";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,6 +14,9 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Dynamic import
+    const { prisma } = await import("@/lib/db");
 
     // Get full user details from database
     const user = await prisma.user.findUnique({

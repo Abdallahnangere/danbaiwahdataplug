@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Dynamic import
+    const { prisma } = await import("@/lib/db");
 
     const plans = await prisma.dataPlan.findMany({
       where: {

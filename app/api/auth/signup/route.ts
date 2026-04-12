@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   try {
+    // Dynamic import
+    const { prisma } = await import("@/lib/db");
+
     const body = await request.json();
     const { fullName, email, phone, pin } = body;
 
