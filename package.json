@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build && npm run db:seed:safe",
+    "build": "node scripts/generate-prisma.js && next build && npm run db:seed:safe",
     "start": "next start",
     "lint": "eslint",
+    "postinstall": "node scripts/generate-prisma.js",
     "db:seed": "npx ts-node prisma/seed.ts",
     "db:seed:safe": "node scripts/seed-if-ready.js"
   },
