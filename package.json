@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/generate-prisma.js && next build && npm run db:seed:safe",
+    "build": "node scripts/prebuild.js && next build",
     "start": "next start",
     "lint": "eslint",
-    "db:seed": "npx ts-node prisma/seed.ts",
+    "postinstall": "node scripts/generate-prisma.js || true",
+    "db:seed": "ts-node prisma/seed.ts",
     "db:seed:safe": "node scripts/seed-if-ready.js"
   },
   "prisma": {
@@ -56,7 +57,6 @@
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.3",
     "tailwindcss": "^4.0.0",
-    "ts-node": "^10.9.0",
     "typescript": "^5.0.0",
     "zod": "^4.3.6"
   }

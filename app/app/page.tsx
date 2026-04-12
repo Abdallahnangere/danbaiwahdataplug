@@ -881,6 +881,7 @@ export default function DanbaiwaApp() {
 
           {/* Confirm & Pay button */}
           <button
+            whileTap={pinFull && !buyDataLoading ? { scale: 0.98 } : {}}
             onClick={handlePinSubmit}
             disabled={!pinFull || buyDataLoading}
             style={{

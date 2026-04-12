@@ -1,31 +1,58 @@
 #!/usr/bin/env node
 
 /**
- * Prisma client generation script
- * Silently tries to generate Prisma client during build
- * SUCCESS: Database URL available → generates successfully
- * SKIP: Prisma client already generated in node_modules → skips
- * FAIL: Generation fails → continues anyway (build won't use DB at build time)
+ * Robust Prisma client generation
+ * Handles missing DATABASE_URL gracefully
+ * This runs during both postinstall and build
  */
 
-const fs = require("fs");
+const { execSync } = require("child_process");
 const path = require("path");
-const { spawnSync } = require("child_process");
 
-// Check if @prisma/client already exists
-const prismaClientPath = path.resolve(__dirname, "..", "node_modules", "@prisma", "client");
-const prismaClientExists = fs.existsSync(prismaClientPath);
+const cwd = path.resolve(__dirname, "..");
 
-if (prismaClientExists) {
-  process.exit(0);
+// Try to generate with DATABASE_URL if available
+// Otherwise use placeholder URL
+const env = { ...process.env };
+if (!env.DATABASE_URL) {
+  console.log("ℹ️  DATABASE_URL not available, using placeholder for schema...");
+  env.DATABASE_URL = "postgresql://placeholder:placeholder@localhost:5432/placeholder";
 }
 
-// Try to generate Prisma client
-const result = spawnSync("npx", ["prisma", "generate"], {
-  cwd: path.resolve(__dirname, ".."),
-  stdio: "pipe",
-  timeout: 60000,
-});
-
-// Exit successfully regardless (ignore generation failures)
-process.exit(0);
+try {
+  console.log("🔄 Generating Prisma client...");
+  
+  // First try with --skip-engine-check (skips database validation)
+  execSync("npx prisma generate --skip-engine-check", {
+    stdio: ["ignore", "pipe", "pipe"],
+    env,
+    cwd,
+  });
+  
+  console.log("✅ Prisma client generated successfully");
+  process.exit(0);
+} catch (firstError) {
+  // If that fails, try without the flag
+  try {
+    console.log("   Retrying without --skip-engine-check...");
+    execSync("npx prisma generate", {
+      stdio: ["ignore", "pipe", "pipe"],
+      env,
+      cwd,
+    });
+    
+    console.log("✅ Prisma client generated successfully (retry)");
+    process.exit(0);
+  } catch (secondError) {
+    // If both fail and we have a real DATABASE_URL, fail hard
+    if (process.env.DATABASE_URL) {
+      console.error("❌ Failed to generate Prisma client");
+      process.exit(1);
+    }
+    
+    // If no DATABASE_URL was available, just warn and continue
+    console.warn("⚠️  Prisma generation skipped - DATABASE_URL not available");
+    console.warn("    The application will regenerate during build with proper DATABASE_URL");
+    process.exit(0);
+  }
+}

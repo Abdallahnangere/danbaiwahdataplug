@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     // Create user with initial balance
     const user = await prisma.user.create({
       data: {
-        fullName,
+        name: fullName,
         email,
         phone,
         pin: hashedPin,
