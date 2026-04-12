@@ -8,13 +8,10 @@ const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 
 export async function GET(request: NextRequest) {
   try {
-    // Check admin access first
-    const authHeader = request.headers.get("authorization");
-    const adminPassword = request.headers.get("x-admin-password");
+    // Check admin session cookie
+    const adminSession = request.cookies.get("admin-session");
     
-    // Validate admin access
-    const isAdmin = process.env.ADMIN_PASSWORD && adminPassword === process.env.ADMIN_PASSWORD;
-    if (!authHeader?.startsWith("Bearer ") && !isAdmin) {
+    if (!adminSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 

@@ -50,11 +50,11 @@ export default function AdminDashboard() {
       const res = await fetch("/api/admin/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include", // Include cookies in request
         body: JSON.stringify({ password }),
       });
 
       if (res.ok) {
-        sessionStorage.setItem("admin-authenticated", "true");
         setAuthenticated(true);
         setPassword("");
         toast.success("Authentication successful");
@@ -70,10 +70,11 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("admin-authenticated");
+  const handleLogout = async () => {
+    // Clear the admin session on the backend if needed
     setAuthenticated(false);
     setPassword("");
+    // Redirect to home
     router.push("/");
   };
 

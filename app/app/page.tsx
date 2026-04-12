@@ -1205,7 +1205,7 @@ export default function DanbaiwaApp() {
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "â€¢â€¢â€¢â€¢â€¢â€¢"}
+                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "••••••"}
                     </span>
                   </div>
 
@@ -1654,7 +1654,7 @@ export default function DanbaiwaApp() {
               autoFocus
               value={pinForm.oldPin}
               onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -1674,7 +1674,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.newPin}
               onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -1694,7 +1694,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.confirmPin}
               onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="••••••"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,

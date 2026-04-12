@@ -22,10 +22,22 @@ export async function POST(request: NextRequest) {
 
     // Compare the provided password with the admin password
     if (password === adminPassword) {
-      return NextResponse.json(
+      // Create a response with admin session cookie
+      const response = NextResponse.json(
         { success: true },
         { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } }
       );
+
+      // Set admin session cookie (valid for 6 hours)
+      response.cookies.set("admin-session", "authenticated", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 6 * 60 * 60, // 6 hours
+        path: "/",
+      });
+
+      return response;
     } else {
       return NextResponse.json(
         { error: "Invalid password" },
@@ -40,3 +52,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

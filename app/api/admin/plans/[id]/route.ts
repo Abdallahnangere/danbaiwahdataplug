@@ -15,9 +15,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Plan ID is required" }, { status: 400, headers: utf8Headers });
     }
 
-    // Validate admin
-    const adminPassword = request.headers.get("x-admin-password");
-    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+    // Check admin session cookie
+    const adminSession = request.cookies.get("admin-session");
+    
+    if (!adminSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
