@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
     // Authentication
-    const session = await auth();
-    if (!session || !session.user?.id) {
+    const session = await getSessionUser(request as any);
+    if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -19,20 +19,20 @@ export async function GET(request: Request) {
     const skip = (page - 1) * limit;
 
     // Build filter
-    const filter: any = { userId: session.user.id };
+    const filter: any = { userId: session.userId };
     if (type) {
       filter.type = type;
     }
 
     // Get transactions
     const [transactions, total] = await Promise.all([
-      prisma.transaction.findMany({
+      prisma.dataTransaction.findMany({
         where: filter,
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
-      prisma.transaction.count({ where: filter }),
+      prisma.dataTransaction.count({ where: filter }),
     ]);
 
     return NextResponse.json(

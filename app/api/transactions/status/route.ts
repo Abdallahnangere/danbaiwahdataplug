@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { smeplug } from "@/lib/smeplug";
 import { saiful } from "@/lib/saiful";
@@ -17,10 +17,10 @@ export async function GET(request: Request) {
     }
 
     // Authentication - optional for this endpoint if reference is provided
-    const session = await auth();
+    const session = await getSessionUser(request as any);
 
     // Get transaction
-    const transaction = await prisma.transaction.findUnique({
+    const transaction = await prisma.dataTransaction.findUnique({
       where: { reference },
     });
 
@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     }
 
     // Verify user owns this transaction if authenticated
-    if (session?.user?.id && transaction.userId !== session.user.id) {
+    if (session?.userId && transaction.userId !== session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -40,38 +40,33 @@ export async function GET(request: Request) {
     if (transaction.status === "PENDING") {
       let result;
 
-      if (
-        transaction.metadata &&
-        typeof transaction.metadata === "object" &&
-        "networkName" in transaction.metadata
-      ) {
-        const networkName = (transaction.metadata as any).networkName;
+      // Get the network for this transaction
+      const network = await prisma.dataNetwork.findUnique({
+        where: { id: transaction.networkId },
+      });
 
-        if (networkName.toLowerCase() === "airtel") {
-          result = await saiful.verifyTransaction(reference);
-        } else {
-          result = await smeplug.verifyTransaction(reference);
-        }
+      if (network) {
+        // For now, default to Saiful for verification
+        // In future, could check which provider based on plan
+        result = await saiful.verifyTransaction(reference);
 
         // Update transaction status
-        const newStatus = result.status === "SUCCESS" ? "COMPLETED" : "FAILED";
+        const newStatus = result.status === "SUCCESS" ? "SUCCESS" : "FAILED";
 
-        if (newStatus !== "PENDING") {
-          await prisma.transaction.update({
-            where: { id: transaction.id },
-            data: { status: newStatus },
-          });
+        await prisma.dataTransaction.update({
+          where: { id: transaction.id },
+          data: { status: newStatus },
+        });
 
-          return NextResponse.json(
-            {
-              transaction: {
-                ...transaction,
-                status: newStatus,
-              },
+        return NextResponse.json(
+          {
+            transaction: {
+              ...transaction,
+              status: newStatus,
             },
-            { status: 200 }
-          );
-        }
+          },
+          { status: 200 }
+        );
       }
     }
 

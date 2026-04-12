@@ -1,16 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,7 +14,7 @@ interface Transaction {
   status: string;
   reference: string;
   createdAt: string;
-  metadata?: Record<string, any>;
+  phone?: string;
 }
 
 export function TransactionHistory() {
@@ -59,7 +52,7 @@ export function TransactionHistory() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "COMPLETED":
+      case "SUCCESS":
         return "bg-green-100 text-green-800";
       case "PENDING":
         return "bg-yellow-100 text-yellow-800";
@@ -101,67 +94,72 @@ export function TransactionHistory() {
         <CardTitle>Transaction History</CardTitle>
         <CardDescription>View your recent transactions</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
         {transactions.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No transactions yet
-          </div>
+          <p className="text-gray-500 text-center py-8">No transactions found</p>
         ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Date</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {transactions.map((tx) => (
-                  <TableRow key={tx.id}>
-                    <TableCell className="font-medium">
-                      {getTypeLabel(tx.type)}
-                    </TableCell>
-                    <TableCell>₦{tx.amount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Badge className={getStatusColor(tx.status)}>
-                        {tx.status}
+          <>
+            <div className="space-y-3">
+              {transactions.map((transaction) => (
+                <div
+                  key={transaction.id}
+                  className="border rounded-lg p-4 flex justify-between items-start"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-medium text-sm">
+                        {getTypeLabel(transaction.type)}
+                      </h3>
+                      <Badge className={getStatusColor(transaction.status)}>
+                        {transaction.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm">{tx.reference}</TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(tx.createdAt).toLocaleDateString()}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Reference: {transaction.reference}
+                    </p>
+                    {transaction.phone && (
+                      <p className="text-xs text-gray-500">
+                        Phone: {transaction.phone}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(transaction.createdAt).toLocaleDateString()} at{" "}
+                      {new Date(transaction.createdAt).toLocaleTimeString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-sm">
+                      {transaction.amount.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            <button
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page === 1}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="px-3 py-1">
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(Math.min(totalPages, page + 1))}
-              disabled={page === totalPages}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+            {totalPages > 1 && (
+              <div className="flex gap-2 justify-center mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page === 1}
+                  size="sm"
+                >
+                  Previous
+                </Button>
+                <span className="flex items-center px-3 text-sm">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage(Math.min(totalPages, page + 1))}
+                  disabled={page === totalPages}
+                  size="sm"
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

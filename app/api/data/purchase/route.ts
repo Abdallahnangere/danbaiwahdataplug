@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validateDataRequest } from "@/lib/validators";
 import { rateLimiter } from "@/lib/rateLimiter";
@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Authentication
-    const session = await auth();
-    if (!session || !session.user?.id) {
+    const session = await getSessionUser(request);
+    if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user has sufficient balance
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: session.userId },
     });
 
     if (!user) {
@@ -65,7 +65,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check balance
-    if (user.balance < plan.price) {
+    const planPrice = typeof plan.price === "number" ? plan.price : Number(plan.price);
+    if (user.balance < planPrice) {
       return NextResponse.json(
         { error: "Insufficient balance" },
         { status: 400 }
@@ -78,10 +79,10 @@ export async function POST(request: NextRequest) {
 
     // Process purchase
     const result = await purchaseData({
-      userId: session.user.id,
+      userId: session.userId,
       planId,
       phoneNumber,
-      amount: plan.price,
+      amount: planPrice,
       provider,
     });
 
@@ -93,18 +94,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create transaction record
-    await prisma.transaction.create({
+    await prisma.dataTransaction.create({
       data: {
-        userId: session.user.id,
-        type: "DATA_PURCHASE",
-        amount: plan.price,
-        status: "PENDING",
+        userId: session.userId,
+        phone: phoneNumber,
+        planId,
+        networkId: plan.networkId,
+        amount: planPrice,
         reference: result.reference,
-        metadata: {
-          planId,
-          networkName: plan.network.name,
-          phoneNumber,
-        },
+        status: "PENDING",
       },
     });
 

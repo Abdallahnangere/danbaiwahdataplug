@@ -1,5 +1,5 @@
 import { NextResponse, NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validatePhoneNumber } from "@/lib/validators";
 import { rateLimiter } from "@/lib/rateLimiter";
@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Authentication
-    const session = await auth();
-    if (!session || !session.user?.id) {
+    const session = await getSessionUser(request);
+    if (!session || !session.userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     // Check if user has sufficient balance
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: session.userId },
     });
 
     if (!user) {
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // Process purchase
     const result = await purchaseAirtime({
-      userId: session.user.id,
+      userId: session.userId,
       amount,
       phoneNumber,
       networkId: parseInt(networkId),
@@ -117,18 +117,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Create transaction record
-    await prisma.transaction.create({
+    await prisma.dataTransaction.create({
       data: {
-        userId: session.user.id,
-        type: "AIRTIME_PURCHASE",
+        userId: session.userId,
+        phone: phoneNumber,
+        planId: "", // Empty for airtime
+        networkId: network.id,
         amount,
-        status: "PENDING",
         reference: result.reference,
-        metadata: {
-          networkId,
-          networkName: network.name,
-          phoneNumber,
-        },
+        status: "PENDING",
       },
     });
 

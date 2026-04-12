@@ -1,16 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 
 export async function GET(
-  request: Request,
-  { params }: { params: { networkId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ networkId: string }> }
 ) {
   try {
-    const { networkId } = params;
+    const { networkId } = await params;
 
     const plans = await prisma.dataPlan.findMany({
       where: { networkId },
-      orderBy: { validity: "asc" },
+      orderBy: { price: "asc" },
     });
 
     return NextResponse.json({ plans }, { status: 200 });

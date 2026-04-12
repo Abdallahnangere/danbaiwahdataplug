@@ -40,33 +40,33 @@ export function BuyDataComponent() {
 
   const fetchNetworks = async () => {
     try {
-      console.log(\"[BuyData] Fetching networks...\");
-      const response = await fetch(\"/api/data/networks\");
+      console.log("[BuyData] Fetching networks...");
+      const response = await fetch("/api/data/networks");
       const data = await response.json();
-      console.log(\"[BuyData] Networks response:\", data);
+      console.log("[BuyData] Networks response:", data);
       setNetworks(data.networks || []);
     } catch (error) {
-      console.error(\"[BuyData] Failed to fetch networks:\", error);
-      toast.error(\"Failed to fetch networks\");
+      console.error("[BuyData] Failed to fetch networks:", error);
+      toast.error("Failed to fetch networks");
     }
   };
 
   const fetchPlans = async (networkId: string) => {
     try {
-      console.log(\"[BuyData] Fetching plans for network:\", networkId);
+      console.log("[BuyData] Fetching plans for network:", networkId);
       const response = await fetch(`/api/data/plans/${networkId}`);
       const data = await response.json();
-      console.log(\"[BuyData] Plans response:\", data);
+      console.log("[BuyData] Plans response:", data);
       setPlans(data.plans || []);
     } catch (error) {
-      console.error(\"[BuyData] Failed to fetch plans:\", error);
-      toast.error(\"Failed to fetch plans\");
+      console.error("[BuyData] Failed to fetch plans:", error);
+      toast.error("Failed to fetch plans");
     }
   };
 
   const handlePurchase = async () => {
     if (!selectedPlan || !phoneNumber) {
-      Toast.error("Please fill all fields");
+      toast.error("Please fill all fields");
       return;
     }
 
