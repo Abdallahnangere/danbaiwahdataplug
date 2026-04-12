@@ -8,6 +8,9 @@ export const revalidate = 0;
 export async function POST(request: NextRequest) {
   let transactionId: string | null = null;
 
+  // Dynamic import to defer Prisma initialization
+  const { prisma } = await import("@/lib/db");
+
   try {
     // 1. AUTHENTICATE USER
     const sessionUser = await getSessionUser(request);
@@ -17,9 +20,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
-
-    // Dynamic import to defer Prisma initialization
-    const { prisma } = await import("@/lib/db");
 
     const userId = sessionUser.userId;
 
