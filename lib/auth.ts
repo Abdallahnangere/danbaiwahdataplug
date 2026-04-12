@@ -16,7 +16,8 @@ const getSecret = (): Uint8Array => {
 
 export interface JWTPayload {
   userId: string;
-  email: string;
+  phone?: string;
+  email?: string;
   role: "USER" | "AGENT" | "ADMIN";
   [key: string]: any;
 }

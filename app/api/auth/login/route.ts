@@ -10,30 +10,39 @@ export const revalidate = 0;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, pin } = body;
+    const { phone, pin } = body;
 
     // Validation
-    if (!email || !pin) {
+    if (!phone || !pin) {
       return NextResponse.json(
-        { error: "Email and PIN are required" },
+        { error: "Phone and PIN are required" },
         { status: 400 }
       );
     }
 
-    // Find user by email
+    if (!/^0[0-9]{10}$/.test(phone)) {
+      return NextResponse.json(
+        { error: "Invalid phone format" },
+        { status: 400 }
+      );
+    }
+
+    // Find user by phone
     const user = await queryOne<{
       id: string;
-      email: string;
+      phone: string;
+      name: string;
       pin: string;
       isActive: boolean;
       role: string;
-    }>("SELECT id, email, \"pin\", \"isActive\", role FROM \"User\" WHERE email = $1", [
-      email,
-    ]);
+    }>(
+      `SELECT id, phone, name, "pin", "isActive", role FROM "User" WHERE phone = $1`,
+      [phone]
+    );
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid email or PIN" },
+        { error: "Invalid phone or PIN" },
         { status: 401 }
       );
     }
@@ -58,7 +67,7 @@ export async function POST(request: NextRequest) {
 
     if (!pinValid) {
       return NextResponse.json(
-        { error: "Invalid email or PIN" },
+        { error: "Invalid phone or PIN" },
         { status: 401 }
       );
     }
@@ -66,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const token = await signToken({
       userId: user.id,
-      email: user.email,
+      phone: user.phone,
       role: user.role as "USER" | "AGENT" | "ADMIN",
     });
 
@@ -82,16 +91,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        message: "Login successful",
+        user: {
+          id: user.id,
+          phone: user.phone,
+          name: user.name,
+          role: user.role,
+        },
+        token,
       },
       { status: 200 }
     );
   } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Login failed" },
+      { error: "Login failed", details: error.message },
       { status: 500 }
     );
   }

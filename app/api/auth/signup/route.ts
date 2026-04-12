@@ -11,56 +11,47 @@ export const revalidate = 0;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { fullName, email, phone, pin } = body;
+    const { name, phone, pin, confirmPin, acceptTerms } = body;
 
     // Validation
-    if (!fullName || !email || !phone || !pin) {
+    if (!name || name.length < 2) {
       return NextResponse.json(
-        { error: "Missing required fields: fullName, email, phone, pin" },
+        { error: "Name must be at least 2 characters" },
         { status: 400 }
       );
     }
 
-    // Validate PIN is 6 digits
-    if (!/^\d{6}$/.test(pin)) {
+    if (!phone || !/^0[0-9]{10}$/.test(phone)) {
+      return NextResponse.json(
+        { error: "Phone number must be 11 digits starting with 0" },
+        { status: 400 }
+      );
+    }
+
+    if (!pin || !/^\d{6}$/.test(pin)) {
       return NextResponse.json(
         { error: "PIN must be exactly 6 digits" },
         { status: 400 }
       );
     }
 
-    // Validate email format
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!confirmPin || pin !== confirmPin) {
       return NextResponse.json(
-        { error: "Invalid email format" },
+        { error: "PINs don't match" },
         { status: 400 }
       );
     }
 
-    // Validate phone is 11 digits
-    if (!/^\d{11}$/.test(phone)) {
+    if (!acceptTerms) {
       return NextResponse.json(
-        { error: "Phone must be exactly 11 digits" },
+        { error: "You must accept the terms and conditions" },
         { status: 400 }
       );
     }
 
-    // Check if email exists
-    const existingEmail = await queryOne<{ id: string }>(
-      "SELECT id FROM \"User\" WHERE email = $1",
-      [email]
-    );
-
-    if (existingEmail) {
-      return NextResponse.json(
-        { error: "Email already registered" },
-        { status: 409 }
-      );
-    }
-
-    // Check if phone exists
+    // Check if phone already exists
     const existingPhone = await queryOne<{ id: string }>(
-      "SELECT id FROM \"User\" WHERE phone = $1",
+      `SELECT id FROM "User" WHERE phone = $1`,
       [phone]
     );
 
@@ -71,24 +62,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash PIN
+    // Hash PIN using bcrypt
     const salt = await bcrypt.genSalt(10);
     const hashedPin = await bcrypt.hash(pin, salt);
 
-    // Create user with initial balance
+    // Create user
     const userId = randomUUID();
     const now = new Date().toISOString();
 
-    await execute(
-      `INSERT INTO "User" (id, name, email, phone, "pin", balance, role, tier, "isActive", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-      [userId, fullName, email, phone, hashedPin, 0, "USER", "user", true, now, now]
+    const result = await queryOne<{ id: string }>(
+      `INSERT INTO "User" (id, name, phone, "pin", balance, role, "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id, name, phone, balance, role`,
+      [userId, name, phone, hashedPin, 0, "USER", true, now, now]
     );
+
+    if (!result) {
+      throw new Error("Failed to create user");
+    }
 
     // Generate JWT token
     const token = await signToken({
       userId,
-      email,
+      phone,
       role: "USER" as const,
     });
 
@@ -106,8 +102,7 @@ export async function POST(request: NextRequest) {
         message: "Account created successfully",
         user: {
           id: userId,
-          name: fullName,
-          email,
+          name,
           phone,
           balance: 0,
           role: "USER",
