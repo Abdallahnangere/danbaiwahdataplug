@@ -11,10 +11,10 @@ export async function GET() {
     log("REQUEST", { timestamp: new Date().toISOString() });
 
     const networks = [
-      { id: 1, name: "MTN", logo: "/networks/mtn.png" },
-      { id: 2, name: "Glo", logo: "/networks/glo.png" },
-      { id: 3, name: "9mobile", logo: "/networks/9mobile.png" },
-      { id: 4, name: "Airtel", logo: "/networks/airtel.png" },
+      { id: 1, name: "MTN", logo: "/networks/mtn.jpeg" },
+      { id: 2, name: "Glo", logo: "/networks/glo.jpeg" },
+      { id: 3, name: "9mobile", logo: "/networks/9mobile.jpeg" },
+      { id: 4, name: "Airtel", logo: "/networks/airtel.jpeg" },
     ];
 
     log("RESPONSE_200", { count: networks.length, networks });

@@ -275,17 +275,14 @@ export async function POST(request: NextRequest) {
           data: providerBData 
         });
 
-        if (
-          providerBData.data &&
-          providerBData.data.Status === "successful"
-        ) {
+        if (providerBData && providerBData.Status === "successful") {
           providerSuccess = true;
-          providerRef = providerBData.data.ident || customerRef;
-          providerResponse = providerBData.data.api_response || "Success";
+          providerRef = providerBData.ident || customerRef;
+          providerResponse = providerBData.api_response || "Success";
           log("PROVIDER_B_SUCCESS", { providerRef, message: providerResponse });
         } else {
           providerResponse =
-            providerBData.data?.api_response || "Provider request failed";
+            providerBData?.api_response || "Provider request failed";
           log("PROVIDER_B_FAILED", { message: providerResponse, data: providerBData });
         }
       } else {

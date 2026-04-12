@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
@@ -37,6 +37,10 @@ export default function AuthPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [savedPhone, setSavedPhone] = useState("");
+
+  // Refs for PIN inputs to prevent keyboard dismissal
+  const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const confirmPinRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -277,16 +281,27 @@ export default function AuthPage() {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {pin.map((d, i) => (
                       <input
-                        key={i}
+                        key={`pin-${i}`}
+                        ref={(el) => { pinRefs.current[i] = el; }}
                         id={`pin-${i}`}
                         type={showPin ? "text" : "password"}
+                        inputMode="numeric"
                         maxLength={1}
                         value={d}
                         onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (val.length > 1) return;
                           const np = [...pin];
-                          np[i] = e.target.value;
+                          np[i] = val;
                           setPin(np);
-                          if (e.target.value && i < 5) document.getElementById(`pin-${i + 1}`)?.focus();
+                          if (val && i < 5) {
+                            setTimeout(() => pinRefs.current[i + 1]?.focus(), 0);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !d && i > 0) {
+                            pinRefs.current[i - 1]?.focus();
+                          }
                         }}
                         style={{
                           flex: 1,
@@ -419,16 +434,27 @@ export default function AuthPage() {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {pin.map((d, i) => (
                       <input
-                        key={i}
+                        key={`sig-pin-${i}`}
+                        ref={(el) => { pinRefs.current[i] = el; }}
                         id={`sig-pin-${i}`}
                         type={showPin ? "text" : "password"}
+                        inputMode="numeric"
                         maxLength={1}
                         value={d}
                         onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (val.length > 1) return;
                           const np = [...pin];
-                          np[i] = e.target.value;
+                          np[i] = val;
                           setPin(np);
-                          if (e.target.value && i < 5) document.getElementById(`sig-pin-${i + 1}`)?.focus();
+                          if (val && i < 5) {
+                            setTimeout(() => pinRefs.current[i + 1]?.focus(), 0);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !d && i > 0) {
+                            pinRefs.current[i - 1]?.focus();
+                          }
                         }}
                         style={{
                           flex: 1,
@@ -466,16 +492,27 @@ export default function AuthPage() {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {confirmPin.map((d, i) => (
                       <input
-                        key={i}
+                        key={`sig-confirm-${i}`}
+                        ref={(el) => { confirmPinRefs.current[i] = el; }}
                         id={`sig-confirm-${i}`}
                         type={showConfirmPin ? "text" : "password"}
+                        inputMode="numeric"
                         maxLength={1}
                         value={d}
                         onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, "");
+                          if (val.length > 1) return;
                           const np = [...confirmPin];
-                          np[i] = e.target.value;
+                          np[i] = val;
                           setConfirmPin(np);
-                          if (e.target.value && i < 5) document.getElementById(`sig-confirm-${i + 1}`)?.focus();
+                          if (val && i < 5) {
+                            setTimeout(() => confirmPinRefs.current[i + 1]?.focus(), 0);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Backspace" && !d && i > 0) {
+                            confirmPinRefs.current[i - 1]?.focus();
+                          }
                         }}
                         style={{
                           flex: 1,
