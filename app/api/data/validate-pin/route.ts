@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import bcrypt from "bcryptjs";
+import { queryOne } from "@/lib/db";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
@@ -16,31 +17,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Dynamic import to defer Prisma initialization
-    const { prisma } = await import("@/lib/db");
-
     // 2. Parse request body
     const body = await request.json();
     const { pin } = body;
 
     if (!pin || typeof pin !== "string") {
-      return NextResponse.json(
-        { error: "PIN is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "PIN is required" }, { status: 400 });
     }
 
     // 3. Fetch user from DB
-    const user = await prisma.user.findUnique({
-      where: { id: sessionUser.userId },
-      select: { pin: true },
-    });
+    const user = await queryOne<{ pin: string | null }>(
+      "SELECT pin FROM \"User\" WHERE id = $1",
+      [sessionUser.userId]
+    );
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // 4. Check if PIN is set
@@ -55,18 +47,18 @@ export async function POST(request: NextRequest) {
     const isValid = await bcrypt.compare(pin, user.pin);
 
     if (!isValid) {
-      return NextResponse.json(
-        { error: "Incorrect PIN." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Incorrect PIN." }, { status: 401 });
     }
 
     // 6. Return success
-    return NextResponse.json({ valid: true });
-  } catch (error) {
-    console.error("Error validating PIN:", error);
     return NextResponse.json(
-      { error: "An error occurred while validating PIN" },
+      { message: "PIN validated successfully" },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("PIN validation error:", error);
+    return NextResponse.json(
+      { error: "Failed to validate PIN", details: error.message },
       { status: 500 }
     );
   }

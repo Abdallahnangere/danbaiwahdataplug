@@ -1,40 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
+import { query, queryOne } from "@/lib/database";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const networkId = request.nextUrl.searchParams.get("networkId");
-
-    if (!networkId) {
-      return NextResponse.json(
-        { error: "networkId query parameter is required" },
-        { status: 400 }
-      );
-    }
-
-    // Dynamic import
-    const { prisma } = await import("@/lib/db");
-
-    const plans = await prisma.dataPlan.findMany({
-      where: {
-        networkId: networkId as any,
-        isActive: true,
-      },
-      select: {
-        id: true,
-        name: true,
-        sizeLabel: true,
-        validity: true,
-        price: true,
-        networkId: true,
-      },
-    });
+    const plans = await query<{
+      id: string;
+      name: string;
+      networkId: number;
+      networkName: string;
+      sizeLabel: string;
+      validity: string;
+      price: number;
+      userPrice: number;
+      agentPrice: number;
+      isActive: boolean;
+    }>(
+      "SELECT id, name, \"networkId\", \"networkName\", \"sizeLabel\", validity, price, \"userPrice\", \"agentPrice\", \"isActive\" FROM \"DataPlan\" WHERE \"isActive\" = true ORDER BY \"networkId\", price"
+    );
 
     return NextResponse.json(plans);
-  } catch (error) {
-    console.error("Error fetching plans:", error);
+  } catch (error: any) {
+    console.error("Get plans error:", error);
     return NextResponse.json(
       { error: "Failed to fetch plans" },
       { status: 500 }

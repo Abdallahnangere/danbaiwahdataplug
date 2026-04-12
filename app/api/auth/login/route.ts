@@ -2,15 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { queryOne } from "@/lib/database";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function POST(request: NextRequest) {
   try {
-    // Dynamic import
-    const { prisma } = await import("@/lib/db");
-
     const body = await request.json();
     const { email, pin } = body;
 
@@ -23,9 +21,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    const user = await queryOne<{
+      id: string;
+      email: string;
+      pin: string;
+      isActive: boolean;
+      role: string;
+    }>("SELECT id, email, \"pin\", \"isActive\", role FROM \"User\" WHERE email = $1", [
+      email,
+    ]);
 
     if (!user) {
       return NextResponse.json(
@@ -72,26 +76,22 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 days
+      maxAge: 7 * 24 * 60 * 60,
       path: "/",
     });
 
     return NextResponse.json(
       {
         id: user.id,
-        fullName: user.fullName,
         email: user.email,
-        phone: user.phone,
-        balance: user.balance.toNumber ? user.balance.toNumber() : user.balance,
-        tier: user.tier,
         role: user.role,
       },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Failed to login" },
+      { error: "Login failed" },
       { status: 500 }
     );
   }
