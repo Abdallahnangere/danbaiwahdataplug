@@ -40,13 +40,13 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calculate metrics
-    const successfulTransactions = allTransactions.filter((t) => t.status === "successful");
-    const totalRevenue = successfulTransactions.reduce((sum, t) => {
+    const successfulTransactions = allTransactions.filter((t: any) => t.status === "successful");
+    const totalRevenue = successfulTransactions.reduce((sum: number, t: any) => {
       const amount = typeof t.amount === "number" ? t.amount : t.amount?.toNumber?.() || 0;
       return sum + amount;
     }, 0);
 
-    const recentTransactions = allTransactions.slice(0, 10).map((t) => ({
+    const recentTransactions = allTransactions.slice(0, 10).map((t: any) => ({
       id: t.id,
       email: t.user?.email || "N/A",
       name: t.user?.name || "N/A",
