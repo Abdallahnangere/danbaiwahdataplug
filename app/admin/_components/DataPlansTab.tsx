@@ -24,6 +24,7 @@ const font = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", H
 interface DataPlan {
   id: string;
   name: string;
+  networkId: string;
   networkName: string;
   sizeLabel: string;
   validity: string;
@@ -172,7 +173,7 @@ export default function DataPlansTab() {
   const handleOpenEdit = (plan: DataPlan) => {
     setFormData({
       name: plan.name,
-      networkId: plan.networkName,
+      networkId: plan.networkId,
       sizeLabel: plan.sizeLabel,
       validity: plan.validity,
       price: plan.price.toString(),

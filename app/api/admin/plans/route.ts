@@ -21,10 +21,19 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json(plans.map((plan: any) => ({
-      ...plan,
-      price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price)),
-      userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
-      agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
+      id: plan.id,
+      name: plan.name,
+      networkId: plan.networkId || "",
+      networkName: plan.networkName || "",
+      sizeLabel: plan.sizeLabel,
+      validity: plan.validity,
+      price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price || 0)),
+      userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : 0,
+      agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : 0,
+      apiAId: plan.apiAId || "",
+      apiBId: plan.apiBId || "",
+      activeApi: plan.activeApi || "A",
+      isActive: plan.isActive !== false,
     })), { headers: utf8Headers });
   } catch (error) {
     console.error("Plans fetch error:", error);
