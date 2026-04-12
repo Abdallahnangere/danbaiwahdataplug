@@ -26,86 +26,151 @@ const T = {
 
 const font = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif';
 
-interface AdminUser {
-  id: string;
-  role: string;
-}
-
 export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"analytics" | "plans" | "users">("analytics");
 
-  // Check if user is admin
+  // Check if already authenticated via sessionStorage
   useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (!res.ok) {
-          router.push("/app/auth");
-          return;
-        }
-        const data = await res.json();
-        
-        // Check if admin
-        if (data.role !== "ADMIN") {
-          router.push("/app");
-          return;
-        }
-        
-        setUser(data);
-      } catch (error) {
-        router.push("/app/auth");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdmin();
+    const isAuth = sessionStorage.getItem("admin-authenticated") === "true";
+    if (isAuth) {
+      setAuthenticated(true);
+    }
   }, []);
 
-  const handleLogout = async () => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
     try {
-      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-      router.push("/app/auth");
-    } catch {
-      toast.error("Logout failed");
+      // Send password to backend to verify against ADMIN_PASSWORD env variable
+      const res = await fetch("/api/admin/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+
+      if (res.ok) {
+        sessionStorage.setItem("admin-authenticated", "true");
+        setAuthenticated(true);
+        setPassword("");
+        toast.success("Authentication successful");
+      } else {
+        toast.error("Invalid admin password");
+        setPassword("");
+      }
+    } catch (error) {
+      toast.error("Authentication failed");
+      setPassword("");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading || !user) {
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin-authenticated");
+    setAuthenticated(false);
+    setPassword("");
+    router.push("/");
+  };
+
+  // Password entry screen
+  if (!authenticated) {
     return (
       <div style={{
         background: T.bg,
         minHeight: "100vh",
         display: "flex",
-        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 20,
         fontFamily: font,
+        padding: "20px",
       }}>
-        <div
-          style={{
-            width: 80,
-            height: 80,
-            borderRadius: 24,
-            background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: `0 0 40px rgba(59,130,246,0.3)`,
-          }}
-        >
-          <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
+        <div style={{
+          background: T.bgCard,
+          border: `1px solid ${T.border}`,
+          borderRadius: 24,
+          padding: 40,
+          maxWidth: 400,
+          width: "100%",
+        }}>
+          <h1 style={{
+            margin: "0 0 12px",
+            fontSize: 28,
+            fontWeight: 800,
+            color: T.textPrimary,
+            letterSpacing: "-0.6px",
+          }}>
+            Admin Access
+          </h1>
+          
+          <p style={{
+            margin: "0 0 28px",
+            fontSize: 14,
+            color: T.textSecondary,
+            lineHeight: 1.6,
+          }}>
+            Enter the admin password to access the dashboard.
+          </p>
+
+          <form onSubmit={handlePasswordSubmit}>
+            <div style={{ marginBottom: 20 }}>
+              <input
+                type="password"
+                placeholder="Admin password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                style={{
+                  width: "100%",
+                  padding: "12px 16px",
+                  borderRadius: 12,
+                  background: T.bgElevated,
+                  border: `1.5px solid ${T.border}`,
+                  color: T.textPrimary,
+                  fontSize: 16,
+                  fontFamily: font,
+                  boxSizing: "border-box",
+                  transition: "all 150ms ease",
+                }}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !password}
+              style={{
+                width: "100%",
+                padding: "12px 16px",
+                borderRadius: 12,
+                background: password && !loading ? T.blue : T.bgElevated,
+                border: "none",
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: password && !loading ? "pointer" : "not-allowed",
+                opacity: password && !loading ? 1 : 0.5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                fontFamily: font,
+                transition: "all 150ms ease",
+              }}
+            >
+              {loading && <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />}
+              {loading ? "Verifying..." : "Access Dashboard"}
+            </button>
+          </form>
         </div>
-        <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
-          Loading admin dashboard…
-        </p>
       </div>
     );
   }
+
+  // Admin dashboard screen
 
   const TABS = [
     { id: "analytics" as const, label: "Analytics", icon: BarChart3 },

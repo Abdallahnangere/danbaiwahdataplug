@@ -177,7 +177,7 @@ export default function DanbaiwaApp() {
           <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
         </div>
         <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
-          Securing your sessionâ€¦
+          Securing your session…
         </p>
       </div>
     );
@@ -486,18 +486,19 @@ export default function DanbaiwaApp() {
             />
 
             {/* Checkmark icon when valid */}
-            {phoneIsValid && (
-              <div
-                style={{
-                  position: "absolute",
-                  right: 12,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                }}
-              >
-                <Check size={20} color={T.green} strokeWidth={3} />
-              </div>
-            )}
+            <div
+              style={{
+                position: "absolute",
+                right: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                opacity: phoneIsValid ? 1 : 0,
+                transition: "opacity 150ms ease",
+                pointerEvents: phoneIsValid ? "auto" : "none",
+              }}
+            >
+              <Check size={20} color={T.green} strokeWidth={3} />
+            </div>
 
             {/* Character counter */}
             <div style={{
@@ -861,23 +862,26 @@ export default function DanbaiwaApp() {
           </div>
 
           {/* Error display */}
-          {buyDataError && (
-            <div
-              style={{
-                background: `${T.red}20`,
-                border: `1px solid ${T.red}50`,
-                borderRadius: 12,
-                padding: 12,
-                marginBottom: 16,
-                color: T.red,
-                fontSize: 13,
-                fontWeight: 500,
-              }}
-              role="alert"
-            >
-              {buyDataError}
-            </div>
-          )}
+          <div
+            style={{
+              background: `${T.red}20`,
+              border: `1px solid ${T.red}50`,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 16,
+              color: T.red,
+              fontSize: 13,
+              fontWeight: 500,
+              opacity: buyDataError ? 1 : 0,
+              maxHeight: buyDataError ? "100%" : "0",
+              overflow: "hidden",
+              transition: "opacity 150ms ease, max-height 150ms ease",
+              pointerEvents: buyDataError ? "auto" : "none",
+            }}
+            role="alert"
+          >
+            {buyDataError}
+          </div>
 
           {/* Confirm & Pay button */}
           <button
@@ -1191,7 +1195,7 @@ export default function DanbaiwaApp() {
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <span style={{
                       fontSize: 44, fontWeight: 700, color: "rgba(255,255,255,0.8)",
-                    }}>â‚¦</span>
+                    }}>₦</span>
                     <span
                       key={balanceVisible ? "vis" : "hid"}
                       style={{
