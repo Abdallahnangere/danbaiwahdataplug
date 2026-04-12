@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
 import SuccessCheck from "@/components/SuccessCheck";
 
-// ─── DESIGN TOKENS ───────────────────────────────────────────────
+// â”€â”€â”€ DESIGN TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const T = {
   // Backgrounds
   bg:        "#07090F",
@@ -52,7 +52,7 @@ const T = {
 
 const font = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif';
 
-// ─── TYPES ───────────────────────────────────────────────────────
+// â”€â”€â”€ TYPES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface User {
   id: string;
   fullName: string;
@@ -69,7 +69,7 @@ const ACCOUNT_SERVICES = [
   { id: "settings",    label: "Settings",       icon: SettingsIcon },
 ];
 
-// ─── MAIN COMPONENT ──────────────────────────────────────────────
+// â”€â”€â”€ MAIN COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function DanbaiwaApp() {
   const router = useRouter();
   const [user, setUser]                         = useState<User | null>(null);
@@ -96,7 +96,7 @@ export default function DanbaiwaApp() {
   const [buyDataError, setBuyDataError] = useState("");
   const [successData, setSuccessData] = useState<any | null>(null);
 
-  // ── Auth ──────────────────────────────────────────────────────
+  // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -155,7 +155,7 @@ export default function DanbaiwaApp() {
     }
   };
 
-  // ── Loading screen ────────────────────────────────────────────
+  // â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (loading || !user) {
     return (
       <div style={{
@@ -177,7 +177,7 @@ export default function DanbaiwaApp() {
           <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
         </div>
         <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
-          Securing your session…
+          Securing your sessionâ€¦
         </p>
       </div>
     );
@@ -197,7 +197,7 @@ export default function DanbaiwaApp() {
     { id: "settings",     icon: SettingsIcon,    label: "Settings"     },
   ];
 
-  // ── Shared sub-components (inline) ───────────────────────────
+  // â”€â”€ Shared sub-components (inline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // Modal wrapper
   const Modal = ({
@@ -377,11 +377,7 @@ export default function DanbaiwaApp() {
       const canContinue = selectedNetwork !== null && phoneIsValid;
 
       return (
-        <motion.div
-          initial={{ x: 60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -60, opacity: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+        <div
           style={{
             padding: "20px 20px 120px",
             fontFamily: font,
@@ -405,10 +401,8 @@ export default function DanbaiwaApp() {
             {networks.map((net) => {
               const isSelected = selectedNetwork?.id === net.id;
               return (
-                <motion.button
+                <button
                   key={net.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedNetwork(net)}
                   style={{
                     position: "relative",
@@ -439,9 +433,7 @@ export default function DanbaiwaApp() {
 
                   {/* Checkmark badge */}
                   {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
+                    <div
                       style={{
                         position: "absolute",
                         top: 8,
@@ -456,9 +448,9 @@ export default function DanbaiwaApp() {
                       }}
                     >
                       <Check size={14} color="#fff" strokeWidth={3} />
-                    </motion.div>
+                    </div>
                   )}
-                </motion.button>
+                </button>
               );
             })}
           </div>
@@ -495,9 +487,7 @@ export default function DanbaiwaApp() {
 
             {/* Checkmark icon when valid */}
             {phoneIsValid && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
+              <div
                 style={{
                   position: "absolute",
                   right: 12,
@@ -506,7 +496,7 @@ export default function DanbaiwaApp() {
                 }}
               >
                 <Check size={20} color={T.green} strokeWidth={3} />
-              </motion.div>
+              </div>
             )}
 
             {/* Character counter */}
@@ -523,9 +513,7 @@ export default function DanbaiwaApp() {
           </div>
 
           {/* Continue button */}
-          <motion.button
-            whileHover={canContinue ? { scale: 1.01 } : {}}
-            whileTap={canContinue ? { scale: 0.98 } : {}}
+          <button
             onClick={() => canContinue && setBuyDataStage(2)}
             disabled={!canContinue}
             style={{
@@ -545,19 +533,15 @@ export default function DanbaiwaApp() {
             aria-disabled={!canContinue}
           >
             Continue
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       );
     }
 
     // Stage 2: Plan Selection
     if (buyDataStage === 2) {
       return (
-        <motion.div
-          initial={{ x: 60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -60, opacity: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+        <div
           style={{
             padding: "20px 20px 120px",
             fontFamily: font,
@@ -568,8 +552,7 @@ export default function DanbaiwaApp() {
           <ProgressIndicator />
 
           {/* Back button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={() => setBuyDataStage(1)}
             style={{
               background: T.bgElevated,
@@ -588,7 +571,7 @@ export default function DanbaiwaApp() {
             }}
           >
             <ArrowLeft size={16} /> Back
-          </motion.button>
+          </button>
 
           <h2 style={{
             margin: "0 0 20px",
@@ -617,7 +600,7 @@ export default function DanbaiwaApp() {
               color: T.textSecondary,
             }}>
               {/* SVG icon placeholder */}
-              <motion.svg
+              <svg
                 width="80"
                 height="80"
                 viewBox="0 0 80 80"
@@ -626,7 +609,7 @@ export default function DanbaiwaApp() {
               >
                 <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="2" />
                 <path d="M 30 35 L 50 45 L 30 55" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
-              </motion.svg>
+              </svg>
               <p style={{ fontSize: 15, margin: "0 0 8px", fontWeight: 500 }}>
                 No plans available
               </p>
@@ -641,10 +624,8 @@ export default function DanbaiwaApp() {
               gap: 12,
             }}>
               {plans.map((plan) => (
-                <motion.button
+                <button
                   key={plan.id}
-                  whileHover={{ scale: 1.02, translateY: -2 }}
-                  whileTap={{ scale: 0.98 }}
                   onClick={() => {
                     setSelectedPlan(plan);
                     setBuyDataStage(3);
@@ -685,13 +666,13 @@ export default function DanbaiwaApp() {
                     color: T.blue,
                     marginTop: 4,
                   }}>
-                    ₦{(plan.price || 0).toLocaleString()}
+                    â‚¦{(plan.price || 0).toLocaleString()}
                   </div>
-                </motion.button>
+                </button>
               ))}
             </div>
           )}
-        </motion.div>
+        </div>
       );
     }
 
@@ -751,7 +732,7 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
-          toast.success(`₦${(data.amount || 0).toLocaleString()} — ${selectedPlan.sizeLabel} sent to ${phone} ✓`);
+          toast.success(`â‚¦${(data.amount || 0).toLocaleString()} â€” ${selectedPlan.sizeLabel} sent to ${phone} âœ“`);
           setSuccessData(data);
           setPinInput(["", "", "", "", "", ""]);
           setBuyDataStage(4);
@@ -765,11 +746,7 @@ export default function DanbaiwaApp() {
       };
 
       return (
-        <motion.div
-          initial={{ x: 60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -60, opacity: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+        <div
           style={{
             padding: "20px 20px 120px",
             fontFamily: font,
@@ -780,8 +757,7 @@ export default function DanbaiwaApp() {
           <ProgressIndicator />
 
           {/* Back button */}
-          <motion.button
-            whileTap={{ scale: 0.9 }}
+          <button
             onClick={() => {
               setBuyDataStage(2);
               setPinInput(["", "", "", "", "", ""]);
@@ -804,7 +780,7 @@ export default function DanbaiwaApp() {
             }}
           >
             <ArrowLeft size={16} /> Back
-          </motion.button>
+          </button>
 
           <h2 style={{
             margin: "0 0 20px",
@@ -851,7 +827,7 @@ export default function DanbaiwaApp() {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
               <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                ₦{(selectedPlan?.price || 0).toLocaleString()}
+                â‚¦{(selectedPlan?.price || 0).toLocaleString()}
               </span>
             </div>
           </div>
@@ -886,9 +862,7 @@ export default function DanbaiwaApp() {
 
           {/* Error display */}
           {buyDataError && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
+            <div
               style={{
                 background: `${T.red}20`,
                 border: `1px solid ${T.red}50`,
@@ -902,11 +876,11 @@ export default function DanbaiwaApp() {
               role="alert"
             >
               {buyDataError}
-            </motion.div>
+            </div>
           )}
 
           {/* Confirm & Pay button */}
-          <motion.button
+          <button
             whileTap={pinFull && !buyDataLoading ? { scale: 0.98 } : {}}
             onClick={handlePinSubmit}
             disabled={!pinFull || buyDataLoading}
@@ -934,19 +908,15 @@ export default function DanbaiwaApp() {
               <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
             )}
             {buyDataLoading ? "Processing..." : "Confirm & Pay"}
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       );
     }
 
     // Stage 4: Success
     if (buyDataStage === 4) {
       return (
-        <motion.div
-          initial={{ x: 60, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: -60, opacity: 0 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+        <div
           style={{
             padding: "20px 20px 120px",
             fontFamily: font,
@@ -1005,7 +975,7 @@ export default function DanbaiwaApp() {
                   Amount Paid
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                  ₦{(successData?.amount || 0).toLocaleString()}
+                  â‚¦{(successData?.amount || 0).toLocaleString()}
                 </div>
               </div>
               <div>
@@ -1024,8 +994,7 @@ export default function DanbaiwaApp() {
             </div>
 
             {/* Done button */}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={() => {
                 setBuyDataStage(1);
                 setSelectedNetwork(null);
@@ -1052,11 +1021,10 @@ export default function DanbaiwaApp() {
               }}
             >
               Done
-            </motion.button>
+            </button>
 
             {/* Buy Again button */}
-            <motion.button
-              whileTap={{ scale: 0.98 }}
+            <button
               onClick={() => {
                 setBuyDataStage(1);
                 setSelectedPlan(null);
@@ -1079,16 +1047,16 @@ export default function DanbaiwaApp() {
               }}
             >
               Buy Again
-            </motion.button>
+            </button>
           </div>
-        </motion.div>
+        </div>
       );
     }
 
     return null;
   };
 
-  // ─── RENDER ────────────────────────────────────────────────────
+  // â”€â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div style={{
       background: T.bg,
@@ -1101,7 +1069,7 @@ export default function DanbaiwaApp() {
       position: "relative",
     }}>
 
-      {/* ── Ambient top glow ── */}
+      {/* â”€â”€ Ambient top glow â”€â”€ */}
       <div style={{
         position: "fixed", top: -120, left: "50%", transform: "translateX(-50%)",
         width: 500, height: 300,
@@ -1109,10 +1077,10 @@ export default function DanbaiwaApp() {
         pointerEvents: "none", zIndex: 0,
       }} />
 
-      {/* ── Safe-area top spacer ── */}
+      {/* â”€â”€ Safe-area top spacer â”€â”€ */}
       <div style={{ height: "env(safe-area-inset-top, 16px)", flexShrink: 0 }} />
 
-      {/* ══════════════════ HEADER ══════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{
         padding: "16px 20px 20px",
         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -1121,7 +1089,7 @@ export default function DanbaiwaApp() {
         {/* Left: greeting */}
         <div>
           <p style={{ margin: 0, fontSize: 13, color: T.textMuted, fontWeight: 500, letterSpacing: "0.2px" }}>
-            Welcome back 👋
+            Welcome back ðŸ‘‹
           </p>
           <h1 style={{
             margin: "2px 0 0", fontSize: 22, fontWeight: 800,
@@ -1132,8 +1100,7 @@ export default function DanbaiwaApp() {
         </div>
 
         {/* Right: avatar + tier badge */}
-        <motion.button
-          whileTap={{ scale: 0.88 }}
+        <button
           onClick={() => setShowSettingsModal(true)}
           style={{
             display: "flex", flexDirection: "column", alignItems: "center",
@@ -1158,33 +1125,26 @@ export default function DanbaiwaApp() {
           }}>
             {user.tier}
           </span>
-        </motion.button>
+        </button>
       </div>
 
-      {/* ══════════════════ SCROLLABLE CONTENT ══════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SCROLLABLE CONTENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{
         flex: 1, overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         position: "relative", zIndex: 5,
       }}>
-        <AnimatePresence mode="wait">
+        <>
 
-          {/* ══ HOME TAB ══ */}
+          {/* â•â• HOME TAB â•â• */}
           {activeTab === "home" && (
-            <motion.div
+            <div
               key="home"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
               style={{ padding: "0 20px 120px" }}
             >
 
-              {/* ── Balance Card ─────────────────────────────── */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05, ease: "easeOut" }}
+              {/* â”€â”€ Balance Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              <div
                 style={{
                   borderRadius: 28,
                   padding: "20px 24px",
@@ -1232,11 +1192,9 @@ export default function DanbaiwaApp() {
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <span style={{
                       fontSize: 44, fontWeight: 700, color: "rgba(255,255,255,0.8)",
-                    }}>₦</span>
-                    <motion.span
+                    }}>â‚¦</span>
+                    <span
                       key={balanceVisible ? "vis" : "hid"}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
                       style={{
                         fontSize: 44, fontWeight: 900, color: "white",
                         letterSpacing: "-2px",
@@ -1244,12 +1202,11 @@ export default function DanbaiwaApp() {
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "••••••"}
-                    </motion.span>
+                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "â€¢â€¢â€¢â€¢â€¢â€¢"}
+                    </span>
                   </div>
 
-                  <motion.button
-                    whileTap={{ scale: 0.78 }}
+                  <button
                     onClick={() => setBalanceVisible(!balanceVisible)}
                     style={{
                       background: "rgba(255,255,255,0.18)",
@@ -1264,7 +1221,7 @@ export default function DanbaiwaApp() {
                     {balanceVisible
                       ? <Eye size={22} strokeWidth={2} />
                       : <EyeOff size={22} strokeWidth={2} />}
-                  </motion.button>
+                  </button>
                 </div>
 
                 {/* Phone row */}
@@ -1288,8 +1245,7 @@ export default function DanbaiwaApp() {
                       {user.phone}
                     </p>
                   </div>
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
+                  <button
                     onClick={() => {
                       navigator.clipboard.writeText(user.phone);
                       toast.success("Phone copied!");
@@ -1306,11 +1262,11 @@ export default function DanbaiwaApp() {
                   >
                     <Copy size={13} strokeWidth={2.5} />
                     Copy
-                  </motion.button>
+                  </button>
                 </div>
-              </motion.div>
+              </div>
 
-              {/* ── Section label ────────────────────────────── */}
+              {/* â”€â”€ Section label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <p style={{
                 margin: "0 0 14px", fontSize: 13, fontWeight: 700,
                 color: T.textMuted, textTransform: "uppercase",
@@ -1319,7 +1275,7 @@ export default function DanbaiwaApp() {
                 Quick Services
               </p>
 
-              {/* ── Services Grid ─────────────────────────────── */}
+              {/* â”€â”€ Services Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
                 gap: 12, marginBottom: 32,
@@ -1327,13 +1283,8 @@ export default function DanbaiwaApp() {
                 {SERVICES.map((svc, i) => {
                   const Icon = svc.icon;
                   return (
-                    <motion.button
+                    <button
                       key={svc.id}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.08 + i * 0.05 }}
-                      whileTap={{ scale: 0.9 }}
-                      whileHover={{ y: -3 }}
                       onClick={() => setActiveTab(svc.id)}
                       style={{
                         background: T.bgCard,
@@ -1363,12 +1314,12 @@ export default function DanbaiwaApp() {
                       }}>
                         {svc.label}
                       </span>
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
 
-              {/* ── Account section ───────────────────────────── */}
+              {/* â”€â”€ Account section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <p style={{
                 margin: "0 0 12px", fontSize: 13, fontWeight: 700,
                 color: T.textMuted, textTransform: "uppercase", letterSpacing: "1px",
@@ -1384,9 +1335,8 @@ export default function DanbaiwaApp() {
                 {ACCOUNT_SERVICES.map((item, idx) => {
                   const Icon = item.icon;
                   return (
-                    <motion.button
+                    <button
                       key={item.id}
-                      whileTap={{ scale: 0.97 }}
                       onClick={() => {
                         if (item.id === "transactions") setShowTransactionsModal(true);
                         else setShowSettingsModal(true);
@@ -1415,14 +1365,14 @@ export default function DanbaiwaApp() {
                         {item.label}
                       </span>
                       <ChevronRight size={18} color={T.textMuted} strokeWidth={2} />
-                    </motion.button>
+                    </button>
                   );
                 })}
               </div>
-            </motion.div>
+            </div>
           )}
 
-          {/* ══ SERVICE TABS ══ */}
+          {/* â•â• SERVICE TABS â•â• */}
           {activeTab === "data" && (
             <BuyDataCard />
           )}
@@ -1439,10 +1389,10 @@ export default function DanbaiwaApp() {
             <ComingSoon key="exam" icon={BookOpen} label="Exam PINs" color={T.services.exampin.icon} />
           )}
 
-        </AnimatePresence>
+        </>
       </div>
 
-      {/* ══════════════════ BOTTOM NAV ══════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BOTTOM NAV â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         background: `rgba(7,9,15,0.88)`,
@@ -1460,9 +1410,8 @@ export default function DanbaiwaApp() {
             : false; // nav items open modals so never truly "active"
 
           return (
-            <motion.button
+            <button
               key={tab.id}
-              whileTap={{ scale: 0.82 }}
               onClick={() => {
                 if (tab.id === "home")         setActiveTab("home");
                 if (tab.id === "transactions") setShowTransactionsModal(true);
@@ -1478,8 +1427,7 @@ export default function DanbaiwaApp() {
             >
               {/* Active pill indicator */}
               {isActive && (
-                <motion.div
-                  layoutId="navPill"
+                <div
                   style={{
                     position: "absolute", top: -10, left: "50%",
                     transform: "translateX(-50%)",
@@ -1501,12 +1449,12 @@ export default function DanbaiwaApp() {
               }}>
                 {tab.label}
               </span>
-            </motion.button>
+            </button>
           );
         })}
       </div>
 
-      {/* ══════════════════ TRANSACTIONS MODAL ══════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TRANSACTIONS MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Modal show={showTransactionsModal} onClose={() => setShowTransactionsModal(false)}>
         <ModalHeader title="Transactions" onClose={() => setShowTransactionsModal(false)} />
 
@@ -1531,11 +1479,8 @@ export default function DanbaiwaApp() {
             {transactions.map((tx: any, idx: number) => {
               const isSuccess = tx.status === "success";
               return (
-                <motion.div
+                <div
                   key={idx}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.04 }}
                   style={{
                     background: T.bgElevated,
                     borderRadius: 16,
@@ -1570,7 +1515,7 @@ export default function DanbaiwaApp() {
                       margin: "0 0 3px", fontSize: 15, fontWeight: 700,
                       color: isSuccess ? T.green : T.textSecondary,
                     }}>
-                      ₦{tx.amount.toLocaleString()}
+                      â‚¦{tx.amount.toLocaleString()}
                     </p>
                     <span style={{
                       fontSize: 11, fontWeight: 700, textTransform: "capitalize",
@@ -1581,14 +1526,14 @@ export default function DanbaiwaApp() {
                       {tx.status}
                     </span>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         )}
       </Modal>
 
-      {/* ══════════════════ SETTINGS MODAL ══════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SETTINGS MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Modal show={showSettingsModal} onClose={() => setShowSettingsModal(false)}>
         <ModalHeader title="Settings" onClose={() => setShowSettingsModal(false)} />
 
@@ -1658,8 +1603,7 @@ export default function DanbaiwaApp() {
         <div style={{ height: 24 }} />
 
         {/* Change PIN */}
-        <motion.button
-          whileTap={{ scale: 0.96 }}
+        <button
           onClick={() => { setPinForm({ oldPin: "", newPin: "", confirmPin: "" }); setPinError(""); setShowPinChangeModal(true); }}
           style={{
             width: "100%", border: "none", borderRadius: 18,
@@ -1673,11 +1617,10 @@ export default function DanbaiwaApp() {
           }}
         >
           Change PIN
-        </motion.button>
+        </button>
 
         {/* Logout */}
-        <motion.button
-          whileTap={{ scale: 0.96 }}
+        <button
           onClick={handleLogout}
           style={{
             width: "100%", border: "none", borderRadius: 18,
@@ -1690,10 +1633,10 @@ export default function DanbaiwaApp() {
           }}
         >
           Sign Out
-        </motion.button>
+        </button>
       </Modal>
 
-      {/* ══════════════════ CHANGE PIN MODAL ══════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CHANGE PIN MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Modal show={showPinChangeModal} onClose={() => setShowPinChangeModal(false)}>
         <ModalHeader title="Change PIN" onClose={() => setShowPinChangeModal(false)} />
 
@@ -1708,7 +1651,7 @@ export default function DanbaiwaApp() {
               autoFocus
               value={pinForm.oldPin}
               onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -1728,7 +1671,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.newPin}
               onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -1748,7 +1691,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.confirmPin}
               onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -1771,8 +1714,7 @@ export default function DanbaiwaApp() {
           )}
 
           {/* Update PIN button */}
-          <motion.button
-            whileTap={{ scale: 0.96 }}
+          <button
             onClick={async () => {
               if (!pinForm.oldPin || !pinForm.newPin || !pinForm.confirmPin) {
                 setPinError("All fields are required");
@@ -1833,10 +1775,11 @@ export default function DanbaiwaApp() {
             ) : (
               "Update PIN"
             )}
-          </motion.button>
+          </button>
         </div>
       </Modal>
 
     </div>
   );
 }
+
