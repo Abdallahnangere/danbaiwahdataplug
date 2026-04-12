@@ -142,9 +142,15 @@ export default function DataPlansTab() {
         const res = await fetch("/api/admin/plans", { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch plans");
         const json = await res.json();
-        setPlans(json);
+        // Ensure json is an array
+        if (Array.isArray(json)) {
+          setPlans(json);
+        } else {
+          throw new Error("Invalid plans data");
+        }
       } catch (error) {
         toast.error("Failed to load plans");
+        setPlans([]);
       } finally {
         setLoading(false);
       }
@@ -152,6 +158,15 @@ export default function DataPlansTab() {
 
     fetchPlans();
   }, []);
+
+  const filteredPlans = plans.filter((plan) => {
+    const searchLower = formData.name?.toLowerCase() || "";
+    return (
+      (plan.name || "").toLowerCase().includes(searchLower) ||
+      (plan.networkName || "").toLowerCase().includes(searchLower) ||
+      (plan.sizeLabel || "").toLowerCase().includes(searchLower)
+    );
+  });
 
   const handleOpenCreate = () => {
     setFormData({
@@ -350,19 +365,19 @@ export default function DataPlansTab() {
           </thead>
           <tbody>
             {plans.map((plan) => (
-              <tr key={plan.id} style={{ borderBottom: `1px solid ${T.border}` }}>
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.name}</td>
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.networkName}</td>
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.sizeLabel}</td>
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.validity}</td>
+              <tr key={plan.id || Math.random()} style={{ borderBottom: `1px solid ${T.border}` }}>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.name || "—"}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.networkName || "—"}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.sizeLabel || "—"}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.validity || "—"}</td>
                 <td style={{ padding: "12px 8px", textAlign: "right", color: T.textPrimary, fontWeight: 600 }}>
                   ₦{(plan.price || 0).toLocaleString()}
                 </td>
                 <td style={{ padding: "12px 8px", color: T.textSecondary, fontSize: 11, fontFamily: "monospace" }}>
-                  {plan.apiAId ? plan.apiAId.slice(0, 8) + "..." : "—"}
+                  {plan.apiAId && String(plan.apiAId).length > 0 ? String(plan.apiAId).slice(0, 8) + "..." : "—"}
                 </td>
                 <td style={{ padding: "12px 8px", color: T.textSecondary, fontSize: 11, fontFamily: "monospace" }}>
-                  {plan.apiBId ? plan.apiBId.slice(0, 8) + "..." : "—"}
+                  {plan.apiBId && String(plan.apiBId).length > 0 ? String(plan.apiBId).slice(0, 8) + "..." : "—"}
                 </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
                   <button

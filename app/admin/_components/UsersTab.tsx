@@ -39,9 +39,15 @@ export default function UsersTab() {
         const res = await fetch("/api/admin/users", { credentials: "include" });
         if (!res.ok) throw new Error("Failed to fetch users");
         const json = await res.json();
-        setUsers(json);
+        // Ensure json is an array
+        if (Array.isArray(json)) {
+          setUsers(json);
+        } else {
+          throw new Error("Invalid users data");
+        }
       } catch (error) {
         toast.error("Failed to load users");
+        setUsers([]);
       } finally {
         setLoading(false);
       }
@@ -51,9 +57,12 @@ export default function UsersTab() {
   }, []);
 
   const filteredUsers = users.filter(
-    (user) =>
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    (user) => {
+      const emailLower = String(user.email || "").toLowerCase();
+      const fullNameLower = String(user.fullName || "").toLowerCase();
+      const queryLower = searchQuery.toLowerCase();
+      return emailLower.includes(queryLower) || fullNameLower.includes(queryLower);
+    }
   );
 
   if (loading) {
@@ -128,12 +137,12 @@ export default function UsersTab() {
           <tbody>
             {filteredUsers.map((user) => (
               <tr
-                key={user.id}
+                key={user.id || Math.random()}
                 style={{ borderBottom: `1px solid ${T.border}` }}
               >
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.email}</td>
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.fullName}</td>
-                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.phone}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.email || "—"}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.fullName || "—"}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.phone || "—"}</td>
                 <td style={{ padding: "12px 8px", textAlign: "right", color: T.textPrimary, fontWeight: 600 }}>
                   ₦{(user.balance || 0).toLocaleString()}
                 </td>
@@ -145,16 +154,16 @@ export default function UsersTab() {
                       borderRadius: 6,
                       fontSize: 11,
                       fontWeight: 600,
-                      background: user.tier === "user" ? `${T.blue}20` : `${T.textSecondary}20`,
-                      color: user.tier === "user" ? T.blue : T.textSecondary,
+                      background: (user.tier || "user") === "user" ? `${T.blue}20` : `${T.textSecondary}20`,
+                      color: (user.tier || "user") === "user" ? T.blue : T.textSecondary,
                       textTransform: "capitalize",
                     }}
                   >
-                    {user.tier}
+                    {user.tier || "user"}
                   </span>
                 </td>
                 <td style={{ padding: "12px 8px", color: T.textMuted, fontSize: 12 }}>
-                  {new Date(user.createdAt).toLocaleDateString()}
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}
                 </td>
                 </tr>
             ))}

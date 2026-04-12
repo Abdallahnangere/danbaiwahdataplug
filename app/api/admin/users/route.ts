@@ -33,13 +33,13 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(
       users.map((user) => ({
-        id: user.id,
-        email: user.email,
-        fullName: user.name || "",
-        phone: user.phone || "",
+        id: user.id || "",
+        email: user.email || "",
+        fullName: String(user.name || ""),
+        phone: String(user.phone || ""),
         balance: typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance || 0)),
-        tier: user.role || "user",
-        createdAt: user.createdAt,
+        tier: String(user.role || "user"),
+        createdAt: user.createdAt || new Date().toISOString(),
       })),
       { headers: utf8Headers }
     );
