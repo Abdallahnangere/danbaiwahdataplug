@@ -24,7 +24,8 @@ export async function queryOne<T = any>(sqlQuery: string, params?: any[]): Promi
 export async function execute(sqlQuery: string, params?: any[]): Promise<number> {
   try {
     const result = await sql(sqlQuery, params || []);
-    return result.count ?? 0;
+    // Neon returns an array; for mutations, we check if we have results
+    return Array.isArray(result) ? result.length : 0;
   } catch (error) {
     console.error("Database execute error:", error);
     throw error;

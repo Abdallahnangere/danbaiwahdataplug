@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { queryOne, execute } from "@/lib/database";
+import { queryOne, execute } from "@/lib/db";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
-import { queryOne } from "@/lib/database";
+import { queryOne } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
