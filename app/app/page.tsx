@@ -735,7 +735,7 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
-          toast.success(`â‚¦${(data.amount || 0).toLocaleString()} â€” ${selectedPlan.sizeLabel} sent to ${phone} âœ“`);
+          toast.success(`₦${(data.amount || 0).toLocaleString()} – ${selectedPlan.sizeLabel} sent to ${phone} ✓`);
           setSuccessData(data);
           setPinInput(["", "", "", "", "", ""]);
           setBuyDataStage(4);
@@ -1094,7 +1094,7 @@ export default function DanbaiwaApp() {
         {/* Left: greeting */}
         <div>
           <p style={{ margin: 0, fontSize: 13, color: T.textMuted, fontWeight: 500, letterSpacing: "0.2px" }}>
-            Welcome back ðŸ‘‹
+            Welcome back 👋
           </p>
           <h1 style={{
             margin: "2px 0 0", fontSize: 22, fontWeight: 800,

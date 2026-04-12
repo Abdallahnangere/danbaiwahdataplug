@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
       role: user.role as "USER" | "AGENT" | "ADMIN",
     });
 
-    // Set token in cookie
+    // Set token in cookie - using standardized name
     const cookieStore = await cookies();
-    cookieStore.set("sy_session", token, {
+    cookieStore.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

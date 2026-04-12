@@ -7,9 +7,9 @@ const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 
 export async function POST(request: NextRequest) {
   try {
-    // Clear the session cookie
+    // Clear the session cookie - using standardized name
     const cookieStore = await cookies();
-    cookieStore.delete("sy_session");
+    cookieStore.delete("auth_token");
 
     return NextResponse.json(
       { message: "Logged out successfully" },

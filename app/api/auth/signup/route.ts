@@ -90,13 +90,14 @@ export async function POST(request: NextRequest) {
       role: "USER" as const,
     });
 
-    // Set secure cookie
+    // Set secure cookie - using standardized name
     const cookieStore = await cookies();
     cookieStore.set("auth_token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60, // 7 days
+      path: "/",
     });
 
     return NextResponse.json(

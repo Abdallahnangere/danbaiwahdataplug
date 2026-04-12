@@ -6,8 +6,8 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-k
 
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const token = request.cookies.get("auth-token")?.value;
+    // Get token from cookies - using standardized auth_token name
+    const token = request.cookies.get("auth_token")?.value;
 
     if (!token) {
       return NextResponse.json(

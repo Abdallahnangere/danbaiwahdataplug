@@ -53,9 +53,9 @@ export async function getSessionUser(
     if (authHeader?.startsWith("Bearer ")) {
       token = authHeader.slice(7);
     } else {
-      // Try getting from sy_session cookie
+      // Try getting from auth_token cookie (standardized)
       const cookieStore = await cookies();
-      token = cookieStore.get("sy_session")?.value || null;
+      token = cookieStore.get("auth_token")?.value || null;
     }
 
     if (!token) {
