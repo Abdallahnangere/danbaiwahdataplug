@@ -10,9 +10,15 @@ export const prisma = new Proxy(
     get(target: any, prop: string | symbol) {
       if (!prismaInstance) {
         try {
+          const dbUrl = process.env.DATABASE_URL;
+          if (!dbUrl) {
+            throw new Error("DATABASE_URL environment variable not set");
+          }
+          
           prismaInstance =
             globalForPrisma.prisma ||
             new PrismaClient({
+              datasourceUrl: dbUrl,
               log: process.env.NODE_ENV === "development" ? ["query"] : [],
             });
 
