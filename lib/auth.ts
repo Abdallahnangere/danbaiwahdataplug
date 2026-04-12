@@ -2,9 +2,17 @@ import { jwtVerify, SignJWT } from "jose";
 import { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 
-const secret = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-super-secret-jwt-key-min-32-chars"
-);
+// Defer secret creation until first use
+let cachedSecret: Uint8Array | null = null;
+
+const getSecret = (): Uint8Array => {
+  if (!cachedSecret) {
+    cachedSecret = new TextEncoder().encode(
+      process.env.JWT_SECRET || "your-super-secret-jwt-key-min-32-chars"
+    );
+  }
+  return cachedSecret;
+};
 
 export interface JWTPayload {
   userId: string;
@@ -17,7 +25,7 @@ export async function signToken(payload: JWTPayload): Promise<string> {
   const token = await new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setExpirationTime("7d")
-    .sign(secret);
+    .sign(getSecret());
 
   return token;
 }
@@ -26,7 +34,7 @@ export async function verifyToken(
   token: string
 ): Promise<JWTPayload | null> {
   try {
-    const verified = await jwtVerify(token, secret);
+    const verified = await jwtVerify(token, getSecret());
     return verified.payload as JWTPayload;
   } catch (error) {
     return null;

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   const networks = [
     { id: 1, name: "MTN", logo: "/networks/mtn.png" },
