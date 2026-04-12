@@ -16,6 +16,7 @@ export const prisma = new Proxy(
           prismaInstance =
             globalForPrisma.prisma ||
             new PrismaClient({
+              datasourceUrl: process.env.DATABASE_URL,
               log: process.env.NODE_ENV === "development" ? ["query"] : [],
             });
 
