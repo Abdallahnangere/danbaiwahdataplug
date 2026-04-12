@@ -35,6 +35,15 @@ export async function GET(request: NextRequest) {
 
 async function createHandler(request: NextRequest) {
   try {
+    // Validate admin
+    const adminPassword = request.headers.get("x-admin-password");
+    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Dynamic import
+    const { prisma } = await import("@/lib/db");
+
     const body = await request.json();
     const {
       name,
@@ -94,5 +103,5 @@ async function createHandler(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  return withAdminGuard(request, createHandler);
+  return createHandler(request);
 }
