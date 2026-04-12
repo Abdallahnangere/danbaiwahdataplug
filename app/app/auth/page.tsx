@@ -174,10 +174,7 @@ export default function AuthPage() {
           padding: "20px",
         }}
       >
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
+        <div
           style={{
             background: T.card,
             borderRadius: 24,
@@ -189,10 +186,7 @@ export default function AuthPage() {
           }}
         >
           {/* Logo */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
+          <div
             style={{
               width: 72,
               height: 72,
@@ -215,7 +209,7 @@ export default function AuthPage() {
                 objectFit: "cover",
               }}
             />
-          </motion.div>
+          </div>
 
           {/* Title */}
           <h1 style={{ textAlign: "center", fontSize: 24, fontWeight: 700, color: T.text, margin: "0 0 8px" }}>
@@ -225,13 +219,10 @@ export default function AuthPage() {
             {mode === "login" ? "Sign in to your account" : "Get started in seconds"}
           </p>
 
-          <AnimatePresence mode="wait">
+          <>
             {mode === "login" ? (
-              <motion.form
+              <form
                 key="login"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
                 onSubmit={handleLogin}
                 style={{ display: "flex", flexDirection: "column", gap: 16 }}
               >
@@ -318,11 +309,9 @@ export default function AuthPage() {
                   </div>
                 </div>
 
-                <motion.button
+                <button
                   type="submit"
                   disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   style={{
                     marginTop: 20,
                     padding: "14px 24px",
@@ -343,7 +332,7 @@ export default function AuthPage() {
                 >
                   {loading && <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />}
                   {loading ? "Signing in..." : "Sign In"}
-                </motion.button>
+                </button>
 
                 <p style={{ textAlign: "center", fontSize: 13, color: T.textMid, marginTop: 16 }}>
                   No account?{" "}
@@ -359,13 +348,10 @@ export default function AuthPage() {
                     Create
                   </button>
                 </p>
-              </motion.form>
+              </form>
             ) : (
-              <motion.form
+              <form
                 key="signup"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
                 onSubmit={handleSignup}
                 style={{ display: "flex", flexDirection: "column", gap: 16 }}
               >
@@ -523,11 +509,9 @@ export default function AuthPage() {
                   <label style={{ fontSize: 12, color: T.textMid, cursor: "pointer" }}>I agree to terms</label>
                 </div>
 
-                <motion.button
+                <button
                   type="submit"
                   disabled={loading}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
                   style={{
                     marginTop: 20,
                     padding: "14px 24px",
@@ -548,7 +532,7 @@ export default function AuthPage() {
                 >
                   {loading && <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />}
                   {loading ? "Creating..." : "Create Account"}
-                </motion.button>
+                </button>
 
                 <p style={{ textAlign: "center", fontSize: 13, color: T.textMid, marginTop: 16 }}>
                   Have account?{" "}
@@ -565,10 +549,10 @@ export default function AuthPage() {
                     Sign in
                   </button>
                 </p>
-              </motion.form>
+              </form>
             )}
-          </AnimatePresence>
-        </motion.div>
+          </>
+        </div>
       </div>
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </>
