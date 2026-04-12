@@ -8,6 +8,8 @@ import {
   Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { BuyDataComponent } from "@/components/data/BuyData";
+import { BuyAirtimeComponent } from "@/components/data/BuyAirtime";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────
 const T = {
@@ -621,12 +623,16 @@ export default function DanbaiwaApp() {
             </motion.div>
           )}
 
-          {/* ══ SERVICE TABS (coming soon) ══ */}
+          {/* ══ SERVICE TABS ══ */}
           {activeTab === "data" && (
-            <ComingSoon key="data" icon={Wifi} label="Data" color={T.services.data.icon} />
+            <div style={{ padding: "20px" }}>
+              <BuyDataComponent />
+            </div>
           )}
           {activeTab === "airtime" && (
-            <ComingSoon key="airtime" icon={Phone} label="Airtime" color={T.services.airtime.icon} />
+            <div style={{ padding: "20px" }}>
+              <BuyAirtimeComponent />
+            </div>
           )}
           {activeTab === "cable" && (
             <ComingSoon key="cable" icon={Tv} label="Cable TV" color={T.services.cable.icon} />
