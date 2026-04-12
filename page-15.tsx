@@ -86,7 +86,7 @@ export default function DanbaiwaApp() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("/api/auth/me");
+        const res = await fetch("/api/auth/me", { credentials: "include" });
         if (!res.ok) return router.push("/app/auth");
         const data = await res.json();
         setUser(data);
@@ -104,7 +104,7 @@ export default function DanbaiwaApp() {
     if (!showTransactionsModal) return;
     (async () => {
       try {
-        const res = await fetch("/api/transactions");
+        const res = await fetch("/api/transactions", { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
@@ -115,7 +115,7 @@ export default function DanbaiwaApp() {
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
       router.push("/app/auth");
     } catch {
       toast.error("Logout failed");
@@ -428,10 +428,9 @@ export default function DanbaiwaApp() {
                   display: "flex", justifyContent: "space-between",
                   alignItems: "center", marginBottom: 18, position: "relative",
                 }}>
-                  <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <span style={{
-                      fontSize: 20, fontWeight: 700, color: "rgba(255,255,255,0.8)",
-                      alignSelf: "flex-start", marginTop: 4,
+                      fontSize: 44, fontWeight: 700, color: "rgba(255,255,255,0.8)",
                     }}>₦</span>
                     <motion.span
                       key={balanceVisible ? "vis" : "hid"}
@@ -444,7 +443,7 @@ export default function DanbaiwaApp() {
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {balanceVisible ? user.balance.toLocaleString() : "••••••"}
+                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "••••••"}
                     </motion.span>
                   </div>
 
@@ -903,7 +902,9 @@ export default function DanbaiwaApp() {
             <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>Current PIN</p>
             <input
               type="password"
+              inputMode="numeric"
               maxLength={6}
+              autoFocus
               value={pinForm.oldPin}
               onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
               placeholder="••••••"
@@ -922,6 +923,7 @@ export default function DanbaiwaApp() {
             <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>New PIN</p>
             <input
               type="password"
+              inputMode="numeric"
               maxLength={6}
               value={pinForm.newPin}
               onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, "") })}
@@ -941,6 +943,7 @@ export default function DanbaiwaApp() {
             <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>Confirm PIN</p>
             <input
               type="password"
+              inputMode="numeric"
               maxLength={6}
               value={pinForm.confirmPin}
               onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value.replace(/\D/g, "") })}
@@ -990,6 +993,7 @@ export default function DanbaiwaApp() {
               try {
                 const res = await fetch("/api/auth/change-pin", {
                   method: "POST",
+                  credentials: "include",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ currentPin: pinForm.oldPin, newPin: pinForm.newPin }),
                 });
