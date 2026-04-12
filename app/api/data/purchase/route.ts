@@ -6,33 +6,50 @@ import bcrypt from "bcryptjs";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+// Logging helper
+const log = (step: string, data: any) => {
+  console.log(`[PURCHASE] ${step}:`, JSON.stringify(data, null, 2));
+};
+
 export async function POST(request: NextRequest) {
   let transactionId: string | null = null;
 
   try {
+    log("START", { timestamp: new Date().toISOString() });
+
     // 1. AUTHENTICATE USER
     const sessionUser = await getSessionUser(request);
     if (!sessionUser) {
+      log("AUTH_FAILED", { reason: "No session user" });
       return NextResponse.json(
         { error: "Unauthorized. Please log in." },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
 
     const userId = sessionUser.userId;
+    log("AUTH_SUCCESS", { userId });
 
     // 2. PARSE REQUEST BODY
     const body = await request.json();
     const { planId, phone, pin } = body;
+    log("REQUEST_BODY", { planId, phone, pinProvided: !!pin });
 
     if (!planId || !phone || !pin) {
+      log("VALIDATION_ERROR", { missingFields: { planId: !planId, phone: !phone, pin: !pin } });
       return NextResponse.json(
         { error: "planId, phone, and pin are required" },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
 
-    // 3. RE-VALIDATE PIN
+    // 3. VALIDATE PIN
     const user = await queryOne<{
       pin: string | null;
       balance: number;
@@ -43,26 +60,42 @@ export async function POST(request: NextRequest) {
     );
 
     if (!user) {
+      log("USER_NOT_FOUND", { userId });
       return NextResponse.json(
         { error: "User not found" },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
 
+    log("USER_FETCHED", { userId, hasPin: !!user.pin, balance: user.balance });
+
     if (!user.pin) {
+      log("PIN_NOT_SET", { userId });
       return NextResponse.json(
         { error: "PIN not set. Please set your PIN first." },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
 
     const isPinValid = await bcrypt.compare(pin, user.pin);
     if (!isPinValid) {
+      log("PIN_INVALID", { userId, submittedPin: pin });
       return NextResponse.json(
         { error: "Incorrect PIN." },
-        { status: 401 }
+        { 
+          status: 401,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
+
+    log("PIN_VALID", { userId });
 
     // 4. LOAD PLAN
     const plan = await queryOne<{
@@ -81,237 +114,317 @@ export async function POST(request: NextRequest) {
       [planId]
     );
 
-    if (!plan || !plan.isActive) {
+    if (!plan) {
+      log("PLAN_NOT_FOUND", { planId });
       return NextResponse.json(
-        { error: "Plan not available." },
-        { status: 404 }
+        { error: "Plan not found" },
+        { 
+          status: 404,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
 
+    if (!plan.isActive) {
+      log("PLAN_INACTIVE", { planId, isActive: plan.isActive });
+      return NextResponse.json(
+        { error: "Plan not available." },
+        { 
+          status: 404,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
+      );
+    }
+
+    log("PLAN_LOADED", { planId, planName: plan.name, price: plan.price, activeApi: plan.activeApi });
+
     // 5. BALANCE CHECK
     const userBalance = typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance));
-    if (!userBalance || userBalance < plan.price) {
+    log("BALANCE_CHECK", { userBalance, planPrice: plan.price, sufficient: userBalance >= plan.price });
+
+    if (userBalance < plan.price) {
+      log("INSUFFICIENT_BALANCE", { userBalance, required: plan.price, shortfall: plan.price - userBalance });
       return NextResponse.json(
         { error: "Insufficient wallet balance." },
-        { status: 402 }
+        { 
+          status: 402,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
       );
     }
 
     // 6. GENERATE REFERENCE
     const customerRef = `DAT-${Date.now()}-${userId.slice(-6)}`;
+    log("REFERENCE_GENERATED", { customerRef });
 
     // 7. CREATE PENDING TRANSACTION and debit wallet
+    const insertResult = await queryOne<{ id: string }>(
+      `INSERT INTO "DataTransaction" 
+       (id, "userId", "planId", phone, "networkId", amount, "providerUsed", "customerRef", 
+        status, "balanceBefore", "createdAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+       RETURNING id`,
+      [
+        userId,
+        planId,
+        phone,
+        plan.networkId,
+        plan.price,
+        plan.activeApi,
+        customerRef,
+        "PENDING",
+        userBalance,
+      ]
+    );
+
+    if (!insertResult) {
+      log("TRANSACTION_INSERT_FAILED", { planId, userId });
+      throw new Error("Failed to create transaction");
+    }
+
+    transactionId = insertResult.id;
+    log("TRANSACTION_CREATED", { transactionId, status: "PENDING" });
+
+    // Debit wallet
+    const updateResult = await queryOne<{ balance: number }>(
+      `UPDATE "User"
+       SET balance = balance - $1
+       WHERE id = $2
+       RETURNING balance`,
+      [plan.price, userId]
+    );
+
+    if (!updateResult) {
+      throw new Error("Failed to update balance");
+    }
+
+    const balanceAfterDebit = typeof updateResult.balance === 'number' ? updateResult.balance : parseFloat(String(updateResult.balance));
+    log("WALLET_DEBITED", { transactionId, debitAmount: plan.price, newBalance: balanceAfterDebit });
+
+    // 8. CALL PROVIDER
+    let providerRef: string | null = null;
+    let providerResponse: string | null = null;
+    let providerSuccess = false;
+    let providerStatus: number | null = null;
+
     try {
-      // Insert transaction
-      const insertResult = await queryOne<{ id: string }>(
-        `INSERT INTO "DataTransaction" 
-         (id, "userId", "planId", phone, "networkId", amount, "providerUsed", "customerRef", 
-          status, "balanceBefore", "createdAt")
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
-         RETURNING id`,
-        [
-          userId,
-          planId,
+      if (plan.activeApi === "A") {
+        // SMEPlug API
+        const payloadA = {
+          network_id: plan.networkId,
+          plan_id: plan.apiAId,
           phone,
-          plan.networkId,
-          plan.price,
-          plan.activeApi,
-          customerRef,
-          "PENDING",
-          userBalance,
-        ]
+          customer_reference: customerRef,
+        };
+        log("PROVIDER_A_REQUEST", payloadA);
+
+        const smePlugResponse = await fetch(
+          `${process.env.SMEPLUG_BASE_URL}/data/purchase`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.SMEPLUG_TOKEN}`,
+              "Content-Type": "application/json; charset=utf-8",
+            },
+            body: JSON.stringify(payloadA),
+          }
+        );
+
+        providerStatus = smePlugResponse.status;
+        const smePlugData = await smePlugResponse.json();
+        log("PROVIDER_A_RESPONSE", { 
+          status: providerStatus, 
+          data: smePlugData 
+        });
+
+        if (smePlugData.status === true) {
+          providerSuccess = true;
+          providerRef = smePlugData.reference || smePlugData.ref || customerRef;
+          providerResponse = smePlugData.msg || "Success";
+          log("PROVIDER_A_SUCCESS", { providerRef, message: providerResponse });
+        } else {
+          providerResponse = smePlugData.msg || "Provider request failed";
+          log("PROVIDER_A_FAILED", { message: providerResponse, data: smePlugData });
+        }
+      } else if (plan.activeApi === "B") {
+        // Provider B API
+        const payloadB = {
+          plan: plan.apiBId,
+          mobile_number: phone,
+          network: plan.networkId,
+        };
+        log("PROVIDER_B_REQUEST", payloadB);
+
+        const providerBResponse = await fetch(
+          `${process.env.PROVIDER_B_BASE_URL}/data`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${process.env.PROVIDER_B_TOKEN}`,
+              Accept: "application/json",
+              "Content-Type": "application/json; charset=utf-8",
+            },
+            body: JSON.stringify(payloadB),
+          }
+        );
+
+        providerStatus = providerBResponse.status;
+        const providerBData = await providerBResponse.json();
+        log("PROVIDER_B_RESPONSE", { 
+          status: providerStatus, 
+          data: providerBData 
+        });
+
+        if (
+          providerBData.data &&
+          providerBData.data.Status === "successful"
+        ) {
+          providerSuccess = true;
+          providerRef = providerBData.data.ident || customerRef;
+          providerResponse = providerBData.data.api_response || "Success";
+          log("PROVIDER_B_SUCCESS", { providerRef, message: providerResponse });
+        } else {
+          providerResponse =
+            providerBData.data?.api_response || "Provider request failed";
+          log("PROVIDER_B_FAILED", { message: providerResponse, data: providerBData });
+        }
+      } else {
+        log("UNKNOWN_PROVIDER", { activeApi: plan.activeApi });
+        throw new Error(`Unknown provider: ${plan.activeApi}`);
+      }
+    } catch (providerError: any) {
+      log("PROVIDER_ERROR", { 
+        error: providerError.message, 
+        stack: providerError.stack 
+      });
+      providerSuccess = false;
+      providerResponse = `Provider error: ${providerError.message}`;
+    }
+
+    // 9. HANDLE PROVIDER RESPONSE
+    if (!providerSuccess) {
+      log("PROVIDER_FAILED_REFUNDING", { transactionId });
+      
+      // Mark transaction as failed
+      await execute(
+        `UPDATE "DataTransaction"
+         SET status = $1, "providerResponse" = $2
+         WHERE id = $3`,
+        ["FAILED", providerResponse, transactionId]
       );
 
-      if (!insertResult) {
-        throw new Error("Failed to create transaction");
-      }
-
-      transactionId = insertResult.id;
-
-      // Debit wallet
-      const updateResult = await queryOne<{ balance: number }>(
+      // Refund wallet
+      await execute(
         `UPDATE "User"
-         SET balance = balance - $1
-         WHERE id = $2
-         RETURNING balance`,
+         SET balance = balance + $1
+         WHERE id = $2`,
         [plan.price, userId]
       );
 
-      if (!updateResult) {
-        throw new Error("Failed to update balance");
-      }
+      log("REFUND_COMPLETED", { transactionId, refundAmount: plan.price });
 
-      const balanceAfterDebit = typeof updateResult.balance === 'number' ? updateResult.balance : parseFloat(String(updateResult.balance));
+      const errorMsg = providerResponse || "Provider failed to deliver data";
+      log("RESPONSE_422", { error: errorMsg, transactionId });
 
-      // 8. CALL PROVIDER
-      let providerRef: string | null = null;
-      let providerResponse: string | null = null;
-      let providerSuccess = false;
-
-      try {
-        if (plan.activeApi === "A") {
-          // SMEPlug API
-          const smePlugResponse = await fetch(
-            `${process.env.SMEPLUG_BASE_URL}/data/purchase`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${process.env.SMEPLUG_TOKEN}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                network_id: plan.networkId,
-                plan_id: plan.apiAId,
-                phone,
-                customer_reference: customerRef,
-              }),
-            }
-          );
-
-          const smePlugData = await smePlugResponse.json();
-
-          if (smePlugData.status === true) {
-            providerSuccess = true;
-            providerRef = smePlugData.reference || smePlugData.ref || customerRef;
-            providerResponse = smePlugData.msg || "Success";
-          } else {
-            providerResponse = smePlugData.msg || "Provider request failed";
-          }
-        } else if (plan.activeApi === "B") {
-          // Provider B API
-          const providerBResponse = await fetch(
-            `${process.env.PROVIDER_B_BASE_URL}/data`,
-            {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${process.env.PROVIDER_B_TOKEN}`,
-                Accept: "application/json",
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                plan: plan.apiBId,
-                mobile_number: phone,
-                network: plan.networkId,
-              }),
-            }
-          );
-
-          const providerBData = await providerBResponse.json();
-
-          if (
-            providerBData.data &&
-            providerBData.data.Status === "successful"
-          ) {
-            providerSuccess = true;
-            providerRef = providerBData.data.ident || customerRef;
-            providerResponse = providerBData.data.api_response || "Success";
-          } else {
-            providerResponse =
-              providerBData.data?.api_response || "Provider request failed";
-          }
+      return NextResponse.json(
+        {
+          error: `${errorMsg}. Your balance has been refunded.`,
+          transactionId,
+          refunded: true,
+        },
+        { 
+          status: 422,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
         }
-      } catch (providerError) {
-        console.error("Provider API error:", providerError);
-        providerSuccess = false;
-        providerResponse = "Network error calling provider";
-      }
+      );
+    }
 
-      // 9. HANDLE PROVIDER RESPONSE
-      if (!providerSuccess) {
-        // Transaction failed - REFUND
-        try {
-          // Mark transaction as failed
+    // 10. ON SUCCESS - UPDATE TRANSACTION
+    log("MARKING_TRANSACTION_SUCCESS", { transactionId });
+    
+    await execute(
+      `UPDATE "DataTransaction"
+       SET status = $1, "providerRef" = $2, "providerResponse" = $3, "balanceAfter" = $4, "updatedAt" = NOW()
+       WHERE id = $5`,
+      ["SUCCESS", providerRef || customerRef, providerResponse, balanceAfterDebit, transactionId]
+    );
+
+    log("TRANSACTION_COMPLETED", { transactionId, status: "SUCCESS", providerRef });
+
+    // 11. RETURN SUCCESS
+    const successResponse = {
+      message: "Data delivered successfully. ₦" + plan.price.toLocaleString() + " debited from your wallet.",
+      transactionId,
+      reference: providerRef || customerRef,
+      plan: plan.name,
+      phone,
+      amount: plan.price,
+      newBalance: balanceAfterDebit,
+    };
+    
+    log("RESPONSE_200", successResponse);
+
+    return NextResponse.json(successResponse, {
+      status: 200,
+      headers: { "Content-Type": "application/json; charset=utf-8" }
+    });
+
+  } catch (error: any) {
+    log("FATAL_ERROR", { 
+      error: error.message, 
+      stack: error.stack,
+      transactionId
+    });
+
+    // If transaction was created and we hit an error, try to refund and mark as failed
+    if (transactionId) {
+      try {
+        const existingTransaction = await queryOne<{
+          status: string;
+          amount: number;
+        }>(
+          `SELECT status, amount FROM "DataTransaction" WHERE id = $1`,
+          [transactionId]
+        );
+
+        if (existingTransaction && existingTransaction.status === "PENDING") {
+          log("AUTO_REFUND_ATTEMPT", { transactionId });
+          
+          // Mark as failed
           await execute(
             `UPDATE "DataTransaction"
-             SET status = $1, "providerResponse" = $2
-             WHERE id = $3`,
-            ["FAILED", providerResponse, transactionId]
+             SET status = $1, "updatedAt" = NOW()
+             WHERE id = $2`,
+            ["FAILED", transactionId]
           );
 
           // Refund wallet
-          await execute(
-            `UPDATE "User"
-             SET balance = balance + $1
-             WHERE id = $2`,
-            [plan.price, userId]
-          );
-        } catch (refundError) {
-          console.error("Error during refund:", refundError);
-        }
-
-        return NextResponse.json(
-          {
-            error:
-              "Provider failed to deliver data. Your balance has been refunded.",
-          },
-          { status: 422 }
-        );
-      }
-
-      // 10. ON SUCCESS - UPDATE TRANSACTION
-      await execute(
-        `UPDATE "DataTransaction"
-         SET status = $1, "providerRef" = $2, "providerResponse" = $3, "balanceAfter" = $4
-         WHERE id = $5`,
-        ["SUCCESS", providerRef || undefined, providerResponse || undefined, balanceAfterDebit, transactionId]
-      );
-
-      // 11. RETURN SUCCESS
-      return NextResponse.json({
-        message: "Data delivered successfully.",
-        reference: providerRef || customerRef,
-        plan: plan.name,
-        phone,
-        amount: plan.price,
-      });
-    } catch (txError) {
-      console.error("Transaction error:", txError);
-
-      // If transaction was created and we hit an error, try to refund and mark as failed
-      if (transactionId) {
-        try {
-          const existingTransaction = await queryOne<{
-            status: string;
-            amount: number;
-            balanceBefore: number;
-          }>(
-            `SELECT status, amount, "balanceBefore" FROM "DataTransaction" WHERE id = $1`,
-            [transactionId]
-          );
-
-          if (existingTransaction && existingTransaction.status === "PENDING") {
-            // Mark as failed
-            await execute(
-              `UPDATE "DataTransaction"
-               SET status = $1
-               WHERE id = $2`,
-              ["FAILED", transactionId]
-            );
-
-            // Refund wallet
+          const sessionUser = await getSessionUser(request);
+          if (sessionUser) {
             const amount = typeof existingTransaction.amount === 'number' ? existingTransaction.amount : parseFloat(String(existingTransaction.amount));
             await execute(
               `UPDATE "User"
                SET balance = balance + $1
                WHERE id = $2`,
-              [amount, userId]
+              [amount, sessionUser.userId]
             );
+            log("AUTO_REFUND_SUCCESS", { transactionId, refundAmount: amount });
           }
-        } catch (cleanupError) {
-          console.error("Error during cleanup:", cleanupError);
         }
+      } catch (cleanupError: any) {
+        log("AUTO_REFUND_FAILED", { transactionId, error: cleanupError.message });
       }
-
-      throw txError;
     }
-  } catch (error) {
-    console.error("Purchase error:", error);
+
     return NextResponse.json(
       {
-        error:
-          "An unexpected error occurred. Please contact support.",
+        error: "An unexpected error occurred. Please contact support.",
+        details: error.message,
       },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: { "Content-Type": "application/json; charset=utf-8" }
+      }
     );
   }
 }

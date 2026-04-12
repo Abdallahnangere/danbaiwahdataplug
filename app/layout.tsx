@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "DANBAIWA DATA PLUG — Buy Data Instantly | Best Prices NGN",
+  title: "DANBAIWA DATA PLUG — Buy Data Instantly | Best Prices ₦",
   description:
     "🚀 Ultimate data & airtime platform. Buy data for MTN, GLO, Airtel & 9Mobile instantly. Electricity, Cable TV & Exam PINs too!",
   keywords: ["buy data", "cheap data", "MTN data", "GLO data", "Airtel data", "9mobile data", "Nigeria data", "airtime", "cable tv", "electricity"],
