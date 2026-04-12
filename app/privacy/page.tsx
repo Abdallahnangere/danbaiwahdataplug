@@ -75,7 +75,7 @@ export default function PrivacyPage() {
           </p>
         </div>
 
-        {/* Sections */}}
+        {/* Sections */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, marginBottom: 40 }}>
           {sections.map((section, idx) => (
             <div
