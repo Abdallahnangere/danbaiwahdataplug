@@ -50,7 +50,7 @@ export default function AdminDashboard() {
         
         // Check if admin
         if (data.role !== "ADMIN") {
-          router.push("/");
+          router.push("/app");
           return;
         }
         

@@ -666,7 +666,7 @@ export default function DanbaiwaApp() {
                     color: T.blue,
                     marginTop: 4,
                   }}>
-                    â‚¦{(plan.price || 0).toLocaleString()}
+                    ₦{(plan.price || 0).toLocaleString()}
                   </div>
                 </button>
               ))}
@@ -827,7 +827,7 @@ export default function DanbaiwaApp() {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
               <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                â‚¦{(selectedPlan?.price || 0).toLocaleString()}
+                ₦{(selectedPlan?.price || 0).toLocaleString()}
               </span>
             </div>
           </div>
@@ -974,7 +974,7 @@ export default function DanbaiwaApp() {
                   Amount Paid
                 </div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                  â‚¦{(successData?.amount || 0).toLocaleString()}
+                  ₦{(successData?.amount || 0).toLocaleString()}
                 </div>
               </div>
               <div>

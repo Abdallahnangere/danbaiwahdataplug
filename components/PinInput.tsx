@@ -121,7 +121,7 @@ export default function PinInput({
       <style>{shakeStyle}</style>
       {value.map((digit, i) => (
         <input
-          key={i}
+          key={`pin-digit-${i}`}
           ref={(el) => {
             inputRefs.current[i] = el;
           }}
