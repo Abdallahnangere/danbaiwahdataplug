@@ -9,12 +9,12 @@
 // - Relations: User -> DataTransaction[], DataPlan -> DataTransaction[]
 
 generator client {
-  provider = "prisma-client"
-  output   = "../lib/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─────────────────────────────────────────────────────────────
