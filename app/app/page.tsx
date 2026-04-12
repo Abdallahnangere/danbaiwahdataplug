@@ -1482,7 +1482,7 @@ export default function DanbaiwaApp() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {transactions.map((tx: any, idx: number) => {
-              const isSuccess = tx.status === "success";
+              const isSuccess = tx.status === "SUCCESS";
               return (
                 <div
                   key={idx}
@@ -1520,7 +1520,7 @@ export default function DanbaiwaApp() {
                       margin: "0 0 3px", fontSize: 15, fontWeight: 700,
                       color: isSuccess ? T.green : T.textSecondary,
                     }}>
-                      â‚¦{tx.amount.toLocaleString()}
+                      ₦{tx.amount.toLocaleString()}
                     </p>
                     <span style={{
                       fontSize: 11, fontWeight: 700, textTransform: "capitalize",

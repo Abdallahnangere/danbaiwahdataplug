@@ -139,9 +139,10 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Validate admin
-    const adminPassword = request.headers.get("x-admin-password");
-    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+    // Check admin session cookie
+    const adminSession = request.cookies.get("admin-session");
+    
+    if (!adminSession) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
