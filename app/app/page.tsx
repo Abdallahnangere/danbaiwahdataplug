@@ -1504,13 +1504,18 @@ export default function DanbaiwaApp() {
                     }}>
                       <History size={18} color={isSuccess ? T.green : T.red} strokeWidth={2} />
                     </div>
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <p style={{ margin: "0 0 3px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>
-                        {tx.description || tx.type}
+                        {tx.planName || "Data Plan"} · {tx.networkName || "Network"}
                       </p>
-                      <p style={{ margin: 0, fontSize: 12, color: T.textMuted }}>
+                      <p style={{ margin: "0 0 3px", fontSize: 12, color: T.textSecondary }}>
+                        📱 {tx.phone || "N/A"}
+                      </p>
+                      <p style={{ margin: 0, fontSize: 11, color: T.textMuted }}>
                         {new Date(tx.createdAt).toLocaleDateString("en-NG", {
                           day: "numeric", month: "short", year: "numeric",
+                        })} · {new Date(tx.createdAt).toLocaleTimeString("en-NG", {
+                          hour: "2-digit", minute: "2-digit", second: "2-digit",
                         })}
                       </p>
                     </div>

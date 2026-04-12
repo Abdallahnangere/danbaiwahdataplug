@@ -49,9 +49,8 @@ export async function GET(request: NextRequest) {
 
     const recentTransactions = allTransactions.slice(0, 10).map((t: any) => ({
       id: t.id,
-      email: t.email || "N/A",
-      name: t.name || "N/A",
-      plan: t.planName || "N/A",
+      user: { email: t.email || "N/A" },
+      plan: { name: t.planName || "N/A" },
       phone: t.phone,
       amount: typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0)),
       status: t.status,

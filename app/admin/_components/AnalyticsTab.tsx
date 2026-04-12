@@ -157,8 +157,8 @@ export default function AnalyticsTab() {
                     borderRadius: 6,
                     fontSize: 11,
                     fontWeight: 600,
-                    background: tx.status === "successful" ? `${T.green}20` : `${T.red}20`,
-                    color: tx.status === "successful" ? T.green : T.red,
+                    background: tx.status === "SUCCESS" ? `${T.green}20` : `${T.red}20`,
+                    color: tx.status === "SUCCESS" ? T.green : T.red,
                   }}>
                     {tx.status}
                   </span>
