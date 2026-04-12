@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAdminGuard } from "@/lib/adminGuard";
 import { prisma } from "@/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 async function patchHandler(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

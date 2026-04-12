@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAdminGuard } from "@/lib/adminGuard";
 import { prisma } from "@/lib/db";
 
+export const dynamic = 'force-dynamic';
+
 async function handler(request: NextRequest) {
   try {
     const [users, transactions, recentTxs] = await Promise.all([
