@@ -127,10 +127,8 @@ export default function UsersTab() {
           </thead>
           <tbody>
             {filteredUsers.map((user) => (
-              <motion.tr
+              <tr
                 key={user.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
                 style={{ borderBottom: `1px solid ${T.border}` }}
               >
                 <td style={{ padding: "12px 8px", color: T.textSecondary }}>{user.email}</td>
@@ -158,7 +156,7 @@ export default function UsersTab() {
                 <td style={{ padding: "12px 8px", color: T.textMuted, fontSize: 12 }}>
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
-              </motion.tr>
+                </tr>
             ))}
           </tbody>
         </table>

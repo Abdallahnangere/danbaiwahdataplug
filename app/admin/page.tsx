@@ -86,9 +86,7 @@ export default function AdminDashboard() {
         gap: 20,
         fontFamily: font,
       }}>
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        <div
           style={{
             width: 80,
             height: 80,
@@ -100,8 +98,8 @@ export default function AdminDashboard() {
             boxShadow: `0 0 40px rgba(59,130,246,0.3)`,
           }}
         >
-          <Loader2 size={36} color="white" />
-        </motion.div>
+          <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
+        </div>
         <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
           Loading admin dashboard…
         </p>
@@ -151,8 +149,7 @@ export default function AdminDashboard() {
             Manage your platform
           </p>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.95 }}
+        <button
           onClick={handleLogout}
           style={{
             display: "flex",
@@ -171,7 +168,7 @@ export default function AdminDashboard() {
         >
           <LogOut size={16} />
           Logout
-        </motion.button>
+        </button>
       </div>
 
       {/* Tab navigation */}
@@ -184,9 +181,8 @@ export default function AdminDashboard() {
         flexShrink: 0,
       }}>
         {TABS.map(({ id, label, icon: Icon }) => (
-          <motion.button
+          <button
             key={id}
-            whileTap={{ scale: 0.95 }}
             onClick={() => setActiveTab(id)}
             style={{
               display: "flex",
@@ -207,7 +203,7 @@ export default function AdminDashboard() {
           >
             <Icon size={16} />
             {label}
-          </motion.button>
+          </button>
         ))}
       </div>
 

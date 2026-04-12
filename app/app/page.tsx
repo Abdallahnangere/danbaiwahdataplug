@@ -165,18 +165,17 @@ export default function DanbaiwaApp() {
         fontFamily: font,
       }}>
         {/* Pulsing brand circle */}
-        <motion.div
-          animate={{ scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+        <div
           style={{
             width: 80, height: 80, borderRadius: 24,
             background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: `0 0 40px ${T.services.data.glow}`,
+            animation: "pulse 1.8s ease-in-out infinite",
           }}
         >
-          <Loader2 size={36} color="white" />
-        </motion.div>
+          <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
+        </div>
         <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
           Securing your session…
         </p>
@@ -204,10 +203,9 @@ export default function DanbaiwaApp() {
   const Modal = ({
     show, onClose, children,
   }: { show: boolean; onClose: () => void; children: React.ReactNode }) => (
-    <AnimatePresence>
+    <>
       {show && (
-        <motion.div
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        <div
           onClick={onClose}
           style={{
             position: "fixed", inset: 0, zIndex: 200,
@@ -215,9 +213,7 @@ export default function DanbaiwaApp() {
             display: "flex", alignItems: "flex-end",
           }}
         >
-          <motion.div
-            initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
+          <div
             onClick={(e) => e.stopPropagation()}
             style={{
               background: T.bgCard,
@@ -231,10 +227,10 @@ export default function DanbaiwaApp() {
             }}
           >
             {children}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       )}
-    </AnimatePresence>
+    </>
   );
 
   // Modal header row
@@ -243,8 +239,8 @@ export default function DanbaiwaApp() {
       <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: T.textPrimary, letterSpacing: "-0.5px" }}>
         {title}
       </h2>
-      <motion.button
-        whileTap={{ scale: 0.85 }} onClick={onClose}
+      <button
+        onClick={onClose}
         style={{
           background: T.bgElevated, border: `1px solid ${T.border}`,
           borderRadius: 12, width: 38, height: 38,
@@ -253,7 +249,7 @@ export default function DanbaiwaApp() {
         }}
       >
         <X size={18} />
-      </motion.button>
+      </button>
     </div>
   );
 
@@ -261,12 +257,10 @@ export default function DanbaiwaApp() {
   const ComingSoon = ({
     icon: Icon, label, color,
   }: { icon: any; label: string; color: string }) => (
-    <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    <div
       style={{ padding: "20px 20px 120px", fontFamily: font }}
     >
-      <motion.button
-        whileTap={{ scale: 0.9 }}
+      <button
         onClick={() => setActiveTab("home")}
         style={{
           background: T.bgElevated, border: `1px solid ${T.border}`,
@@ -277,22 +271,21 @@ export default function DanbaiwaApp() {
         }}
       >
         <ArrowLeft size={16} /> Back
-      </motion.button>
+      </button>
 
       <div style={{ textAlign: "center", padding: "40px 20px" }}>
-        <motion.div
-          animate={{ scale: [1, 1.08, 1] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
+        <div
           style={{
             width: 96, height: 96, borderRadius: 28, margin: "0 auto 32px",
             background: `radial-gradient(circle, ${color}22, ${color}08)`,
             border: `1.5px solid ${color}33`,
             display: "flex", alignItems: "center", justifyContent: "center",
             boxShadow: `0 0 40px ${color}22`,
+            animation: "pulse 2.5s ease-in-out infinite",
           }}
         >
           <Icon size={44} color={color} strokeWidth={1.5} />
-        </motion.div>
+        </div>
         <h2 style={{
           margin: "0 0 12px", fontSize: 26, fontWeight: 800,
           color: T.textPrimary, letterSpacing: "-0.6px",
@@ -309,15 +302,13 @@ export default function DanbaiwaApp() {
           background: T.bgElevated, border: `1px solid ${T.border}`,
           borderRadius: 100, padding: "10px 20px",
         }}>
-          <motion.div
-            animate={{ opacity: [0.4, 1, 0.4] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            style={{ width: 8, height: 8, borderRadius: "50%", background: color }}
+          <div
+            style={{ width: 8, height: 8, borderRadius: "50%", background: color, animation: "pulse 1.5s ease-in-out infinite" }}
           />
           <span style={{ fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>In development</span>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 
   // Buy Data component for the data tab
@@ -348,16 +339,14 @@ export default function DanbaiwaApp() {
         display: "flex", gap: 6, justifyContent: "center", marginBottom: 24,
       }}>
         {[1, 2, 3, 4].map((stage) => (
-          <motion.div
+          <div
             key={stage}
-            animate={{
-              background: stage < buyDataStage ? T.blue : stage === buyDataStage ? T.blue : T.border,
-              scale: stage === buyDataStage ? 1.2 : 1,
-            }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
             style={{
               width: 8, height: 8, borderRadius: "50%",
+              background: stage < buyDataStage ? T.blue : stage === buyDataStage ? T.blue : T.border,
               cursor: "pointer", opacity: stage <= buyDataStage ? 1 : 0.3,
+              transform: stage === buyDataStage ? "scale(1.2)" : "scale(1)",
+              transition: "all 0.2s ease-out",
             }}
             onClick={() => {
               if (stage < buyDataStage) setBuyDataStage(stage);
@@ -370,15 +359,14 @@ export default function DanbaiwaApp() {
 
     // Skeleton loader for plan cards
     const PlanSkeleton = () => (
-      <motion.div
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity }}
+      <div
         style={{
           padding: 16,
           borderRadius: 16,
           background: T.bgElevated,
           border: `1px solid ${T.border}`,
           height: 100,
+          animation: "pulse 1.5s ease-in-out infinite",
         }}
       />
     );

@@ -55,12 +55,9 @@ const Modal = ({
   children: React.ReactNode;
   title: string;
 }) => (
-  <AnimatePresence>
+  <>
     {show && (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+      <div
         onClick={onClose}
         style={{
           position: "fixed",
@@ -73,11 +70,7 @@ const Modal = ({
           fontFamily: font,
         }}
       >
-        <motion.div
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "100%" }}
-          transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        <div
           onClick={(e) => e.stopPropagation()}
           style={{
             background: T.bgCard,
@@ -93,8 +86,7 @@ const Modal = ({
             <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: T.textPrimary }}>
               {title}
             </h2>
-            <motion.button
-              whileTap={{ scale: 0.85 }}
+            <button
               onClick={onClose}
               style={{
                 background: T.bgElevated,
@@ -110,13 +102,13 @@ const Modal = ({
               }}
             >
               <X size={18} />
-            </motion.button>
+            </button>
           </div>
           {children}
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     )}
-  </AnimatePresence>
+  </>
 );
 
 export default function DataPlansTab() {
@@ -305,8 +297,7 @@ export default function DataPlansTab() {
   return (
     <div style={{ fontFamily: font }}>
       {/* Create button */}
-      <motion.button
-        whileTap={{ scale: 0.95 }}
+      <button
         onClick={handleOpenCreate}
         style={{
           display: "flex",
@@ -326,7 +317,7 @@ export default function DataPlansTab() {
       >
         <Plus size={18} />
         Create Plan
-      </motion.button>
+      </button>
 
       {/* Plans table */}
       <div style={{
@@ -373,8 +364,7 @@ export default function DataPlansTab() {
                   {plan.apiBId ? plan.apiBId.slice(0, 8) + "..." : "—"}
                 </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={() => handleToggleApi(plan)}
                     style={{
                       padding: "4px 12px",
@@ -389,7 +379,7 @@ export default function DataPlansTab() {
                     }}
                   >
                     API {plan.activeApi}
-                  </motion.button>
+                  </button>
                 </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
                   <span
@@ -408,8 +398,7 @@ export default function DataPlansTab() {
                 </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
                   <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
+                    <button
                       onClick={() => handleOpenEdit(plan)}
                       style={{
                         background: T.bgElevated,
@@ -425,9 +414,8 @@ export default function DataPlansTab() {
                       }}
                     >
                       <Edit2 size={14} />
-                    </motion.button>
-                    <motion.button
-                      whileTap={{ scale: 0.85 }}
+                    </button>
+                    <button
                       onClick={() => handleDeletePlan(plan.id)}
                       disabled={deleteLoading === plan.id}
                       style={{
@@ -445,7 +433,7 @@ export default function DataPlansTab() {
                       }}
                     >
                       {deleteLoading === plan.id ? <Loader2 size={14} /> : <Trash2 size={14} />}
-                    </motion.button>
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -690,9 +678,8 @@ export default function DataPlansTab() {
             </label>
             <div style={{ display: "flex", gap: 8 }}>
               {(["A", "B"] as const).map((api) => (
-                <motion.button
+                <button
                   key={api}
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => setFormData({ ...formData, activeApi: api })}
                   style={{
                     flex: 1,
@@ -708,7 +695,7 @@ export default function DataPlansTab() {
                   }}
                 >
                   API {api}
-                </motion.button>
+                </button>
               ))}
             </div>
           </div>
@@ -727,8 +714,7 @@ export default function DataPlansTab() {
           </div>
 
           {/* Save button */}
-          <motion.button
-            whileTap={{ scale: 0.95 }}
+          <button
             onClick={handleSavePlan}
             disabled={formLoading}
             style={{
@@ -760,7 +746,7 @@ export default function DataPlansTab() {
             ) : (
               "Create Plan"
             )}
-          </motion.button>
+          </button>
         </div>
       </Modal>
     </div>

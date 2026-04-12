@@ -85,11 +85,8 @@ export default function AnalyticsTab() {
         marginBottom: 32,
       }}>
         {STAT_CARDS.map((card, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
             style={{
               padding: 20,
               borderRadius: 12,
@@ -108,7 +105,7 @@ export default function AnalyticsTab() {
             }}>
               {card.value}
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 

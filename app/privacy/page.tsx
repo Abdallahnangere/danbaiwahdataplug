@@ -56,33 +56,30 @@ export default function PrivacyPage() {
   return (
     <div style={{ minHeight: "100vh", background: T.bg, fontFamily: T.font }}>
       {/* Header */}
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: "sticky", top: 0, zIndex: 40, background: `rgba(255,255,255,0.9)`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${T.blueBorder}`, boxShadow: `0 4px 12px ${T.blue}15` }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 40, background: `rgba(255,255,255,0.9)`, backdropFilter: "blur(12px)", borderBottom: `1px solid ${T.blueBorder}`, boxShadow: `0 4px 12px ${T.blue}15` }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 11, background: T.surface, border: `1.5px solid ${T.blueBorder}`, fontFamily: T.font, fontWeight: 600, fontSize: 12, color: T.blue, cursor: "pointer", transition: "all 0.2s" }}>
+          <button onClick={() => router.back()} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 11, background: T.surface, border: `1.5px solid ${T.blueBorder}`, fontFamily: T.font, fontWeight: 600, fontSize: 12, color: T.blue, cursor: "pointer", transition: "all 0.2s" }}>
             <ChevronLeft size={16} /> Back
-          </motion.button>
+          </button>
           <h1 style={{ fontFamily: T.font, fontWeight: 700, fontSize: 24, color: T.text, margin: 0 }}>Privacy Policy</h1>
           <div style={{ width: 120 }} />
         </div>
-      </motion.div>
+        </div>
 
       {/* Content */}
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ background: T.blueLight, border: `2px solid ${T.blueBorder}`, borderRadius: 20, padding: "24px", marginBottom: 40 }}>
+        <div style={{ background: T.blueLight, border: `2px solid ${T.blueBorder}`, borderRadius: 20, padding: "24px", marginBottom: 40 }}>
           <h2 style={{ fontFamily: T.font, fontWeight: 700, fontSize: 18, color: T.blue, margin: "0 0 12px" }}>Your Privacy Matters</h2>
           <p style={{ fontFamily: T.font, fontWeight: 400, fontSize: 14, color: T.textMid, margin: 0, lineHeight: 1.6 }}>
             SY DATA SUB is committed to protecting your privacy. This policy explains how we collect, use, and protect your information when you use our services.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Sections */}
+        {/* Sections */}}
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 20, marginBottom: 40 }}>
           {sections.map((section, idx) => (
-            <motion.div
+            <div
               key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.1 }}
               style={{
                 background: T.card,
                 border: `1.5px solid ${T.blueBorder}`,
@@ -103,17 +100,17 @@ export default function PrivacyPage() {
                   {section.content}
                 </p>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
 
         {/* Footer Info */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "20px", textAlign: "center" }}>
+        <div style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 12, padding: "20px", textAlign: "center" }}>
           <p style={{ fontFamily: T.font, fontSize: 12, color: T.textDim, margin: 0, lineHeight: 1.6 }}>
             Last updated: April 2026 | For questions, contact{" "}
             <span style={{ fontWeight: 600, color: T.blue }}>privacy@danbaiwa.com</span>
           </p>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
