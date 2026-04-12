@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Star } from "lucide-react";
 
 const testimonials = [
@@ -28,38 +27,12 @@ const testimonials = [
 ];
 
 export function TestimonialsSection() {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-      },
-    },
-  };
-
   return (
     <section className="relative py-20 sm:py-32 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Section title */}
-        <motion.div
+        <div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
         >
           <h2 className="text-4xl sm:text-5xl font-display font-bold text-white mb-4">
             Loved by Nigerians
@@ -67,20 +40,15 @@ export function TestimonialsSection() {
           <p className="text-xl text-slate-300">
             Join thousands of satisfied customers who've made the switch.
           </p>
-        </motion.div>
+        </div>
 
         {/* Testimonials grid */}
-        <motion.div
+        <div
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
         >
           {testimonials.map((testimonial, index) => (
-            <motion.div
+            <div
               key={index}
-              variants={itemVariants}
               className="group"
             >
               <div className="h-full p-8 rounded-2xl border border-slate-700/50 hover:border-teal-500/50 transition-all duration-300 bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm hover:shadow-lg hover:shadow-teal-500/10">
@@ -109,17 +77,13 @@ export function TestimonialsSection() {
                   </p>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Trust badges */}
-        <motion.div
+        <div
           className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          viewport={{ once: true }}
         >
           <div className="text-center">
             <div className="text-3xl font-bold text-teal-400 mb-2">10k+</div>
@@ -133,7 +97,7 @@ export function TestimonialsSection() {
             <div className="text-3xl font-bold text-teal-400 mb-2">99.9%</div>
             <p className="text-slate-400">Success Rate</p>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

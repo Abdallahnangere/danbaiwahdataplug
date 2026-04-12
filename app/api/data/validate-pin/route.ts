@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+import bcrypt from "bcryptjs";
+
+export async function POST(request: NextRequest) {
+  try {
+    // 1. Authenticate user
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser) {
+      return NextResponse.json(
+        { error: "Unauthorized. Please log in." },
+        { status: 401 }
+      );
+    }
+
+    // 2. Parse request body
+    const body = await request.json();
+    const { pin } = body;
+
+    if (!pin || typeof pin !== "string") {
+      return NextResponse.json(
+        { error: "PIN is required" },
+        { status: 400 }
+      );
+    }
+
+    // 3. Fetch user from DB
+    const user = await prisma.user.findUnique({
+      where: { id: sessionUser.userId },
+      select: { pin: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // 4. Check if PIN is set
+    if (!user.pin) {
+      return NextResponse.json(
+        { error: "PIN not set. Please set your PIN first." },
+        { status: 400 }
+      );
+    }
+
+    // 5. Verify PIN with bcrypt
+    const isValid = await bcrypt.compare(pin, user.pin);
+
+    if (!isValid) {
+      return NextResponse.json(
+        { error: "Incorrect PIN." },
+        { status: 401 }
+      );
+    }
+
+    // 6. Return success
+    return NextResponse.json({ valid: true });
+  } catch (error) {
+    console.error("Error validating PIN:", error);
+    return NextResponse.json(
+      { error: "An error occurred while validating PIN" },
+      { status: 500 }
+    );
+  }
+}

@@ -1,6 +1,4 @@
 "use client";
-
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Shield, Lock, Eye, Users, FileText, AlertCircle } from "lucide-react";
 

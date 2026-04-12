@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Loader2, User } from "lucide-react";
 import { toast } from "sonner";
 

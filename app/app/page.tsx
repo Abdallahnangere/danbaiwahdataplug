@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+
 import {
   Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
-  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft,
+  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import PinInput from "@/components/PinInput";
+import SuccessCheck from "@/components/SuccessCheck";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────
 const T = {
@@ -82,6 +84,18 @@ export default function DanbaiwaApp() {
   const [pinForm, setPinForm]                             = useState({ oldPin: "", newPin: "", confirmPin: "" });
   const [pinError, setPinError]                           = useState("");
 
+  // Buy-Data Flow State
+  const [buyDataStage, setBuyDataStage] = useState(1);
+  const [networks, setNetworks] = useState<any[]>([]);
+  const [selectedNetwork, setSelectedNetwork] = useState<any | null>(null);
+  const [phone, setPhone] = useState("");
+  const [plans, setPlans] = useState<any[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
+  const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
+  const [buyDataLoading, setBuyDataLoading] = useState(false);
+  const [buyDataError, setBuyDataError] = useState("");
+  const [successData, setSuccessData] = useState<any | null>(null);
+
   // ── Auth ──────────────────────────────────────────────────────
   useEffect(() => {
     const checkAuth = async () => {
@@ -112,6 +126,25 @@ export default function DanbaiwaApp() {
       } catch {}
     })();
   }, [showTransactionsModal]);
+
+  // Load networks when data tab is accessed
+  useEffect(() => {
+    if (activeTab !== "data") return;
+
+    if (networks.length === 0) {
+      (async () => {
+        try {
+          const res = await fetch("/api/data/networks");
+          if (res.ok) {
+            const data = await res.json();
+            setNetworks(data);
+          }
+        } catch (error) {
+          toast.error("Failed to load networks");
+        }
+      })();
+    }
+  }, [activeTab, networks.length]);
 
   const handleLogout = async () => {
     try {
@@ -286,6 +319,786 @@ export default function DanbaiwaApp() {
       </div>
     </motion.div>
   );
+
+  // Buy Data component for the data tab
+  const BuyDataCard = () => {
+    // Load plans when stage 2 is entered
+    useEffect(() => {
+      if (buyDataStage !== 2 || plans.length > 0) return;
+
+      (async () => {
+        setBuyDataLoading(true);
+        try {
+          const res = await fetch(`/api/data/plans?networkId=${selectedNetwork.id}`);
+          if (!res.ok) throw new Error();
+          const data = await res.json();
+          setPlans(data);
+        } catch {
+          toast.error("Couldn't load plans. Check your connection.");
+          setBuyDataStage(1);
+        } finally {
+          setBuyDataLoading(false);
+        }
+      })();
+    }, [buyDataStage]);
+
+    // Progress indicator component
+    const ProgressIndicator = () => (
+      <div style={{
+        display: "flex", gap: 6, justifyContent: "center", marginBottom: 24,
+      }}>
+        {[1, 2, 3, 4].map((stage) => (
+          <motion.div
+            key={stage}
+            animate={{
+              background: stage < buyDataStage ? T.blue : stage === buyDataStage ? T.blue : T.border,
+              scale: stage === buyDataStage ? 1.2 : 1,
+            }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            style={{
+              width: 8, height: 8, borderRadius: "50%",
+              cursor: "pointer", opacity: stage <= buyDataStage ? 1 : 0.3,
+            }}
+            onClick={() => {
+              if (stage < buyDataStage) setBuyDataStage(stage);
+            }}
+            aria-label={`Step ${stage} of 4`}
+          />
+        ))}
+      </div>
+    );
+
+    // Skeleton loader for plan cards
+    const PlanSkeleton = () => (
+      <motion.div
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+        style={{
+          padding: 16,
+          borderRadius: 16,
+          background: T.bgElevated,
+          border: `1px solid ${T.border}`,
+          height: 100,
+        }}
+      />
+    );
+
+    // Stage 1: Network + Phone Input
+    if (buyDataStage === 1) {
+      const phoneIsValid = phone.length === 11 && /^\d{11}$/.test(phone);
+      const canContinue = selectedNetwork !== null && phoneIsValid;
+
+      return (
+        <motion.div
+          initial={{ x: 60, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: -60, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          <h2 style={{
+            margin: "0 0 20px", fontSize: 22, fontWeight: 800,
+            color: T.textPrimary, letterSpacing: "-0.5px",
+          }}>
+            Select Network
+          </h2>
+
+          {/* Network selector - 2x2 grid */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28,
+          }}>
+            {networks.map((net) => {
+              const isSelected = selectedNetwork?.id === net.id;
+              return (
+                <motion.button
+                  key={net.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setSelectedNetwork(net)}
+                  style={{
+                    position: "relative",
+                    padding: 16,
+                    borderRadius: 16,
+                    background: isSelected ? `${T.blue}15` : T.bgCard,
+                    border: `2px solid ${isSelected ? T.blue : T.border}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: font,
+                  }}
+                  role="radio"
+                  aria-checked={isSelected}
+                >
+                  <img src={net.logo} alt={net.name} style={{ width: 28, height: 28 }} />
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: T.textPrimary,
+                    textAlign: "center",
+                  }}>
+                    {net.name}
+                  </span>
+
+                  {/* Checkmark badge */}
+                  {isSelected && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        background: T.blue,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Check size={14} color="#fff" strokeWidth={3} />
+                    </motion.div>
+                  )}
+                </motion.button>
+              );
+            })}
+          </div>
+
+          <h2 style={{
+            margin: "0 0 16px", fontSize: 16, fontWeight: 700,
+            color: T.textPrimary,
+          }}>
+            Recipient Phone Number
+          </h2>
+
+          {/* Phone input with counter */}
+          <div style={{ position: "relative", marginBottom: 24 }}>
+            <input
+              type="tel"
+              inputMode="numeric"
+              maxLength={11}
+              placeholder="e.g. 08012345678"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+              style={{
+                width: "100%",
+                padding: "12px 40px 12px 14px",
+                borderRadius: 12,
+                background: T.bgCard,
+                border: `1.5px solid ${phoneIsValid ? T.green : T.border}`,
+                color: T.textPrimary,
+                fontSize: 16,
+                fontFamily: font,
+                boxSizing: "border-box",
+                transition: "all 150ms ease",
+              }}
+            />
+
+            {/* Checkmark icon when valid */}
+            {phoneIsValid && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                style={{
+                  position: "absolute",
+                  right: 12,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }}
+              >
+                <Check size={20} color={T.green} strokeWidth={3} />
+              </motion.div>
+            )}
+
+            {/* Character counter */}
+            <div style={{
+              fontSize: 12,
+              color: phoneIsValid ? T.green : T.textMuted,
+              textAlign: "right",
+              marginTop: 6,
+              fontWeight: 500,
+              transition: "color 150ms ease",
+            }}>
+              {phone.length}/11
+            </div>
+          </div>
+
+          {/* Continue button */}
+          <motion.button
+            whileHover={canContinue ? { scale: 1.01 } : {}}
+            whileTap={canContinue ? { scale: 0.98 } : {}}
+            onClick={() => canContinue && setBuyDataStage(2)}
+            disabled={!canContinue}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: canContinue ? T.blue : T.bgElevated,
+              border: `1.5px solid ${canContinue ? T.blue : T.border}`,
+              color: canContinue ? "#fff" : T.textMuted,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: canContinue ? "pointer" : "not-allowed",
+              opacity: canContinue ? 1 : 0.5,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+            aria-disabled={!canContinue}
+          >
+            Continue
+          </motion.button>
+        </motion.div>
+      );
+    }
+
+    // Stage 2: Plan Selection
+    if (buyDataStage === 2) {
+      return (
+        <motion.div
+          initial={{ x: 60, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: -60, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          {/* Back button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setBuyDataStage(1)}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </motion.button>
+
+          <h2 style={{
+            margin: "0 0 20px",
+            fontSize: 22,
+            fontWeight: 800,
+            color: T.textPrimary,
+            letterSpacing: "-0.5px",
+          }}>
+            Select Plan
+          </h2>
+
+          {buyDataLoading ? (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 12,
+            }}>
+              {[...Array(4)].map((_, i) => (
+                <PlanSkeleton key={i} />
+              ))}
+            </div>
+          ) : plans.length === 0 ? (
+            <div style={{
+              textAlign: "center",
+              padding: "60px 20px",
+              color: T.textSecondary,
+            }}>
+              {/* SVG icon placeholder */}
+              <motion.svg
+                width="80"
+                height="80"
+                viewBox="0 0 80 80"
+                fill="none"
+                style={{ margin: "0 auto 16px", opacity: 0.5 }}
+              >
+                <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="2" />
+                <path d="M 30 35 L 50 45 L 30 55" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />
+              </motion.svg>
+              <p style={{ fontSize: 15, margin: "0 0 8px", fontWeight: 500 }}>
+                No plans available
+              </p>
+              <p style={{ fontSize: 13, margin: 0, color: T.textMuted }}>
+                for {selectedNetwork?.name} right now.
+              </p>
+            </div>
+          ) : (
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 12,
+            }}>
+              {plans.map((plan) => (
+                <motion.button
+                  key={plan.id}
+                  whileHover={{ scale: 1.02, translateY: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setSelectedPlan(plan);
+                    setBuyDataStage(3);
+                  }}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: T.bgCard,
+                    border: `1.5px solid ${T.border}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: font,
+                    textAlign: "left",
+                  }}
+                  role="radio"
+                >
+                  <div style={{
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: T.textPrimary,
+                    letterSpacing: "-0.3px",
+                  }}>
+                    {plan.sizeLabel}
+                  </div>
+                  <div style={{
+                    fontSize: 12,
+                    color: T.textMuted,
+                    fontWeight: 500,
+                  }}>
+                    {plan.validity}
+                  </div>
+                  <div style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: T.blue,
+                    marginTop: 4,
+                  }}>
+                    ₦{(plan.price || 0).toLocaleString()}
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      );
+    }
+
+    // Stage 3: PIN Confirmation & Summary
+    if (buyDataStage === 3) {
+      const pinFull = pinInput.every((d) => d !== "");
+
+      const handlePinSubmit = async () => {
+        if (!pinFull) return;
+
+        setBuyDataLoading(true);
+        setBuyDataError("");
+
+        try {
+          // Validate PIN
+          const validateRes = await fetch("/api/data/validate-pin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ pin: pinInput.join("") }),
+          });
+
+          if (!validateRes.ok) {
+            const error = await validateRes.json();
+            setBuyDataError(error.error || "Incorrect PIN. Please try again.");
+            setPinInput(["", "", "", "", "", ""]);
+            setBuyDataLoading(false);
+            return;
+          }
+
+          // PIN valid, now purchase
+          const purchaseRes = await fetch("/api/data/purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              planId: selectedPlan.id,
+              phone,
+              pin: pinInput.join(""),
+            }),
+          });
+
+          if (!purchaseRes.ok) {
+            const error = await purchaseRes.json();
+            if (error.error?.includes("Insufficient balance")) {
+              setBuyDataError("Insufficient balance. Please fund your wallet.");
+            } else if (error.error?.includes("refunded")) {
+              toast.error("Delivery failed. Your balance has been refunded.");
+              setBuyDataError("Delivery failed. Your balance has been refunded.");
+            } else {
+              toast.error("Something went wrong. Please try again.");
+              setBuyDataError(error.error || "Purchase failed");
+            }
+            setPinInput(["", "", "", "", "", ""]);
+            setBuyDataLoading(false);
+            return;
+          }
+
+          const data = await purchaseRes.json();
+          toast.success(`₦${(data.amount || 0).toLocaleString()} — ${selectedPlan.sizeLabel} sent to ${phone} ✓`);
+          setSuccessData(data);
+          setPinInput(["", "", "", "", "", ""]);
+          setBuyDataStage(4);
+        } catch (error: any) {
+          toast.error("Something went wrong. Please try again.");
+          setBuyDataError(error.message || "An error occurred");
+          setPinInput(["", "", "", "", "", ""]);
+        } finally {
+          setBuyDataLoading(false);
+        }
+      };
+
+      return (
+        <motion.div
+          initial={{ x: 60, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: -60, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          {/* Back button */}
+          <motion.button
+            whileTap={{ scale: 0.9 }}
+            onClick={() => {
+              setBuyDataStage(2);
+              setPinInput(["", "", "", "", "", ""]);
+              setBuyDataError("");
+            }}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </motion.button>
+
+          <h2 style={{
+            margin: "0 0 20px",
+            fontSize: 22,
+            fontWeight: 800,
+            color: T.textPrimary,
+            letterSpacing: "-0.5px",
+          }}>
+            Confirm Purchase
+          </h2>
+
+          {/* Summary receipt */}
+          <div style={{
+            background: T.bgElevated,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 24,
+            border: `1px solid ${T.border}`,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Phone</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{phone}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Network</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{selectedNetwork?.name}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Plan</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{selectedPlan?.sizeLabel}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Validity</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{selectedPlan?.validity}</span>
+            </div>
+
+            {/* Divider */}
+            <div style={{
+              height: 1,
+              background: T.border,
+              margin: "16px 0",
+            }} />
+
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
+                ₦{(selectedPlan?.price || 0).toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* PIN Input */}
+          <label style={{
+            display: "block",
+            fontSize: 14,
+            fontWeight: 600,
+            color: T.textSecondary,
+            marginBottom: 12,
+          }}>
+            Enter your 6-digit PIN
+          </label>
+
+          <div style={{ marginBottom: 16 }}>
+            <PinInput
+              value={pinInput}
+              onChange={setPinInput}
+              error={buyDataError.length > 0}
+              disabled={buyDataLoading}
+              bgColor={T.bgCard}
+              bgElevated={T.bgElevated}
+              borderColor={T.border}
+              borderStrong={T.borderStrong}
+              textPrimary={T.textPrimary}
+              textSecondary={T.textSecondary}
+              errorColor={T.red}
+              blueColor={T.blue}
+            />
+          </div>
+
+          {/* Error display */}
+          {buyDataError && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: `${T.red}20`,
+                border: `1px solid ${T.red}50`,
+                borderRadius: 12,
+                padding: 12,
+                marginBottom: 16,
+                color: T.red,
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+              role="alert"
+            >
+              {buyDataError}
+            </motion.div>
+          )}
+
+          {/* Confirm & Pay button */}
+          <motion.button
+            whileTap={pinFull && !buyDataLoading ? { scale: 0.98 } : {}}
+            onClick={handlePinSubmit}
+            disabled={!pinFull || buyDataLoading}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: pinFull && !buyDataLoading ? T.blue : T.bgElevated,
+              border: "none",
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: pinFull && !buyDataLoading ? "pointer" : "not-allowed",
+              opacity: pinFull && !buyDataLoading ? 1 : 0.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+            aria-disabled={!pinFull || buyDataLoading}
+          >
+            {buyDataLoading && (
+              <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+            )}
+            {buyDataLoading ? "Processing..." : "Confirm & Pay"}
+          </motion.button>
+        </motion.div>
+      );
+    }
+
+    // Stage 4: Success
+    if (buyDataStage === 4) {
+      return (
+        <motion.div
+          initial={{ x: 60, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: -60, opacity: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          <div style={{ textAlign: "center" }}>
+            <SuccessCheck greenColor={T.green} size={80} />
+
+            <h2 style={{
+              margin: "0 0 12px",
+              fontSize: 26,
+              fontWeight: 800,
+              color: T.textPrimary,
+              letterSpacing: "-0.6px",
+            }}>
+              Data Delivered!
+            </h2>
+            <p style={{
+              margin: "0 0 28px",
+              fontSize: 14,
+              color: T.textSecondary,
+              lineHeight: 1.6,
+            }}>
+              Your {selectedPlan?.sizeLabel} has been sent to {phone}
+            </p>
+
+            {/* Receipt summary */}
+            <div style={{
+              background: T.bgElevated,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 28,
+              border: `1px solid ${T.border}`,
+              textAlign: "left",
+            }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
+                  Reference
+                </div>
+                <div style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: T.textPrimary,
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                }}>
+                  {successData?.reference}
+                </div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
+                  Amount Paid
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
+                  ₦{(successData?.amount || 0).toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
+                  Date
+                </div>
+                <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>
+                  {new Date().toLocaleDateString("en-NG", {
+                    weekday: "short",
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Done button */}
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setBuyDataStage(1);
+                setSelectedNetwork(null);
+                setPhone("");
+                setSelectedPlan(null);
+                setPinInput(["", "", "", "", "", ""]);
+                setBuyDataError("");
+                setSuccessData(null);
+                setPlans([]);
+                setActiveTab("home");
+              }}
+              style={{
+                width: "100%",
+                padding: 14,
+                borderRadius: 12,
+                background: T.blue,
+                border: "none",
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: "pointer",
+                marginBottom: 12,
+                fontFamily: font,
+              }}
+            >
+              Done
+            </motion.button>
+
+            {/* Buy Again button */}
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                setBuyDataStage(1);
+                setSelectedPlan(null);
+                setPinInput(["", "", "", "", "", ""]);
+                setBuyDataError("");
+                setSuccessData(null);
+                setPlans([]);
+              }}
+              style={{
+                width: "100%",
+                padding: 12,
+                borderRadius: 12,
+                background: "transparent",
+                border: `1.5px solid ${T.blue}`,
+                color: T.blue,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: font,
+              }}
+            >
+              Buy Again
+            </motion.button>
+          </div>
+        </motion.div>
+      );
+    }
+
+    return null;
+  };
 
   // ─── RENDER ────────────────────────────────────────────────────
   return (
@@ -623,7 +1436,7 @@ export default function DanbaiwaApp() {
 
           {/* ══ SERVICE TABS ══ */}
           {activeTab === "data" && (
-            <ComingSoon key="data" icon={Wifi} label="Data" color={T.services.data.icon} />
+            <BuyDataCard />
           )}
           {activeTab === "airtime" && (
             <ComingSoon key="airtime" icon={Phone} label="Airtime" color={T.services.airtime.icon} />
