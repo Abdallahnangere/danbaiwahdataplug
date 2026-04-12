@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { query, queryOne } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,18 +12,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Dynamic import
-    const { prisma } = await import("@/lib/db");
-
-    const plans = await prisma.dataPlan.findMany({
-      orderBy: { createdAt: "desc" },
-    });
+    const plans = await query<any>(
+      `SELECT * FROM "DataPlan" ORDER BY "createdAt" DESC`,
+      []
+    );
 
     return NextResponse.json(plans.map((plan: any) => ({
       ...plan,
-      price: typeof plan.price === 'number' ? plan.price : plan.price.toNumber?.() || 0,
-      userPrice: typeof plan.userPrice === 'number' ? plan.userPrice : plan.userPrice?.toNumber?.() || null,
-      agentPrice: typeof plan.agentPrice === 'number' ? plan.agentPrice : plan.agentPrice?.toNumber?.() || null,
+      price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price)),
+      userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
+      agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
     })));
   } catch (error) {
     console.error("Plans fetch error:", error);
@@ -40,9 +39,6 @@ async function createHandler(request: NextRequest) {
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
-    // Dynamic import
-    const { prisma } = await import("@/lib/db");
 
     const body = await request.json();
     const {
@@ -67,29 +63,38 @@ async function createHandler(request: NextRequest) {
       );
     }
 
-    const plan = await prisma.dataPlan.create({
-      data: {
+    const plan = await queryOne<any>(
+      `INSERT INTO "DataPlan" 
+       (id, name, "networkId", "networkName", "sizeLabel", validity, price, "userPrice", 
+        "agentPrice", "apiAId", "apiBId", "activeApi", "isActive", "createdAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+       RETURNING *`,
+      [
         name,
-        networkId,
-        networkName,
+        parseInt(networkId),
+        networkName || null,
         sizeLabel,
         validity,
-        price: parseFloat(price),
-        userPrice: userPrice ? parseFloat(userPrice) : null,
-        agentPrice: agentPrice ? parseFloat(agentPrice) : null,
-        apiAId: apiAId ? parseInt(apiAId) : null,
-        apiBId: apiBId ? parseInt(apiBId) : null,
-        activeApi: activeApi || "A",
-        isActive: isActive !== false,
-      } as any,
-    });
+        parseFloat(price),
+        userPrice ? parseFloat(userPrice) : null,
+        agentPrice ? parseFloat(agentPrice) : null,
+        apiAId ? parseInt(apiAId) : null,
+        apiBId ? parseInt(apiBId) : null,
+        activeApi || "A",
+        isActive !== false,
+      ]
+    );
+
+    if (!plan) {
+      throw new Error("Failed to create plan");
+    }
 
     return NextResponse.json(
       {
         ...plan,
-        price: typeof plan.price === 'number' ? plan.price : plan.price.toNumber?.() || 0,
-        userPrice: typeof plan.userPrice === 'number' ? plan.userPrice : plan.userPrice?.toNumber?.() || null,
-        agentPrice: typeof plan.agentPrice === 'number' ? plan.agentPrice : plan.agentPrice?.toNumber?.() || null,
+        price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price)),
+        userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
+        agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
       },
       { status: 201 }
     );

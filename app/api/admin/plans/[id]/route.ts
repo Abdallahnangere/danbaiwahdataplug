@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { queryOne, execute } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -18,9 +19,6 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Dynamic import to defer Prisma initialization
-    const { prisma } = await import("@/lib/db");
-
     const body = await request.json();
     const {
       name,
@@ -36,32 +34,96 @@ export async function PATCH(request: NextRequest) {
       isActive,
     } = body;
 
-    const updateData: any = {};
+    // Build UPDATE query dynamically
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramCount = 1;
 
-    if (name !== undefined) updateData.name = name;
-    if (networkId !== undefined) updateData.networkId = parseInt(networkId);
-    if (sizeLabel !== undefined) updateData.sizeLabel = sizeLabel;
-    if (validity !== undefined) updateData.validity = validity;
-    if (price !== undefined) updateData.price = parseFloat(price);
-    if (userPrice !== undefined)
-      updateData.userPrice = userPrice ? parseFloat(userPrice) : null;
-    if (agentPrice !== undefined)
-      updateData.agentPrice = agentPrice ? parseFloat(agentPrice) : null;
-    if (apiAId !== undefined) updateData.apiAId = apiAId ? parseInt(apiAId) : null;
-    if (apiBId !== undefined) updateData.apiBId = apiBId ? parseInt(apiBId) : null;
-    if (activeApi !== undefined) updateData.activeApi = activeApi;
-    if (isActive !== undefined) updateData.isActive = isActive;
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount}`);
+      params.push(name);
+      paramCount++;
+    }
+    if (networkId !== undefined) {
+      updates.push(`"networkId" = $${paramCount}`);
+      params.push(parseInt(networkId));
+      paramCount++;
+    }
+    if (sizeLabel !== undefined) {
+      updates.push(`"sizeLabel" = $${paramCount}`);
+      params.push(sizeLabel);
+      paramCount++;
+    }
+    if (validity !== undefined) {
+      updates.push(`validity = $${paramCount}`);
+      params.push(validity);
+      paramCount++;
+    }
+    if (price !== undefined) {
+      updates.push(`price = $${paramCount}`);
+      params.push(parseFloat(price));
+      paramCount++;
+    }
+    if (userPrice !== undefined) {
+      updates.push(`"userPrice" = $${paramCount}`);
+      params.push(userPrice ? parseFloat(userPrice) : null);
+      paramCount++;
+    }
+    if (agentPrice !== undefined) {
+      updates.push(`"agentPrice" = $${paramCount}`);
+      params.push(agentPrice ? parseFloat(agentPrice) : null);
+      paramCount++;
+    }
+    if (apiAId !== undefined) {
+      updates.push(`"apiAId" = $${paramCount}`);
+      params.push(apiAId ? parseInt(apiAId) : null);
+      paramCount++;
+    }
+    if (apiBId !== undefined) {
+      updates.push(`"apiBId" = $${paramCount}`);
+      params.push(apiBId ? parseInt(apiBId) : null);
+      paramCount++;
+    }
+    if (activeApi !== undefined) {
+      updates.push(`"activeApi" = $${paramCount}`);
+      params.push(activeApi);
+      paramCount++;
+    }
+    if (isActive !== undefined) {
+      updates.push(`"isActive" = $${paramCount}`);
+      params.push(isActive);
+      paramCount++;
+    }
 
-    const plan = await prisma.dataPlan.update({
-      where: { id },
-      data: updateData,
-    });
+    if (updates.length === 0) {
+      return NextResponse.json(
+        { error: "No fields to update" },
+        { status: 400 }
+      );
+    }
+
+    // Add the ID to params for WHERE clause
+    params.push(id);
+
+    const updateQuery = `
+      UPDATE "DataPlan"
+      SET ${updates.join(", ")}
+      WHERE id = $${paramCount}
+      RETURNING id, name, "networkId", "sizeLabel", validity, price, "userPrice", "agentPrice", 
+                "apiAId", "apiBId", "activeApi", "isActive", "createdAt"
+    `;
+
+    const plan = await queryOne<any>(updateQuery, params);
+
+    if (!plan) {
+      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+    }
 
     return NextResponse.json({
       ...plan,
-      price: plan.price.toNumber(),
-      userPrice: plan.userPrice?.toNumber() || null,
-      agentPrice: plan.agentPrice?.toNumber() || null,
+      price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price)),
+      userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
+      agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
     });
   } catch (error) {
     console.error("Plan update error:", error);
@@ -80,18 +142,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Dynamic import to defer Prisma initialization
-    const { prisma } = await import("@/lib/db");
-
     const id = request.nextUrl.pathname.split("/").pop();
 
     if (!id) {
       return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
     }
 
-    await prisma.dataPlan.delete({
-      where: { id },
-    });
+    await execute(`DELETE FROM "DataPlan" WHERE id = $1`, [id]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

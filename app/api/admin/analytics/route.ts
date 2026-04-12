@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { query, queryOne } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -15,44 +16,45 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only import and use prisma inside the handler to defer initialization
-    const { prisma } = await import("@/lib/db");
+    // Fetch user count
+    const userCountResult = await queryOne<{ count: number }>(
+      `SELECT COUNT(*) as count FROM "User"`,
+      []
+    );
+    const userCount = userCountResult?.count || 0;
 
-    // Fetch all data in parallel
-    const [userCount, allTransactions] = await Promise.all([
-      prisma.user.count(),
-      prisma.dataTransaction.findMany({
-        select: {
-          id: true,
-          phone: true,
-          amount: true,
-          status: true,
-          createdAt: true,
-          user: {
-            select: { email: true, name: true },
-          },
-          plan: {
-            select: { name: true },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
+    // Fetch all transactions with user and plan info
+    const allTransactions = await query<any>(
+      `SELECT 
+        dt.id,
+        dt.phone,
+        dt.amount,
+        dt.status,
+        dt."createdAt",
+        u.email,
+        u.name,
+        dp.name as "planName"
+       FROM "DataTransaction" dt
+       LEFT JOIN "User" u ON dt."userId" = u.id
+       LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
+       ORDER BY dt."createdAt" DESC`,
+      []
+    );
 
     // Calculate metrics
-    const successfulTransactions = allTransactions.filter((t: any) => t.status === "successful");
+    const successfulTransactions = allTransactions.filter((t: any) => t.status === "SUCCESS");
     const totalRevenue = successfulTransactions.reduce((sum: number, t: any) => {
-      const amount = typeof t.amount === "number" ? t.amount : t.amount?.toNumber?.() || 0;
+      const amount = typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0));
       return sum + amount;
     }, 0);
 
     const recentTransactions = allTransactions.slice(0, 10).map((t: any) => ({
       id: t.id,
-      email: t.user?.email || "N/A",
-      name: t.user?.name || "N/A",
-      plan: t.plan?.name || "N/A",
+      email: t.email || "N/A",
+      name: t.name || "N/A",
+      plan: t.planName || "N/A",
       phone: t.phone,
-      amount: typeof t.amount === "number" ? t.amount : t.amount?.toNumber?.() || 0,
+      amount: typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0)),
       status: t.status,
       createdAt: t.createdAt,
     }));

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { query } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -11,26 +12,26 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Dynamic import
-    const { prisma } = await import("@/lib/db");
-
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        phone: true,
-        balance: true,
-        role: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    // Fetch all users from database
+    const users = await query<{
+      id: string;
+      email: string;
+      name: string | null;
+      phone: string | null;
+      balance: number;
+      role: string;
+      createdAt: string;
+    }>(
+      `SELECT id, email, name, phone, balance, role, "createdAt"
+       FROM "User"
+       ORDER BY "createdAt" DESC`,
+      []
+    );
 
     return NextResponse.json(
-      users.map((user: any) => ({
+      users.map((user) => ({
         ...user,
-        balance: typeof user.balance === 'number' ? user.balance : user.balance.toNumber?.() || 0,
+        balance: typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance)),
       }))
     );
   } catch (error) {
