@@ -8,6 +8,8 @@ import { randomUUID } from "crypto";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -17,35 +19,35 @@ export async function POST(request: NextRequest) {
     if (!name || name.length < 2) {
       return NextResponse.json(
         { error: "Name must be at least 2 characters" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
     if (!phone || !/^0[0-9]{10}$/.test(phone)) {
       return NextResponse.json(
         { error: "Phone number must be 11 digits starting with 0" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
     if (!pin || !/^\d{6}$/.test(pin)) {
       return NextResponse.json(
         { error: "PIN must be exactly 6 digits" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
     if (!confirmPin || pin !== confirmPin) {
       return NextResponse.json(
         { error: "PINs don't match" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
     if (!acceptTerms) {
       return NextResponse.json(
         { error: "You must accept the terms and conditions" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest) {
     if (existingPhone) {
       return NextResponse.json(
         { error: "Phone number already registered" },
-        { status: 409 }
+        { status: 409, headers: utf8Headers }
       );
     }
 
@@ -109,13 +111,13 @@ export async function POST(request: NextRequest) {
         },
         token,
       },
-      { status: 201 }
+      { status: 201, headers: utf8Headers }
     );
   } catch (error: any) {
     console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Failed to create account", details: error.message },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }

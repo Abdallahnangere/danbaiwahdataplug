@@ -4,6 +4,8 @@ import { query, queryOne } from "@/lib/db";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function GET(request: NextRequest) {
   try {
     // Check admin access first
@@ -13,7 +15,7 @@ export async function GET(request: NextRequest) {
     // Validate admin access
     const isAdmin = process.env.ADMIN_PASSWORD && adminPassword === process.env.ADMIN_PASSWORD;
     if (!authHeader?.startsWith("Bearer ") && !isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     // Fetch user count
@@ -68,12 +70,12 @@ export async function GET(request: NextRequest) {
           ? Math.round((successfulTransactions.length / allTransactions.length) * 1000) / 10
           : 0,
       recentTransactions,
-    });
+    }, { headers: utf8Headers });
   } catch (error) {
     console.error("Analytics API error:", error);
     return NextResponse.json(
       { error: "Failed to fetch analytics", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }

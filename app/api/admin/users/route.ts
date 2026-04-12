@@ -4,12 +4,14 @@ import { query } from "@/lib/db";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function GET(request: NextRequest) {
   try {
     // Validate admin
     const adminPassword = request.headers.get("x-admin-password");
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     // Fetch all users from database
@@ -32,13 +34,14 @@ export async function GET(request: NextRequest) {
       users.map((user) => ({
         ...user,
         balance: typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance)),
-      }))
+      })),
+      { headers: utf8Headers }
     );
   } catch (error) {
     console.error("Users fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch users" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }

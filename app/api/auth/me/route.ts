@@ -5,6 +5,8 @@ import { queryOne } from "@/lib/db";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function GET(request: NextRequest) {
   try {
     const sessionUser = await getSessionUser(request);
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
     if (!sessionUser) {
       return NextResponse.json(
         { error: "Not authenticated" },
-        { status: 401 }
+        { status: 401, headers: utf8Headers }
       );
     }
 
@@ -35,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "User not found" },
-        { status: 404 }
+        { status: 404, headers: utf8Headers }
       );
     }
 
@@ -47,12 +49,12 @@ export async function GET(request: NextRequest) {
       tier: user.tier,
       role: user.role,
       isActive: user.isActive,
-    });
+    }, { headers: utf8Headers });
   } catch (error) {
     console.error("Get user error:", error);
     return NextResponse.json(
       { error: "Failed to fetch user" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }

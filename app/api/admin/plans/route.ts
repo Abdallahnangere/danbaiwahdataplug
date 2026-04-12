@@ -4,12 +4,14 @@ import { query, queryOne } from "@/lib/db";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function GET(request: NextRequest) {
   try {
     // Validate admin
     const adminPassword = request.headers.get("x-admin-password");
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     const plans = await query<any>(
@@ -22,12 +24,12 @@ export async function GET(request: NextRequest) {
       price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price)),
       userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
       agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
-    })));
+    })), { headers: utf8Headers });
   } catch (error) {
     console.error("Plans fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch plans" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }
@@ -37,7 +39,7 @@ async function createHandler(request: NextRequest) {
     // Validate admin
     const adminPassword = request.headers.get("x-admin-password");
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     const body = await request.json();
@@ -59,7 +61,7 @@ async function createHandler(request: NextRequest) {
     if (!name || !networkId || !sizeLabel || !validity ||!price) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
@@ -96,13 +98,13 @@ async function createHandler(request: NextRequest) {
         userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
         agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
       },
-      { status: 201 }
+      { status: 201, headers: utf8Headers }
     );
   } catch (error) {
     console.error("Plan creation error:", error);
     return NextResponse.json(
       { error: "Failed to create plan" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }

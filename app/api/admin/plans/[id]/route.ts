@@ -4,19 +4,21 @@ import { queryOne, execute } from "@/lib/db";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function PATCH(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") || (request.nextUrl.pathname.split("/").pop());
 
     if (!id) {
-      return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Plan ID is required" }, { status: 400, headers: utf8Headers });
     }
 
     // Validate admin
     const adminPassword = request.headers.get("x-admin-password");
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     const body = await request.json();
@@ -98,7 +100,7 @@ export async function PATCH(request: NextRequest) {
     if (updates.length === 0) {
       return NextResponse.json(
         { error: "No fields to update" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
@@ -116,7 +118,7 @@ export async function PATCH(request: NextRequest) {
     const plan = await queryOne<any>(updateQuery, params);
 
     if (!plan) {
-      return NextResponse.json({ error: "Plan not found" }, { status: 404 });
+      return NextResponse.json({ error: "Plan not found" }, { status: 404, headers: utf8Headers });
     }
 
     return NextResponse.json({
@@ -124,12 +126,12 @@ export async function PATCH(request: NextRequest) {
       price: typeof plan.price === 'number' ? plan.price : parseFloat(String(plan.price)),
       userPrice: plan.userPrice ? (typeof plan.userPrice === 'number' ? plan.userPrice : parseFloat(String(plan.userPrice))) : null,
       agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
-    });
+    }, { headers: utf8Headers });
   } catch (error) {
     console.error("Plan update error:", error);
     return NextResponse.json(
       { error: "Failed to update plan" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }
@@ -139,23 +141,23 @@ export async function DELETE(request: NextRequest) {
     // Validate admin
     const adminPassword = request.headers.get("x-admin-password");
     if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     const id = request.nextUrl.pathname.split("/").pop();
 
     if (!id) {
-      return NextResponse.json({ error: "Plan ID is required" }, { status: 400 });
+      return NextResponse.json({ error: "Plan ID is required" }, { status: 400, headers: utf8Headers });
     }
 
     await execute(`DELETE FROM "DataPlan" WHERE id = $1`, [id]);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: utf8Headers });
   } catch (error) {
     console.error("Plan delete error:", error);
     return NextResponse.json(
       { error: "Failed to delete plan" },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }

@@ -7,6 +7,8 @@ import { queryOne } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -16,14 +18,14 @@ export async function POST(request: NextRequest) {
     if (!phone || !pin) {
       return NextResponse.json(
         { error: "Phone and PIN are required" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
     if (!/^0[0-9]{10}$/.test(phone)) {
       return NextResponse.json(
         { error: "Invalid phone format" },
-        { status: 400 }
+        { status: 400, headers: utf8Headers }
       );
     }
 
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json(
         { error: "Invalid phone or PIN" },
-        { status: 401 }
+        { status: 401, headers: utf8Headers }
       );
     }
 
@@ -51,7 +53,7 @@ export async function POST(request: NextRequest) {
     if (!user.isActive) {
       return NextResponse.json(
         { error: "Account is disabled" },
-        { status: 403 }
+        { status: 403, headers: utf8Headers }
       );
     }
 
@@ -59,7 +61,7 @@ export async function POST(request: NextRequest) {
     if (!user.pin) {
       return NextResponse.json(
         { error: "Account not properly configured" },
-        { status: 500 }
+        { status: 500, headers: utf8Headers }
       );
     }
 
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (!pinValid) {
       return NextResponse.json(
         { error: "Invalid phone or PIN" },
-        { status: 401 }
+        { status: 401, headers: utf8Headers }
       );
     }
 
@@ -100,13 +102,13 @@ export async function POST(request: NextRequest) {
         },
         token,
       },
-      { status: 200 }
+      { status: 200, headers: utf8Headers }
     );
   } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
       { error: "Login failed", details: error.message },
-      { status: 500 }
+      { status: 500, headers: utf8Headers }
     );
   }
 }
