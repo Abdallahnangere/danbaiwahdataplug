@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
 import SuccessCheck from "@/components/SuccessCheck";
 
-// â”€â”€â”€ DESIGN TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const T = {
   // Backgrounds
   bg:        "#07090F",
@@ -52,7 +52,7 @@ const T = {
 
 const font = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif';
 
-// â”€â”€â”€ TYPES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── TYPES ───────────────────────────────────────────────────────────────────
 interface User {
   id: string;
   fullName: string;
@@ -69,7 +69,7 @@ const ACCOUNT_SERVICES = [
   { id: "settings",    label: "Settings",       icon: SettingsIcon },
 ];
 
-// â”€â”€â”€ MAIN COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function DanbaiwaApp() {
   const router = useRouter();
   const [user, setUser]                         = useState<User | null>(null);
@@ -97,7 +97,17 @@ export default function DanbaiwaApp() {
   const [successData, setSuccessData] = useState<any | null>(null);
   const phoneInputRef = useRef<HTMLInputElement>(null);
 
-  // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // Buy-Airtime Flow State
+  const [buyAirtimeStage, setBuyAirtimeStage] = useState(1);
+  const [airtimePhone, setAirtimePhone] = useState("");
+  const [airtimeAmount, setAirtimeAmount] = useState("");
+  const [airtimePinInput, setAirtimePinInput] = useState(["", "", "", "", "", ""]);
+  const [buyAirtimeLoading, setBuyAirtimeLoading] = useState(false);
+  const [buyAirtimeError, setBuyAirtimeError] = useState("");
+  const [airtimeSuccessData, setAirtimeSuccessData] = useState<any | null>(null);
+  const airtimePhoneInputRef = useRef<HTMLInputElement>(null);
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -147,6 +157,32 @@ export default function DanbaiwaApp() {
     }
   }, [activeTab, networks.length]);
 
+  // ── FIX: Plans loading moved here from inside BuyDataCard.
+  // Because BuyDataCard was defined inside this component's render, every
+  // parent state change (e.g. typing in the phone field) caused React to see
+  // it as a *brand-new component type*, unmount it, and remount — dismissing
+  // the keyboard. Moving the useEffect up and calling BuyDataCard as a plain
+  // function ({BuyDataCard()}) instead of JSX (<BuyDataCard />) eliminates
+  // the unmount/remount cycle entirely.
+  useEffect(() => {
+    if (buyDataStage !== 2 || plans.length > 0 || !selectedNetwork) return;
+
+    (async () => {
+      setBuyDataLoading(true);
+      try {
+        const res = await fetch(`/api/data/plans?networkId=${selectedNetwork.id}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setPlans(data);
+      } catch {
+        toast.error("Couldn't load plans. Check your connection.");
+        setBuyDataStage(1);
+      } finally {
+        setBuyDataLoading(false);
+      }
+    })();
+  }, [buyDataStage, selectedNetwork, plans.length]);
+
   const handleLogout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
@@ -156,7 +192,7 @@ export default function DanbaiwaApp() {
     }
   };
 
-  // â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Loading screen ────────────────────────────────────────────────────────
   if (loading || !user) {
     return (
       <div style={{
@@ -198,7 +234,7 @@ export default function DanbaiwaApp() {
     { id: "settings",     icon: SettingsIcon,    label: "Settings"     },
   ];
 
-  // â”€â”€ Shared sub-components (inline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Shared sub-components (inline) ────────────────────────────────────────
 
   // Modal wrapper
   const Modal = ({
@@ -312,28 +348,10 @@ export default function DanbaiwaApp() {
     </div>
   );
 
-  // Buy Data component for the data tab
+  // ── BuyDataCard: defined as a plain function (not a JSX component) so React
+  // never unmounts/remounts it on parent re-renders, keeping the keyboard alive.
+  // The plans-loading useEffect has been moved up to DanbaiwaApp above.
   const BuyDataCard = () => {
-    // Load plans when stage 2 is entered
-    useEffect(() => {
-      if (buyDataStage !== 2 || plans.length > 0) return;
-
-      (async () => {
-        setBuyDataLoading(true);
-        try {
-          const res = await fetch(`/api/data/plans?networkId=${selectedNetwork.id}`);
-          if (!res.ok) throw new Error();
-          const data = await res.json();
-          setPlans(data);
-        } catch {
-          toast.error("Couldn't load plans. Check your connection.");
-          setBuyDataStage(1);
-        } finally {
-          setBuyDataLoading(false);
-        }
-      })();
-    }, [buyDataStage]);
-
     // Progress indicator component
     const ProgressIndicator = () => (
       <div style={{
@@ -473,12 +491,10 @@ export default function DanbaiwaApp() {
               placeholder="e.g. 08012345678"
               value={phone}
               onChange={(e) => {
-                // Prevent any default behavior and just get digits
                 const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
                 setPhone(digits);
               }}
               onKeyDown={(e) => {
-                // Allow only: backspace, delete, arrow keys, and 0-9
                 const isDigit = /^\d$/.test(e.key);
                 const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key);
                 
@@ -489,7 +505,7 @@ export default function DanbaiwaApp() {
               autoComplete="off"
               autoCorrect="off"
               autoCapitalize="off"
-              spellCheck="false"
+              spellCheck={false}
               style={{
                 width: "100%",
                 padding: "12px 40px 12px 14px",
@@ -619,7 +635,6 @@ export default function DanbaiwaApp() {
               padding: "60px 20px",
               color: T.textSecondary,
             }}>
-              {/* SVG icon placeholder */}
               <svg
                 width="80"
                 height="80"
@@ -1078,7 +1093,561 @@ export default function DanbaiwaApp() {
     return null;
   };
 
-  // â”€â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const BuyAirtimeCard = () => {
+    // Progress indicator component
+    const ProgressIndicator = () => (
+      <div style={{
+        display: "flex", gap: 6, justifyContent: "center", marginBottom: 24,
+      }}>
+        {[1, 2, 3].map((stage) => (
+          <div
+            key={stage}
+            style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: stage < buyAirtimeStage ? T.blue : stage === buyAirtimeStage ? T.blue : T.border,
+              cursor: "pointer", opacity: stage <= buyAirtimeStage ? 1 : 0.3,
+              transform: stage === buyAirtimeStage ? "scale(1.2)" : "scale(1)",
+              transition: "all 0.2s ease-out",
+            }}
+            onClick={() => {
+              if (stage < buyAirtimeStage) setBuyAirtimeStage(stage);
+            }}
+            aria-label={`Step ${stage} of 3`}
+          />
+        ))}
+      </div>
+    );
+
+    // Stage 1: Phone + Amount Input
+    if (buyAirtimeStage === 1) {
+      const phoneIsValid = airtimePhone.length === 11 && /^08\d{9}$/.test(airtimePhone);
+      const amountNum = parseInt(airtimeAmount) || 0;
+      const amountIsValid = amountNum >= 100 && amountNum <= 50000;
+      const canContinue = phoneIsValid && amountIsValid;
+
+      return (
+        <div
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          <h2 style={{
+            margin: "0 0 20px", fontSize: 22, fontWeight: 800,
+            color: T.textPrimary, letterSpacing: "-0.5px",
+          }}>
+            Buy Airtime
+          </h2>
+
+          {/* Phone input */}
+          <div style={{ position: "relative", marginBottom: 24 }}>
+            <label style={{
+              display: "block",
+              fontSize: 14,
+              fontWeight: 600,
+              color: T.textSecondary,
+              marginBottom: 8,
+            }}>
+              Recipient Phone Number
+            </label>
+            <input
+              ref={airtimePhoneInputRef}
+              type="tel"
+              inputMode="numeric"
+              maxLength={11}
+              placeholder="e.g. 08012345678"
+              value={airtimePhone}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                setAirtimePhone(digits);
+              }}
+              onKeyDown={(e) => {
+                const isDigit = /^\d$/.test(e.key);
+                const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key);
+                if (!isDigit && !isControlKey && e.key !== "Enter" && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                }
+              }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              style={{
+                width: "100%",
+                padding: "12px 40px 12px 14px",
+                borderRadius: 12,
+                background: T.bgCard,
+                border: `1.5px solid ${phoneIsValid ? T.green : T.border}`,
+                color: T.textPrimary,
+                fontSize: 16,
+                fontFamily: font,
+                boxSizing: "border-box",
+                transition: "all 150ms ease",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                right: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                marginTop: 20,
+                opacity: phoneIsValid ? 1 : 0,
+                transition: "opacity 150ms ease",
+                pointerEvents: phoneIsValid ? "auto" : "none",
+              }}
+            >
+              <Check size={20} color={T.green} strokeWidth={3} />
+            </div>
+            <div style={{
+              fontSize: 12,
+              color: phoneIsValid ? T.green : T.textMuted,
+              textAlign: "right",
+              marginTop: 6,
+              fontWeight: 500,
+            }}>
+              {airtimePhone.length}/11
+            </div>
+          </div>
+
+          {/* Amount input */}
+          <div style={{ position: "relative", marginBottom: 24 }}>
+            <label style={{
+              display: "block",
+              fontSize: 14,
+              fontWeight: 600,
+              color: T.textSecondary,
+              marginBottom: 8,
+            }}>
+              Amount (₦100 - ₦50,000)
+            </label>
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="Enter amount"
+              value={airtimeAmount}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "").slice(0, 5);
+                setAirtimeAmount(val);
+              }}
+              min="100"
+              max="50000"
+              style={{
+                width: "100%",
+                padding: "12px 40px 12px 14px",
+                borderRadius: 12,
+                background: T.bgCard,
+                border: `1.5px solid ${amountIsValid && airtimeAmount ? T.green : T.border}`,
+                color: T.textPrimary,
+                fontSize: 16,
+                fontFamily: font,
+                boxSizing: "border-box",
+                transition: "all 150ms ease",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                right: 12,
+                top: "50%",
+                transform: "translateY(-50%)",
+                marginTop: 20,
+                opacity: amountIsValid && airtimeAmount ? 1 : 0,
+                transition: "opacity 150ms ease",
+              }}
+            >
+              <Check size={20} color={T.green} strokeWidth={3} />
+            </div>
+          </div>
+
+          {/* Continue button */}
+          <button
+            onClick={() => canContinue && setBuyAirtimeStage(2)}
+            disabled={!canContinue}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: canContinue ? T.blue : T.bgElevated,
+              border: `1.5px solid ${canContinue ? T.blue : T.border}`,
+              color: canContinue ? "#fff" : T.textMuted,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: canContinue ? "pointer" : "not-allowed",
+              opacity: canContinue ? 1 : 0.5,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+            aria-disabled={!canContinue}
+          >
+            Continue
+          </button>
+        </div>
+      );
+    }
+
+    // Stage 2: PIN Confirmation & Summary
+    if (buyAirtimeStage === 2) {
+      const pinFull = airtimePinInput.every((d) => d !== "");
+
+      const handlePinSubmit = async () => {
+        if (!pinFull) return;
+
+        setBuyAirtimeLoading(true);
+        setBuyAirtimeError("");
+
+        try {
+          // Validate PIN
+          const validateRes = await fetch("/api/airtime/validate-pin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ pin: airtimePinInput.join("") }),
+          });
+
+          if (!validateRes.ok) {
+            const error = await validateRes.json();
+            setBuyAirtimeError(error.error || "Incorrect PIN. Please try again.");
+            setAirtimePinInput(["", "", "", "", "", ""]);
+            setBuyAirtimeLoading(false);
+            return;
+          }
+
+          // PIN valid, now purchase
+          const purchaseRes = await fetch("/api/airtime/purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              phone: airtimePhone,
+              amount: parseInt(airtimeAmount),
+              pin: airtimePinInput.join(""),
+            }),
+          });
+
+          if (!purchaseRes.ok) {
+            const error = await purchaseRes.json();
+            if (error.error?.includes("Insufficient balance")) {
+              setBuyAirtimeError("Insufficient balance. Please fund your wallet.");
+            } else if (error.error?.includes("refunded")) {
+              toast.error("Delivery failed. Your balance has been refunded.");
+              setBuyAirtimeError("Delivery failed. Your balance has been refunded.");
+            } else {
+              toast.error("Something went wrong. Please try again.");
+              setBuyAirtimeError(error.error || "Purchase failed");
+            }
+            setAirtimePinInput(["", "", "", "", "", ""]);
+            setBuyAirtimeLoading(false);
+            return;
+          }
+
+          const data = await purchaseRes.json();
+          toast.success(`₦${(data.amount || 0).toLocaleString()} sent to ${airtimePhone} ✓`);
+          setAirtimeSuccessData(data);
+          setAirtimePinInput(["", "", "", "", "", ""]);
+          setBuyAirtimeStage(3);
+        } catch (error: any) {
+          toast.error("Something went wrong. Please try again.");
+          setBuyAirtimeError(error.message || "An error occurred");
+          setAirtimePinInput(["", "", "", "", "", ""]);
+        } finally {
+          setBuyAirtimeLoading(false);
+        }
+      };
+
+      return (
+        <div
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          {/* Back button */}
+          <button
+            onClick={() => {
+              setBuyAirtimeStage(1);
+              setAirtimePinInput(["", "", "", "", "", ""]);
+              setBuyAirtimeError("");
+            }}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <h2 style={{
+            margin: "0 0 20px",
+            fontSize: 22,
+            fontWeight: 800,
+            color: T.textPrimary,
+            letterSpacing: "-0.5px",
+          }}>
+            Confirm Purchase
+          </h2>
+
+          {/* Summary receipt */}
+          <div style={{
+            background: T.bgElevated,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 24,
+            border: `1px solid ${T.border}`,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Phone</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{airtimePhone}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 0, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Amount</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>₦{parseInt(airtimeAmount).toLocaleString()}</span>
+            </div>
+
+            {/* Divider */}
+            <div style={{
+              height: 1,
+              background: T.border,
+              margin: "16px 0",
+            }} />
+
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Total</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
+                ₦{parseInt(airtimeAmount).toLocaleString()}
+              </span>
+            </div>
+          </div>
+
+          {/* PIN Input */}
+          <label style={{
+            display: "block",
+            fontSize: 14,
+            fontWeight: 600,
+            color: T.textSecondary,
+            marginBottom: 12,
+          }}>
+            Enter your 6-digit PIN
+          </label>
+
+          <div style={{ marginBottom: 16 }}>
+            <PinInput
+              value={airtimePinInput}
+              onChange={setAirtimePinInput}
+              error={buyAirtimeError.length > 0}
+              disabled={buyAirtimeLoading}
+              bgColor={T.bgCard}
+              bgElevated={T.bgElevated}
+              borderColor={T.border}
+              borderStrong={T.borderStrong}
+              textPrimary={T.textPrimary}
+              textSecondary={T.textSecondary}
+              errorColor={T.red}
+              blueColor={T.blue}
+            />
+          </div>
+
+          {/* Error display */}
+          <div
+            style={{
+              background: `${T.red}20`,
+              border: `1px solid ${T.red}50`,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 16,
+              color: T.red,
+              fontSize: 13,
+              fontWeight: 500,
+              opacity: buyAirtimeError ? 1 : 0,
+              maxHeight: buyAirtimeError ? "100%" : "0",
+              overflow: "hidden",
+              transition: "opacity 150ms ease, max-height 150ms ease",
+              pointerEvents: buyAirtimeError ? "auto" : "none",
+            }}
+            role="alert"
+          >
+            {buyAirtimeError}
+          </div>
+
+          {/* Confirm & Pay button */}
+          <button
+            onClick={handlePinSubmit}
+            disabled={!pinFull || buyAirtimeLoading}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: pinFull && !buyAirtimeLoading ? T.blue : T.bgElevated,
+              border: "none",
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: pinFull && !buyAirtimeLoading ? "pointer" : "not-allowed",
+              opacity: pinFull && !buyAirtimeLoading ? 1 : 0.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+            aria-disabled={!pinFull || buyAirtimeLoading}
+          >
+            {buyAirtimeLoading && (
+              <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+            )}
+            {buyAirtimeLoading ? "Processing..." : "Confirm & Pay"}
+          </button>
+        </div>
+      );
+    }
+
+    // Stage 3: Success
+    if (buyAirtimeStage === 3) {
+      return (
+        <div
+          style={{
+            padding: "20px 20px 120px",
+            fontFamily: font,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <ProgressIndicator />
+
+          <div style={{ textAlign: "center" }}>
+            <SuccessCheck greenColor={T.green} size={80} />
+
+            <h2 style={{
+              margin: "0 0 12px",
+              fontSize: 26,
+              fontWeight: 800,
+              color: T.textPrimary,
+              letterSpacing: "-0.6px",
+            }}>
+              Airtime Sent!
+            </h2>
+            <p style={{
+              margin: "0 0 28px",
+              fontSize: 14,
+              color: T.textSecondary,
+              lineHeight: 1.6,
+            }}>
+              ₦{(airtimeSuccessData?.amount || airtimeAmount).toLocaleString()} has been sent to {airtimePhone}
+            </p>
+
+            {/* Receipt summary */}
+            <div style={{
+              background: T.bgElevated,
+              borderRadius: 16,
+              padding: 20,
+              marginBottom: 28,
+              border: `1px solid ${T.border}`,
+              textAlign: "left",
+            }}>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
+                  Reference
+                </div>
+                <div style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: T.textPrimary,
+                  fontFamily: "monospace",
+                  wordBreak: "break-all",
+                }}>
+                  {airtimeSuccessData?.reference}
+                </div>
+              </div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
+                  Date
+                </div>
+                <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>
+                  {new Date().toLocaleDateString()}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
+                  Status
+                </div>
+                <div style={{ fontSize: 14, color: T.green, fontWeight: 600 }}>
+                  ✓ Successful
+                </div>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <button
+                onClick={() => {
+                  setBuyAirtimeStage(1);
+                  setAirtimePhone("");
+                  setAirtimeAmount("");
+                  setAirtimePinInput(["", "", "", "", "", ""]);
+                  setAirtimeSuccessData(null);
+                }}
+                style={{
+                  width: "100%",
+                  padding: 14,
+                  borderRadius: 12,
+                  background: T.blue,
+                  border: "none",
+                  color: "#fff",
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: font,
+                }}
+              >
+                Buy Again
+              </button>
+              <button
+                onClick={() => setActiveTab("history")}
+                style={{
+                  width: "100%",
+                  padding: 14,
+                  borderRadius: 12,
+                  background: "transparent",
+                  border: `1.5px solid ${T.border}`,
+                  color: T.textPrimary,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: font,
+                }}
+              >
+                View History
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────────
   return (
     <div style={{
       background: T.bg,
@@ -1091,7 +1660,7 @@ export default function DanbaiwaApp() {
       position: "relative",
     }}>
 
-      {/* â”€â”€ Ambient top glow â”€â”€ */}
+      {/* ── Ambient top glow ── */}
       <div style={{
         position: "fixed", top: -120, left: "50%", transform: "translateX(-50%)",
         width: 500, height: 300,
@@ -1099,10 +1668,10 @@ export default function DanbaiwaApp() {
         pointerEvents: "none", zIndex: 0,
       }} />
 
-      {/* â”€â”€ Safe-area top spacer â”€â”€ */}
+      {/* ── Safe-area top spacer ── */}
       <div style={{ height: "env(safe-area-inset-top, 16px)", flexShrink: 0 }} />
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ══════════════════ HEADER ══════════════════ */}
       <div style={{
         padding: "16px 20px 20px",
         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -1150,7 +1719,7 @@ export default function DanbaiwaApp() {
         </button>
       </div>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SCROLLABLE CONTENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ══════════════════ SCROLLABLE CONTENT ══════════════════ */}
       <div style={{
         flex: 1, overflowY: "auto",
         WebkitOverflowScrolling: "touch",
@@ -1158,14 +1727,14 @@ export default function DanbaiwaApp() {
       }}>
         <>
 
-          {/* â•â• HOME TAB â•â• */}
+          {/* ══ HOME TAB ══ */}
           {activeTab === "home" && (
             <div
               key="home"
               style={{ padding: "0 20px 120px" }}
             >
 
-              {/* â”€â”€ Balance Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              {/* ── Balance Card ─────────────────────────────────────── */}
               <div
                 style={{
                   borderRadius: 28,
@@ -1288,7 +1857,7 @@ export default function DanbaiwaApp() {
                 </div>
               </div>
 
-              {/* â”€â”€ Section label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              {/* ── Section label ────────────────────────────────────── */}
               <p style={{
                 margin: "0 0 14px", fontSize: 13, fontWeight: 700,
                 color: T.textMuted, textTransform: "uppercase",
@@ -1297,7 +1866,7 @@ export default function DanbaiwaApp() {
                 Quick Services
               </p>
 
-              {/* â”€â”€ Services Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              {/* ── Services Grid ───────────────────────────────────── */}
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
                 gap: 12, marginBottom: 32,
@@ -1341,7 +1910,7 @@ export default function DanbaiwaApp() {
                 })}
               </div>
 
-              {/* â”€â”€ Account section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+              {/* ── Account section ──────────────────────────────────── */}
               <p style={{
                 margin: "0 0 12px", fontSize: 13, fontWeight: 700,
                 color: T.textMuted, textTransform: "uppercase", letterSpacing: "1px",
@@ -1394,13 +1963,12 @@ export default function DanbaiwaApp() {
             </div>
           )}
 
-          {/* â•â• SERVICE TABS â•â• */}
-          {activeTab === "data" && (
-            <BuyDataCard />
-          )}
-          {activeTab === "airtime" && (
-            <ComingSoon key="airtime" icon={Phone} label="Airtime" color={T.services.airtime.icon} />
-          )}
+          {/* ══ SERVICE TABS ══ */}
+          {/* FIX: Called as {BuyDataCard()} not <BuyDataCard /> so React does
+              not treat it as a new component type on each render, preventing
+              the unmount/remount that was dismissing the keyboard. */}
+          {activeTab === "data" && BuyDataCard()}
+          {activeTab === "airtime" && BuyAirtimeCard()}
           {activeTab === "cable" && (
             <ComingSoon key="cable" icon={Tv} label="Cable TV" color={T.services.cable.icon} />
           )}
@@ -1414,7 +1982,7 @@ export default function DanbaiwaApp() {
         </>
       </div>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BOTTOM NAV â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ══════════════════ BOTTOM NAV ══════════════════ */}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         background: `rgba(7,9,15,0.88)`,
@@ -1429,7 +1997,7 @@ export default function DanbaiwaApp() {
           const Icon  = tab.icon;
           const isActive = tab.id === "home"
             ? activeTab === "home"
-            : false; // nav items open modals so never truly "active"
+            : false;
 
           return (
             <button
@@ -1476,7 +2044,7 @@ export default function DanbaiwaApp() {
         })}
       </div>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• TRANSACTIONS MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ══════════════════ TRANSACTIONS MODAL ══════════════════ */}
       <Modal show={showTransactionsModal} onClose={() => setShowTransactionsModal(false)}>
         <ModalHeader title="Transactions" onClose={() => setShowTransactionsModal(false)} />
 
@@ -1560,7 +2128,7 @@ export default function DanbaiwaApp() {
         )}
       </Modal>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SETTINGS MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ══════════════════ SETTINGS MODAL ══════════════════ */}
       <Modal show={showSettingsModal} onClose={() => setShowSettingsModal(false)}>
         <ModalHeader title="Settings" onClose={() => setShowSettingsModal(false)} />
 
@@ -1663,7 +2231,7 @@ export default function DanbaiwaApp() {
         </button>
       </Modal>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CHANGE PIN MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      {/* ══════════════════ CHANGE PIN MODAL ══════════════════ */}
       <Modal show={showPinChangeModal} onClose={() => setShowPinChangeModal(false)}>
         <ModalHeader title="Change PIN" onClose={() => setShowPinChangeModal(false)} />
 
@@ -1809,4 +2377,3 @@ export default function DanbaiwaApp() {
     </div>
   );
 }
-
