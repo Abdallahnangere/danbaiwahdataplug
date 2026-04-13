@@ -77,11 +77,11 @@ export default function UsersTab() {
   const fetchUserTransactions = async (userId: string) => {
     setTransactionsLoading(true);
     try {
-      const res = await fetch("/api/transactions", { credentials: "include" });
+      const res = await fetch(`/api/admin/users/${userId}/transactions`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch transactions");
       const json = await res.json();
-      if (json.success && Array.isArray(json.transactions)) {
-        setUserTransactions(json.transactions || []);
+      if (Array.isArray(json)) {
+        setUserTransactions(json);
       }
     } catch (error) {
       toast.error("Failed to load user transactions");
