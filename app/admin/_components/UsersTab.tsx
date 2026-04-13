@@ -49,6 +49,7 @@ export default function UsersTab() {
   const [balanceOperation, setBalanceOperation] = useState<"" | "add" | "subtract" | "set">("");
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [roleLoading, setRoleLoading] = useState(false);
 
   // Fetch users
   useEffect(() => {
@@ -152,6 +153,43 @@ export default function UsersTab() {
       toast.error("Failed to update balance");
     } finally {
       setBalanceLoading(false);
+    }
+  };
+
+  // Handle role toggle
+  const handleRoleToggle = async () => {
+    if (!selectedUser) return;
+
+    const newRole = selectedUser.tier === "user" ? "AGENT" : "USER";
+    setRoleLoading(true);
+
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/role`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (!res.ok) throw new Error("Failed to update role");
+      const result = await res.json();
+
+      // Update selected user role
+      const updatedUser = { ...selectedUser, tier: newRole.toLowerCase() };
+      setSelectedUser(updatedUser);
+
+      // Update users list
+      setUsers(
+        users.map((u) =>
+          u.id === selectedUser.id ? { ...u, tier: newRole.toLowerCase() } : u
+        )
+      );
+
+      toast.success(`User ${newRole === "AGENT" ? "upgraded to Agent" : "downgraded to User"}`);
+    } catch (error) {
+      toast.error("Failed to update user role");
+    } finally {
+      setRoleLoading(false);
     }
   };
 
@@ -436,18 +474,44 @@ export default function UsersTab() {
                 </div>
                 <div>
                   <p style={{ margin: "0 0 4px", fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Tier</p>
-                  <span style={{
-                    display: "inline-block",
-                    padding: "4px 8px",
-                    borderRadius: 6,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    background: (selectedUser.tier || "user") === "user" ? `${T.blue}20` : `${T.textSecondary}20`,
-                    color: (selectedUser.tier || "user") === "user" ? T.blue : T.textSecondary,
-                    textTransform: "capitalize",
-                  }}>
-                    {selectedUser.tier || "user"}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{
+                      display: "inline-block",
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      background: (selectedUser.tier || "user") === "user" ? `${T.blue}20` : `${T.textSecondary}20`,
+                      color: (selectedUser.tier || "user") === "user" ? T.blue : T.textSecondary,
+                      textTransform: "capitalize",
+                    }}>
+                      {selectedUser.tier || "user"}
+                    </span>
+                    <button
+                      onClick={handleRoleToggle}
+                      disabled={roleLoading}
+                      style={{
+                        padding: "4px 12px",
+                        borderRadius: 6,
+                        background: selectedUser.tier === "user" ? T.violet : `${T.blue}20`,
+                        border: `1px solid ${selectedUser.tier === "user" ? T.violet : T.blue}`,
+                        color: selectedUser.tier === "user" ? "#fff" : T.blue,
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: roleLoading ? "not-allowed" : "pointer",
+                        opacity: roleLoading ? 0.7 : 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      {roleLoading ? (
+                        <Loader2 size={12} style={{ animation: "spin 1s linear infinite" }} />
+                      ) : (
+                        selectedUser.tier === "user" ? "Upgrade" : "Downgrade"
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 

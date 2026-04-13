@@ -49,13 +49,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. VALIDATE PIN
+    // 3. VALIDATE PIN AND GET USER DETAILS
     const user = await queryOne<{
       pin: string | null;
       balance: number;
       name: string | null;
+      role: string;
     }>(
-      `SELECT pin, balance, name FROM "User" WHERE id = $1`,
+      `SELECT pin, balance, name, role FROM "User" WHERE id = $1`,
       [userId]
     );
 
@@ -103,12 +104,13 @@ export async function POST(request: NextRequest) {
       name: string;
       networkId: number;
       price: number;
+      agentPrice: number | null;
       activeApi: string;
       apiAId: number | null;
       apiBId: number | null;
       isActive: boolean;
     }>(
-      `SELECT id, name, "networkId", price, "activeApi", "apiAId", "apiBId", "isActive"
+      `SELECT id, name, "networkId", price, "agentPrice", "activeApi", "apiAId", "apiBId", "isActive"
        FROM "DataPlan"
        WHERE id = $1`,
       [planId]
@@ -136,14 +138,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    log("PLAN_LOADED", { planId, planName: plan.name, price: plan.price, activeApi: plan.activeApi });
+    // Apply role-based pricing
+    let planPrice = plan.price;
+    if (user.role === "AGENT" && plan.agentPrice && plan.agentPrice > 0) {
+      planPrice = plan.agentPrice;
+    }
+
+    log("PLAN_LOADED", { planId, planName: plan.name, basePrice: plan.price, agentPrice: plan.agentPrice, userRole: user.role, appliedPrice: planPrice, activeApi: plan.activeApi });
 
     // 5. BALANCE CHECK
     const userBalance = typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance));
-    log("BALANCE_CHECK", { userBalance, planPrice: plan.price, sufficient: userBalance >= plan.price });
+    log("BALANCE_CHECK", { userBalance, planPrice, sufficient: userBalance >= planPrice });
 
-    if (userBalance < plan.price) {
-      log("INSUFFICIENT_BALANCE", { userBalance, required: plan.price, shortfall: plan.price - userBalance });
+    if (userBalance < planPrice) {
+      log("INSUFFICIENT_BALANCE", { userBalance, required: planPrice, shortfall: planPrice - userBalance });
       return NextResponse.json(
         { error: "Insufficient wallet balance." },
         { 
@@ -169,7 +177,7 @@ export async function POST(request: NextRequest) {
         planId,
         phone,
         plan.networkId,
-        plan.price,
+        planPrice,
         plan.activeApi,
         customerRef,
         "PENDING",
@@ -191,7 +199,7 @@ export async function POST(request: NextRequest) {
        SET balance = balance - $1
        WHERE id = $2
        RETURNING balance`,
-      [plan.price, userId]
+      [planPrice, userId]
     );
 
     if (!updateResult) {
@@ -199,7 +207,7 @@ export async function POST(request: NextRequest) {
     }
 
     const balanceAfterDebit = typeof updateResult.balance === 'number' ? updateResult.balance : parseFloat(String(updateResult.balance));
-    log("WALLET_DEBITED", { transactionId, debitAmount: plan.price, newBalance: balanceAfterDebit });
+    log("WALLET_DEBITED", { transactionId, debitAmount: planPrice, newBalance: balanceAfterDebit });
 
     // 8. CALL PROVIDER
     let providerRef: string | null = null;
