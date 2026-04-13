@@ -24,11 +24,10 @@ export async function GET(request: NextRequest) {
       name: string | null;
       phone: string | null;
       balance: number;
-      tier: string | null;
       role: string;
       isActive: boolean;
     }>(
-      `SELECT id, name, phone, balance, tier, role, "isActive"
+      `SELECT id, name, phone, balance, role, "isActive"
        FROM "User"
        WHERE id = $1`,
       [sessionUser.userId]
@@ -41,12 +40,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Map role to tier for frontend (USER -> user, AGENT -> agent)
+    const tier = (user.role || "USER").toLowerCase() as "user" | "agent" | "admin";
+
     return NextResponse.json({
       id: user.id,
       fullName: user.name,
       phone: user.phone,
       balance: typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance)),
-      tier: user.tier,
+      tier: tier,
       role: user.role,
       isActive: user.isActive,
     }, { headers: utf8Headers });

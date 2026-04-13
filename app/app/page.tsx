@@ -472,7 +472,24 @@ export default function DanbaiwaApp() {
               maxLength={11}
               placeholder="e.g. 08012345678"
               value={phone}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+              onChange={(e) => {
+                // Prevent any default behavior and just get digits
+                const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                setPhone(digits);
+              }}
+              onKeyDown={(e) => {
+                // Allow only: backspace, delete, arrow keys, and 0-9
+                const isDigit = /^\d$/.test(e.key);
+                const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key);
+                
+                if (!isDigit && !isControlKey && e.key !== "Enter" && !e.ctrlKey && !e.metaKey) {
+                  e.preventDefault();
+                }
+              }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck="false"
               style={{
                 width: "100%",
                 padding: "12px 40px 12px 14px",
@@ -1196,13 +1213,13 @@ export default function DanbaiwaApp() {
                 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <span style={{
-                      fontSize: 44, fontWeight: 700, color: "rgba(255,255,255,0.8)",
+                      fontSize: 31, fontWeight: 700, color: "rgba(255,255,255,0.8)",
                     }}>₦</span>
                     <span
                       key={balanceVisible ? "vis" : "hid"}
                       style={{
-                        fontSize: 44, fontWeight: 900, color: "white",
-                        letterSpacing: "-2px",
+                        fontSize: 31, fontWeight: 900, color: "white",
+                        letterSpacing: "-1px",
                         fontVariantNumeric: "tabular-nums",
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
