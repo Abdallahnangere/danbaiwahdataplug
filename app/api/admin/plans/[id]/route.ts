@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { queryOne, execute } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
@@ -8,18 +9,20 @@ const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Verify admin access using JWT role
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Unauthorized - Admin access required" },
+        { status: 403, headers: utf8Headers }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id") || (request.nextUrl.pathname.split("/").pop());
 
     if (!id) {
       return NextResponse.json({ error: "Plan ID is required" }, { status: 400, headers: utf8Headers });
-    }
-
-    // Check admin session cookie
-    const adminSession = request.cookies.get("admin-session");
-    
-    if (!adminSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     const body = await request.json();
@@ -129,7 +132,7 @@ export async function PATCH(request: NextRequest) {
       agentPrice: plan.agentPrice ? (typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice))) : null,
     }, { headers: utf8Headers });
   } catch (error) {
-    console.error("Plan update error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("Plan update error:", error);
     return NextResponse.json(
       { error: "Failed to update plan" },
       { status: 500, headers: utf8Headers }
@@ -139,11 +142,13 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Check admin session cookie
-    const adminSession = request.cookies.get("admin-session");
-    
-    if (!adminSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
+    // Verify admin access using JWT role
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Unauthorized - Admin access required" },
+        { status: 403, headers: utf8Headers }
+      );
     }
 
     const id = request.nextUrl.pathname.split("/").pop();
@@ -156,7 +161,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true }, { headers: utf8Headers });
   } catch (error) {
-    console.error("Plan delete error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("Plan delete error:", error);
     return NextResponse.json(
       { error: "Failed to delete plan" },
       { status: 500, headers: utf8Headers }

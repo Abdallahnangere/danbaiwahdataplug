@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { queryOne } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
@@ -18,11 +19,13 @@ export async function PATCH(
       return NextResponse.json({ error: "User ID is required" }, { status: 400, headers: utf8Headers });
     }
 
-    // Check admin session cookie
-    const adminSession = request.cookies.get("admin-session");
-    
-    if (!adminSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
+    // Verify admin access using JWT role
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Unauthorized - Admin access required" },
+        { status: 403, headers: utf8Headers }
+      );
     }
 
     const body = await request.json();
@@ -68,7 +71,7 @@ export async function PATCH(
       { headers: utf8Headers }
     );
   } catch (error: any) {
-    console.error("Role update error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("Role update error:", error);
     return NextResponse.json(
       { error: "Failed to update user role", details: error.message },
       { status: 500, headers: utf8Headers }

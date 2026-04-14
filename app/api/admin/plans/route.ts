@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       isActive: plan.isActive === true,
     })), { headers: utf8Headers });
   } catch (error) {
-    console.error("Plans fetch error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("Plans fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch plans" },
       { status: 500, headers: utf8Headers }

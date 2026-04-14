@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest) {
 
     return NextResponse.json({ error: "Invalid request" }, { status: 400, headers: utf8Headers });
   } catch (error) {
-    console.error("User update error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("User update error:", error);
     return NextResponse.json(
       { error: "Failed to update user" },
       { status: 500, headers: utf8Headers }
@@ -98,7 +98,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true }, { headers: utf8Headers });
   } catch (error) {
-    console.error("User delete error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("User delete error:", error);
     return NextResponse.json(
       { error: "Failed to delete user" },
       { status: 500, headers: utf8Headers }
