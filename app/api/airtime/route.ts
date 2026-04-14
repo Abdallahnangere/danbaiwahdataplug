@@ -146,10 +146,10 @@ export async function POST(request: NextRequest) {
         mobile_number,
         amount: amountNum,
       };
-      log("PROVIDER_REQUEST", { url: `${process.env.PROVIDER_B_BASE_URL}/api/topup`, payload });
+      log("PROVIDER_REQUEST", { url: `${process.env.PROVIDER_B_BASE_URL}/topup`, payload });
 
       const providerBResponse = await fetch(
-        `${process.env.PROVIDER_B_BASE_URL}/api/topup`,
+        `${process.env.PROVIDER_B_BASE_URL}/topup`,
         {
           method: "POST",
           headers: {
