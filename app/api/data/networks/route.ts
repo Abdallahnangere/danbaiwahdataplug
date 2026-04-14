@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 export const dynamic = 'force-dynamic';
 
 const log = (step: string, data: any) => {
-  console.log(`[NETWORKS] ${step}:`, JSON.stringify(data, null, 2));
+  // Only log in development environment
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[NETWORKS] ${step}:`, JSON.stringify(data, null, 2));
+  }
 };
 
 export async function GET() {

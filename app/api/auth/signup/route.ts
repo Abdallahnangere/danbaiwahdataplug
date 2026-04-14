@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { queryOne, execute } from "@/lib/db";
 import { randomUUID } from "crypto";
+import { checkRateLimit, resetRateLimit } from "@/lib/rateLimiter";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -51,6 +52,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check rate limit for signup attempts
+    const rateLimitCheck = checkRateLimit(phone, "signup", {
+      maxAttempts: 3,
+      windowMs: 60 * 60 * 1000, // 1 hour
+    });
+
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many signup attempts. Please try again later.",
+          retryAfter: rateLimitCheck.resetTime,
+        },
+        { status: 429, headers: utf8Headers }
+      );
+    }
+
     // Check if phone already exists
     const existingPhone = await queryOne<{ id: string }>(
       `SELECT id FROM "User" WHERE phone = $1`,
@@ -63,6 +80,9 @@ export async function POST(request: NextRequest) {
         { status: 409, headers: utf8Headers }
       );
     }
+
+    // Reset rate limit on successful signup
+    resetRateLimit(phone, "signup");
 
     // Hash PIN using bcrypt
     const salt = await bcrypt.genSalt(10);

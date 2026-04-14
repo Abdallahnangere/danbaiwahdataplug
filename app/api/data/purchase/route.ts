@@ -8,7 +8,10 @@ export const revalidate = 0;
 
 // Logging helper
 const log = (step: string, data: any) => {
-  console.log(`[PURCHASE] ${step}:`, JSON.stringify(data, null, 2));
+  // Only log in development environment
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[PURCHASE] ${step}:`, JSON.stringify(data, null, 2));
+  }
 };
 
 export async function POST(request: NextRequest) {

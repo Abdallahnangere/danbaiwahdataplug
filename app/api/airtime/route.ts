@@ -7,7 +7,10 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const log = (step: string, data: any) => {
-  console.log(`[AIRTIME] ${step}:`, JSON.stringify(data, null, 2));
+  // Only log in development environment
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[AIRTIME] ${step}:`, JSON.stringify(data, null, 2));
+  }
 };
 
 export async function POST(request: NextRequest) {

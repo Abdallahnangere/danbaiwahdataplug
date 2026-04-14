@@ -3,6 +3,7 @@ import { signToken } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { queryOne } from "@/lib/db";
+import { checkRateLimit, resetRateLimit } from "@/lib/rateLimiter";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,6 +27,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Invalid phone format" },
         { status: 400, headers: utf8Headers }
+      );
+    }
+
+    // Check rate limit for this phone number
+    const rateLimitCheck = checkRateLimit(phone, "login", {
+      maxAttempts: 5,
+      windowMs: 15 * 60 * 1000, // 15 minutes
+    });
+
+    if (!rateLimitCheck.allowed) {
+      const resetTime = new Date(rateLimitCheck.resetTime || Date.now()).toISOString();
+      return NextResponse.json(
+        {
+          error: "Too many login attempts. Please try again later.",
+          retryAfter: rateLimitCheck.resetTime,
+        },
+        { status: 429, headers: utf8Headers }
       );
     }
 
@@ -73,6 +91,9 @@ export async function POST(request: NextRequest) {
         { status: 401, headers: utf8Headers }
       );
     }
+
+    // Reset rate limit on successful login
+    resetRateLimit(phone, "login");
 
     // Generate JWT token
     const token = await signToken({
