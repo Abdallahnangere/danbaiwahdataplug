@@ -99,9 +99,9 @@ export default function DanbaiwaApp() {
 
   // Buy-Airtime Flow State
   const [buyAirtimeStage, setBuyAirtimeStage] = useState(1);
+  const [airtimeNetwork, setAirtimeNetwork] = useState<any | null>(null);
   const [airtimePhone, setAirtimePhone] = useState("");
   const [airtimeAmount, setAirtimeAmount] = useState("");
-  const [airtimePinInput, setAirtimePinInput] = useState(["", "", "", "", "", ""]);
   const [buyAirtimeLoading, setBuyAirtimeLoading] = useState(false);
   const [buyAirtimeError, setBuyAirtimeError] = useState("");
   const [airtimeSuccessData, setAirtimeSuccessData] = useState<any | null>(null);
@@ -1093,552 +1093,317 @@ export default function DanbaiwaApp() {
     return null;
   };
 
+  const AIRTIME_NETWORKS = [
+    { id: 1, name: "MTN", prefix: /^0803|0806|0703|0706|0913/, color: "#FFD700", hexColor: "#ffd700" },
+    { id: 2, name: "Glo", prefix: /^0805|0807|0811|0815|0905/, color: "#228B22", hexColor: "#228b22" },
+    { id: 3, name: "9mobile", prefix: /^0809|0817|0818|0909/, color: "#006400", hexColor: "#006400" },
+    { id: 4, name: "Airtel", prefix: /^0801|0802|0808|0812|0902|0904/, color: "#DC143C", hexColor: "#dc143c" },
+  ];
+
   const BuyAirtimeCard = () => {
-    // Progress indicator component
+    // Detect which network a phone prefix belongs to
+    const detectNetwork = (phone: string) => {
+      if (!phone || phone.length < 4) return null;
+      const prefix = phone.slice(0, 4);
+      return AIRTIME_NETWORKS.find(net => net.prefix.test(prefix)) || null;
+    };
+
+    // Progress indicator
     const ProgressIndicator = () => (
-      <div style={{
-        display: "flex", gap: 6, justifyContent: "center", marginBottom: 24,
-      }}>
-        {[1, 2, 3].map((stage) => (
-          <div
-            key={stage}
-            style={{
-              width: 8, height: 8, borderRadius: "50%",
-              background: stage < buyAirtimeStage ? T.blue : stage === buyAirtimeStage ? T.blue : T.border,
-              cursor: "pointer", opacity: stage <= buyAirtimeStage ? 1 : 0.3,
-              transform: stage === buyAirtimeStage ? "scale(1.2)" : "scale(1)",
-              transition: "all 0.2s ease-out",
-            }}
-            onClick={() => {
-              if (stage < buyAirtimeStage) setBuyAirtimeStage(stage);
-            }}
-            aria-label={`Step ${stage} of 3`}
-          />
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 24 }}>
+        {[1, 2, 3, 4].map((s) => (
+          <div key={s} style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: s <= buyAirtimeStage ? T.blue : T.border,
+            opacity: s <= buyAirtimeStage ? 1 : 0.3,
+            transform: s === buyAirtimeStage ? "scale(1.2)" : "scale(1)",
+            transition: "all 0.2s ease-out", cursor: "pointer",
+          }} onClick={() => s < buyAirtimeStage && setBuyAirtimeStage(s)} />
         ))}
       </div>
     );
 
-    // Stage 1: Phone + Amount Input
+    // STAGE 1: Network Selection
     if (buyAirtimeStage === 1) {
-      const phoneIsValid = airtimePhone.length === 11 && /^08\d{9}$/.test(airtimePhone);
-      const amountNum = parseInt(airtimeAmount) || 0;
-      const amountIsValid = amountNum >= 100 && amountNum <= 50000;
-      const canContinue = phoneIsValid && amountIsValid;
-
       return (
-        <div
-          style={{
-            padding: "20px 20px 120px",
-            fontFamily: font,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
           <ProgressIndicator />
-
-          <h2 style={{
-            margin: "0 0 20px", fontSize: 22, fontWeight: 800,
-            color: T.textPrimary, letterSpacing: "-0.5px",
-          }}>
-            Buy Airtime
-          </h2>
-
-          {/* Phone input */}
-          <div style={{ position: "relative", marginBottom: 24 }}>
-            <label style={{
-              display: "block",
-              fontSize: 14,
-              fontWeight: 600,
-              color: T.textSecondary,
-              marginBottom: 8,
-            }}>
-              Recipient Phone Number
-            </label>
-            <input
-              ref={airtimePhoneInputRef}
-              type="tel"
-              inputMode="numeric"
-              maxLength={11}
-              placeholder="e.g. 08012345678"
-              value={airtimePhone}
-              onChange={(e) => {
-                const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
-                setAirtimePhone(digits);
-              }}
-              onKeyDown={(e) => {
-                const isDigit = /^\d$/.test(e.key);
-                const isControlKey = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(e.key);
-                if (!isDigit && !isControlKey && e.key !== "Enter" && !e.ctrlKey && !e.metaKey) {
-                  e.preventDefault();
-                }
-              }}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              style={{
-                width: "100%",
-                padding: "12px 40px 12px 14px",
-                borderRadius: 12,
-                background: T.bgCard,
-                border: `1.5px solid ${phoneIsValid ? T.green : T.border}`,
-                color: T.textPrimary,
-                fontSize: 16,
-                fontFamily: font,
-                boxSizing: "border-box",
-                transition: "all 150ms ease",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                right: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                marginTop: 20,
-                opacity: phoneIsValid ? 1 : 0,
-                transition: "opacity 150ms ease",
-                pointerEvents: phoneIsValid ? "auto" : "none",
-              }}
-            >
-              <Check size={20} color={T.green} strokeWidth={3} />
-            </div>
-            <div style={{
-              fontSize: 12,
-              color: phoneIsValid ? T.green : T.textMuted,
-              textAlign: "right",
-              marginTop: 6,
-              fontWeight: 500,
-            }}>
-              {airtimePhone.length}/11
-            </div>
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Network</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {AIRTIME_NETWORKS.map((net) => (
+              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setBuyAirtimeStage(2); setAirtimePhone(""); setAirtimeError(""); }}
+                style={{
+                  padding: 20, borderRadius: 16, background: airtimeNetwork?.id === net.id ? `${net.color}15` : T.bgCard,
+                  border: `2px solid ${airtimeNetwork?.id === net.id ? net.color : T.border}`, cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 8, transition: "all 150ms",
+                  fontFamily: font,
+                }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: net.color, opacity: 0.2 }} />
+                <span style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>{net.name}</span>
+                {airtimeNetwork?.id === net.id && <Check size={16} color={net.color} style={{ position: "absolute", top: 8, right: 8 }} />}
+              </button>
+            ))}
           </div>
-
-          {/* Amount input */}
-          <div style={{ position: "relative", marginBottom: 24 }}>
-            <label style={{
-              display: "block",
-              fontSize: 14,
-              fontWeight: 600,
-              color: T.textSecondary,
-              marginBottom: 8,
-            }}>
-              Amount (₦100 - ₦50,000)
-            </label>
-            <input
-              type="number"
-              inputMode="decimal"
-              placeholder="Enter amount"
-              value={airtimeAmount}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 5);
-                setAirtimeAmount(val);
-              }}
-              min="100"
-              max="50000"
-              style={{
-                width: "100%",
-                padding: "12px 40px 12px 14px",
-                borderRadius: 12,
-                background: T.bgCard,
-                border: `1.5px solid ${amountIsValid && airtimeAmount ? T.green : T.border}`,
-                color: T.textPrimary,
-                fontSize: 16,
-                fontFamily: font,
-                boxSizing: "border-box",
-                transition: "all 150ms ease",
-              }}
-            />
-            <div
-              style={{
-                position: "absolute",
-                right: 12,
-                top: "50%",
-                transform: "translateY(-50%)",
-                marginTop: 20,
-                opacity: amountIsValid && airtimeAmount ? 1 : 0,
-                transition: "opacity 150ms ease",
-              }}
-            >
-              <Check size={20} color={T.green} strokeWidth={3} />
-            </div>
-          </div>
-
-          {/* Continue button */}
-          <button
-            onClick={() => canContinue && setBuyAirtimeStage(2)}
-            disabled={!canContinue}
-            style={{
-              width: "100%",
-              padding: 14,
-              borderRadius: 12,
-              background: canContinue ? T.blue : T.bgElevated,
-              border: `1.5px solid ${canContinue ? T.blue : T.border}`,
-              color: canContinue ? "#fff" : T.textMuted,
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: canContinue ? "pointer" : "not-allowed",
-              opacity: canContinue ? 1 : 0.5,
-              fontFamily: font,
-              transition: "all 150ms ease",
-            }}
-            aria-disabled={!canContinue}
-          >
-            Continue
-          </button>
         </div>
       );
     }
 
-    // Stage 2: PIN Confirmation & Summary
+    // STAGE 2: Phone Input
     if (buyAirtimeStage === 2) {
-      const pinFull = airtimePinInput.every((d) => d !== "");
+      const phoneValid = airtimePhone.length === 11 && /^0\d{10}$/.test(airtimePhone);
+      const detectedNet = detectNetwork(airtimePhone);
+      const networkMismatch = phoneValid && detectedNet && detectedNet.id !== airtimeNetwork?.id;
+      const [showNetworkWarning, setShowNetworkWarning] = useState(false);
 
-      const handlePinSubmit = async () => {
-        if (!pinFull) return;
+      const handleContinue = () => {
+        if (networkMismatch) {
+          setShowNetworkWarning(true);
+        } else {
+          setBuyAirtimeStage(3);
+          setAirtimeAmount("");
+        }
+      };
 
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button onClick={() => setBuyAirtimeStage(1)} style={{
+            background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 16px",
+            display: "flex", alignItems: "center", gap: 8, color: T.blue, fontSize: 12, fontWeight: 600,
+            cursor: "pointer", marginBottom: 24, fontFamily: font,
+          }}><ArrowLeft size={14} /> Back</button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Enter Phone Number</h2>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: T.textSecondary, marginBottom: 8 }}>
+            Recipient Phone ({airtimeNetwork?.name})
+          </label>
+          <input type="tel" inputMode="numeric" maxLength={11} placeholder="08012345678" value={airtimePhone}
+            onChange={(e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 11); setAirtimePhone(d); }}
+            style={{
+              width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,
+              border: `1.5px solid ${phoneValid ? T.green : T.border}`, color: T.textPrimary, fontSize: 15,
+              fontFamily: font, boxSizing: "border-box", transition: "all 150ms",
+            }} />
+          <div style={{ fontSize: 12, color: phoneValid ? T.green : T.textMuted, marginTop: 6, fontWeight: 500 }}>
+            {airtimePhone.length}/11
+          </div>
+
+          {networkMismatch && (
+            <div style={{
+              background: `${T.amber}20`, border: `1px solid ${T.amber}50`, borderRadius: 12, padding: 12,
+              marginTop: 16, marginBottom: 16, color: T.amber, fontSize: 13, fontWeight: 500,
+            }}>
+              ⚠ This number looks like {detectedNet?.name}, but you selected {airtimeNetwork?.name}. Continue anyway?
+            </div>
+          )}
+
+          {showNetworkWarning && (
+            <div style={{ display: "flex", gap: 10, marginTop: 16, marginBottom: 16 }}>
+              <button onClick={() => { setBuyAirtimeStage(1); setShowNetworkWarning(false); }}
+                style={{
+                  flex: 1, padding: 10, borderRadius: 8, background: T.bgElevated, border: `1px solid ${T.border}`,
+                  color: T.textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font,
+                }}>Change Network</button>
+              <button onClick={() => { setShowNetworkWarning(false); setBuyAirtimeStage(3); setAirtimeAmount(""); }}
+                style={{
+                  flex: 1, padding: 10, borderRadius: 8, background: T.blue, border: "none",
+                  color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font,
+                }}>Yes, Continue</button>
+            </div>
+          )}
+
+          <button onClick={handleContinue} disabled={!phoneValid}
+            style={{
+              width: "100%", padding: 14, borderRadius: 12, background: phoneValid ? T.blue : T.bgElevated,
+              border: "none", color: phoneValid ? "#fff" : T.textMuted, fontSize: 16, fontWeight: 600,
+              cursor: phoneValid ? "pointer" : "not-allowed", opacity: phoneValid ? 1 : 0.5,
+              fontFamily: font, transition: "all 150ms",
+            }}>Continue</button>
+        </div>
+      );
+    }
+
+    // STAGE 3: Amount Input
+    if (buyAirtimeStage === 3) {
+      const PRESETS = [50, 100, 200, 500, 1000];
+      const amountNum = parseInt(airtimeAmount) || 0;
+      const amountValid = amountNum >= 50 && amountNum <= 5000;
+      const selectedPreset = PRESETS.includes(amountNum) ? amountNum : null;
+
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button onClick={() => setBuyAirtimeStage(2)} style={{
+            background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 16px",
+            display: "flex", alignItems: "center", gap: 8, color: T.blue, fontSize: 12, fontWeight: 600,
+            cursor: "pointer", marginBottom: 24, fontFamily: font,
+          }}><ArrowLeft size={14} /> Back</button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Amount</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 24 }}>
+            {PRESETS.map((amt) => (
+              <button key={amt} onClick={() => setAirtimeAmount(String(amt))}
+                style={{
+                  padding: 12, borderRadius: 10, background: selectedPreset === amt ? T.blue : T.bgCard,
+                  border: `1.5px solid ${selectedPreset === amt ? T.blue : T.border}`, color: selectedPreset === amt ? "#fff" : T.textPrimary,
+                  fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font, transition: "all 150ms",
+                }}>₦{amt.toLocaleString()}</button>
+            ))}
+          </div>
+
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: T.textSecondary, marginBottom: 8 }}>
+            Custom Amount (₦50 - ₦5,000)
+          </label>
+          <input type="number" inputMode="decimal" placeholder="0" value={airtimeAmount}
+            onChange={(e) => setAirtimeAmount(e.target.value.replace(/\D/g, ""))}
+            min="50" max="5000"
+            style={{
+              width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,
+              border: `1.5px solid ${amountValid ? T.green : T.border}`, color: T.textPrimary, fontSize: 15,
+              fontFamily: font, boxSizing: "border-box", transition: "all 150ms",
+            }} />
+
+          {!amountValid && airtimeAmount && (
+            <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>
+              {amountNum < 50 ? "Minimum is ₦50" : "Maximum is ₦5,000"}
+            </div>
+          )}
+
+          {amountValid && (
+            <div style={{ fontSize: 13, color: T.textSecondary, marginTop: 16, padding: 12, background: T.bgElevated, borderRadius: 8 }}>
+              Sending ₦{amountNum.toLocaleString()} airtime to{" "}
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{airtimePhone}</span> ({airtimeNetwork?.name})
+            </div>
+          )}
+
+          <button onClick={() => setBuyAirtimeStage(4)} disabled={!amountValid}
+            style={{
+              width: "100%", padding: 14, borderRadius: 12, marginTop: 24, background: amountValid ? T.blue : T.bgElevated,
+              border: "none", color: amountValid ? "#fff" : T.textMuted, fontSize: 16, fontWeight: 600,
+              cursor: amountValid ? "pointer" : "not-allowed", opacity: amountValid ? 1 : 0.5,
+              fontFamily: font, transition: "all 150ms",
+            }}>Continue to Review</button>
+        </div>
+      );
+    }
+
+    // STAGE 4: Confirm & Submit
+    if (buyAirtimeStage === 4) {
+      const amountNum = parseInt(airtimeAmount) || 0;
+
+      const handleSubmit = async () => {
         setBuyAirtimeLoading(true);
         setBuyAirtimeError("");
 
         try {
-          // Validate PIN
-          const validateRes = await fetch("/api/airtime/validate-pin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+          const res = await fetch("/api/airtime", {
+            method: "POST", headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ pin: airtimePinInput.join("") }),
+            body: JSON.stringify({ network: airtimeNetwork?.id, mobile_number: airtimePhone, amount: amountNum }),
           });
 
-          if (!validateRes.ok) {
-            const error = await validateRes.json();
-            setBuyAirtimeError(error.error || "Incorrect PIN. Please try again.");
-            setAirtimePinInput(["", "", "", "", "", ""]);
-            setBuyAirtimeLoading(false);
+          const data = await res.json();
+
+          if (!res.ok) {
+            const errMsg = data?.errors?.amount?.[0] || data?.errors?.mobile_number?.[0] || data?.error || "Purchase failed";
+            setBuyAirtimeError(errMsg);
+            toast.error(errMsg);
             return;
           }
 
-          // PIN valid, now purchase
-          const purchaseRes = await fetch("/api/airtime/purchase", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              phone: airtimePhone,
-              amount: parseInt(airtimeAmount),
-              pin: airtimePinInput.join(""),
-            }),
-          });
-
-          if (!purchaseRes.ok) {
-            const error = await purchaseRes.json();
-            if (error.error?.includes("Insufficient balance")) {
-              setBuyAirtimeError("Insufficient balance. Please fund your wallet.");
-            } else if (error.error?.includes("refunded")) {
-              toast.error("Delivery failed. Your balance has been refunded.");
-              setBuyAirtimeError("Delivery failed. Your balance has been refunded.");
-            } else {
-              toast.error("Something went wrong. Please try again.");
-              setBuyAirtimeError(error.error || "Purchase failed");
-            }
-            setAirtimePinInput(["", "", "", "", "", ""]);
-            setBuyAirtimeLoading(false);
-            return;
-          }
-
-          const data = await purchaseRes.json();
-          toast.success(`₦${(data.amount || 0).toLocaleString()} sent to ${airtimePhone} ✓`);
+          toast.success(`₦${amountNum.toLocaleString()} sent to ${airtimePhone} ✓`);
           setAirtimeSuccessData(data);
-          setAirtimePinInput(["", "", "", "", "", ""]);
-          setBuyAirtimeStage(3);
-        } catch (error: any) {
-          toast.error("Something went wrong. Please try again.");
-          setBuyAirtimeError(error.message || "An error occurred");
-          setAirtimePinInput(["", "", "", "", "", ""]);
+          setBuyAirtimeStage(5);
+        } catch (err: any) {
+          const msg = err.message || "Network error. Please try again.";
+          setBuyAirtimeError(msg);
+          toast.error(msg);
         } finally {
           setBuyAirtimeLoading(false);
         }
       };
 
       return (
-        <div
-          style={{
-            padding: "20px 20px 120px",
-            fontFamily: font,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
           <ProgressIndicator />
+          <button onClick={() => setBuyAirtimeStage(3)} style={{
+            background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 16px",
+            display: "flex", alignItems: "center", gap: 8, color: T.blue, fontSize: 12, fontWeight: 600,
+            cursor: "pointer", marginBottom: 24, fontFamily: font,
+          }}><ArrowLeft size={14} /> Back</button>
 
-          {/* Back button */}
-          <button
-            onClick={() => {
-              setBuyAirtimeStage(1);
-              setAirtimePinInput(["", "", "", "", "", ""]);
-              setBuyAirtimeError("");
-            }}
-            style={{
-              background: T.bgElevated,
-              border: `1px solid ${T.border}`,
-              borderRadius: 12,
-              padding: "10px 16px",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              color: T.blue,
-              fontSize: 14,
-              fontWeight: 600,
-              cursor: "pointer",
-              marginBottom: 24,
-              fontFamily: font,
-            }}
-          >
-            <ArrowLeft size={16} /> Back
-          </button>
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Review & Confirm</h2>
 
-          <h2 style={{
-            margin: "0 0 20px",
-            fontSize: 22,
-            fontWeight: 800,
-            color: T.textPrimary,
-            letterSpacing: "-0.5px",
-          }}>
-            Confirm Purchase
-          </h2>
-
-          {/* Summary receipt */}
           <div style={{
-            background: T.bgElevated,
-            borderRadius: 16,
-            padding: 16,
-            marginBottom: 24,
-            border: `1px solid ${T.border}`,
+            background: T.bgElevated, borderRadius: 16, padding: 20, marginBottom: 24, border: `1px solid ${T.border}`,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
-              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Phone</span>
-              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{airtimePhone}</span>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Network</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>{airtimeNetwork?.name}</div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 0, fontSize: 14 }}>
-              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Amount</span>
-              <span style={{ color: T.textPrimary, fontWeight: 600 }}>₦{parseInt(airtimeAmount).toLocaleString()}</span>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Phone Number</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: T.textPrimary }}>{airtimePhone}</div>
             </div>
+            <div style={{ height: 1, background: T.border, marginBottom: 16 }} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 500 }}>Amount</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: T.green }}>₦{amountNum.toLocaleString()}</div>
+            </div>
+          </div>
 
-            {/* Divider */}
+          {buyAirtimeError && (
             <div style={{
-              height: 1,
-              background: T.border,
-              margin: "16px 0",
-            }} />
+              background: `${T.red}20`, border: `1px solid ${T.red}50`, borderRadius: 12, padding: 12,
+              marginBottom: 16, color: T.red, fontSize: 13, fontWeight: 500,
+            }}>{buyAirtimeError}</div>
+          )}
 
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Total</span>
-              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                ₦{parseInt(airtimeAmount).toLocaleString()}
-              </span>
-            </div>
-          </div>
-
-          {/* PIN Input */}
-          <label style={{
-            display: "block",
-            fontSize: 14,
-            fontWeight: 600,
-            color: T.textSecondary,
-            marginBottom: 12,
-          }}>
-            Enter your 6-digit PIN
-          </label>
-
-          <div style={{ marginBottom: 16 }}>
-            <PinInput
-              value={airtimePinInput}
-              onChange={setAirtimePinInput}
-              error={buyAirtimeError.length > 0}
-              disabled={buyAirtimeLoading}
-              bgColor={T.bgCard}
-              bgElevated={T.bgElevated}
-              borderColor={T.border}
-              borderStrong={T.borderStrong}
-              textPrimary={T.textPrimary}
-              textSecondary={T.textSecondary}
-              errorColor={T.red}
-              blueColor={T.blue}
-            />
-          </div>
-
-          {/* Error display */}
-          <div
+          <button onClick={handleSubmit} disabled={buyAirtimeLoading}
             style={{
-              background: `${T.red}20`,
-              border: `1px solid ${T.red}50`,
-              borderRadius: 12,
-              padding: 12,
-              marginBottom: 16,
-              color: T.red,
-              fontSize: 13,
-              fontWeight: 500,
-              opacity: buyAirtimeError ? 1 : 0,
-              maxHeight: buyAirtimeError ? "100%" : "0",
-              overflow: "hidden",
-              transition: "opacity 150ms ease, max-height 150ms ease",
-              pointerEvents: buyAirtimeError ? "auto" : "none",
-            }}
-            role="alert"
-          >
-            {buyAirtimeError}
-          </div>
-
-          {/* Confirm & Pay button */}
-          <button
-            onClick={handlePinSubmit}
-            disabled={!pinFull || buyAirtimeLoading}
-            style={{
-              width: "100%",
-              padding: 14,
-              borderRadius: 12,
-              background: pinFull && !buyAirtimeLoading ? T.blue : T.bgElevated,
-              border: "none",
-              color: "#fff",
-              fontSize: 16,
-              fontWeight: 600,
-              cursor: pinFull && !buyAirtimeLoading ? "pointer" : "not-allowed",
-              opacity: pinFull && !buyAirtimeLoading ? 1 : 0.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              fontFamily: font,
-              transition: "all 150ms ease",
-            }}
-            aria-disabled={!pinFull || buyAirtimeLoading}
-          >
-            {buyAirtimeLoading && (
-              <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
-            )}
-            {buyAirtimeLoading ? "Processing..." : "Confirm & Pay"}
+              width: "100%", padding: 14, borderRadius: 12, background: T.blue, border: "none",
+              color: "#fff", fontSize: 16, fontWeight: 600, cursor: buyAirtimeLoading ? "not-allowed" : "pointer",
+              opacity: buyAirtimeLoading ? 0.6 : 1, display: "flex", alignItems: "center", justifyContent: "center",
+              gap: 8, fontFamily: font, transition: "all 150ms",
+            }}>
+            {buyAirtimeLoading && <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />}
+            {buyAirtimeLoading ? "Processing..." : "Confirm Purchase"}
           </button>
         </div>
       );
     }
 
-    // Stage 3: Success
-    if (buyAirtimeStage === 3) {
+    // STAGE 5: Success
+    if (buyAirtimeStage === 5) {
       return (
-        <div
-          style={{
-            padding: "20px 20px 120px",
-            fontFamily: font,
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
+        <div style={{ padding: "20px 20px 120px", fontFamily: font, textAlign: "center" }}>
           <ProgressIndicator />
+          <SuccessCheck greenColor={T.green} size={80} />
+          <h2 style={{ margin: "16px 0 8px", fontSize: 24, fontWeight: 800, color: T.textPrimary }}>Airtime Sent!</h2>
+          <p style={{ margin: "0 0 24px", fontSize: 14, color: T.textSecondary }}>
+            ₦{(parseInt(airtimeAmount) || 0).toLocaleString()} to {airtimePhone}
+          </p>
 
-          <div style={{ textAlign: "center" }}>
-            <SuccessCheck greenColor={T.green} size={80} />
-
-            <h2 style={{
-              margin: "0 0 12px",
-              fontSize: 26,
-              fontWeight: 800,
-              color: T.textPrimary,
-              letterSpacing: "-0.6px",
-            }}>
-              Airtime Sent!
-            </h2>
-            <p style={{
-              margin: "0 0 28px",
-              fontSize: 14,
-              color: T.textSecondary,
-              lineHeight: 1.6,
-            }}>
-              ₦{(airtimeSuccessData?.amount || airtimeAmount).toLocaleString()} has been sent to {airtimePhone}
-            </p>
-
-            {/* Receipt summary */}
-            <div style={{
-              background: T.bgElevated,
-              borderRadius: 16,
-              padding: 20,
-              marginBottom: 28,
-              border: `1px solid ${T.border}`,
-              textAlign: "left",
-            }}>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
-                  Reference
-                </div>
-                <div style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: T.textPrimary,
-                  fontFamily: "monospace",
-                  wordBreak: "break-all",
-                }}>
-                  {airtimeSuccessData?.reference}
-                </div>
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
-                  Date
-                </div>
-                <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 500 }}>
-                  {new Date().toLocaleDateString()}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
-                  Status
-                </div>
-                <div style={{ fontSize: 14, color: T.green, fontWeight: 600 }}>
-                  ✓ Successful
-                </div>
-              </div>
+          <div style={{
+            background: T.bgElevated, borderRadius: 16, padding: 16, marginBottom: 24, border: `1px solid ${T.border}`, textAlign: "left",
+          }}>
+            <div style={{ marginBottom: 12, fontSize: 13 }}>
+              <div style={{ color: T.textMuted, fontWeight: 500, marginBottom: 2 }}>Reference</div>
+              <div style={{ color: T.textPrimary, fontWeight: 600, fontFamily: "monospace" }}>{airtimeSuccessData?.reference || "--"}</div>
             </div>
+          </div>
 
-            {/* Action buttons */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <button
-                onClick={() => {
-                  setBuyAirtimeStage(1);
-                  setAirtimePhone("");
-                  setAirtimeAmount("");
-                  setAirtimePinInput(["", "", "", "", "", ""]);
-                  setAirtimeSuccessData(null);
-                }}
-                style={{
-                  width: "100%",
-                  padding: 14,
-                  borderRadius: 12,
-                  background: T.blue,
-                  border: "none",
-                  color: "#fff",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: font,
-                }}
-              >
-                Buy Again
-              </button>
-              <button
-                onClick={() => setActiveTab("history")}
-                style={{
-                  width: "100%",
-                  padding: 14,
-                  borderRadius: 12,
-                  background: "transparent",
-                  border: `1.5px solid ${T.border}`,
-                  color: T.textPrimary,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  fontFamily: font,
-                }}
-              >
-                View History
-              </button>
-            </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button onClick={() => { setBuyAirtimeStage(1); setAirtimePhone(""); setAirtimeAmount(""); setAirtimeNetwork(null); setAirtimeSuccessData(null); setBuyAirtimeError(""); }}
+              style={{
+                width: "100%", padding: 12, borderRadius: 12, background: T.blue, border: "none",
+                color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: font,
+              }}>Send Another</button>
+            <button onClick={() => setActiveTab("history")}
+              style={{
+                width: "100%", padding: 12, borderRadius: 12, background: "transparent", border: `1px solid ${T.border}`,
+                color: T.textPrimary, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: font,
+              }}>View History</button>
           </div>
         </div>
       );
