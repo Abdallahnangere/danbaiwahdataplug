@@ -41,17 +41,16 @@ export async function GET(request: NextRequest) {
     const dataTransactions = await query(
       `SELECT 
         dt.id,
-        dt.phone as phone_number,
+        dt.phone,
         dt.amount,
         dt.status,
-        dt."providerUsed" as provider,
-        dt."providerRef" as reference,
-        dt."customerRef" as customer_ref,
-        dt."createdAt" as created_at,
-        dp.name as plan_name,
-        dp."sizeLabel" as size_label,
-        dp."networkName" as network_name,
-        'data' as type
+        dt."providerUsed",
+        dt."providerRef",
+        dt."customerRef",
+        dt."createdAt",
+        dp.name,
+        dp."sizeLabel",
+        dp."networkName"
        FROM "DataTransaction" dt
        LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
        WHERE dt."userId" = $1
@@ -63,15 +62,14 @@ export async function GET(request: NextRequest) {
     const airtimeTransactions = await query(
       `SELECT 
         at.id,
-        at.mobile_number as phone_number,
+        at.mobile_number as phone,
         at.amount,
         at.status,
-        at.provider_id as provider,
-        at.ident as reference,
-        at.ident as customer_ref,
-        at.created_at,
+        at.provider_id,
+        at.ident,
+        at.created_at as "createdAt",
         at.network_name,
-        'airtime' as type
+        NULL as name
        FROM airtime_transactions at
        WHERE at.user_id = $1
        ORDER BY at.created_at DESC
@@ -79,22 +77,46 @@ export async function GET(request: NextRequest) {
       [userId]
     );
 
-    // Merge and sort by date
-    const allTransactions = [...(dataTransactions || []), ...(airtimeTransactions || [])]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 50);
+    // Format data transactions
+    const formattedData = (dataTransactions || []).map((tx: any) => ({
+      id: tx.id,
+      planName: tx.name || "Data Plan",
+      sizeLabel: tx.sizeLabel || "",
+      networkName: tx.networkName || "Network",
+      phone: tx.phone,
+      amount: Number(tx.amount) || 0,
+      status: String(tx.status || "PENDING"),
+      createdAt: tx.createdAt,
+      type: "data",
+    }));
 
-    const transactions = allTransactions;
+    // Format airtime transactions
+    const formattedAirtime = (airtimeTransactions || []).map((tx: any) => ({
+      id: tx.id,
+      planName: `${tx.network_name} Airtime`,
+      sizeLabel: "",
+      networkName: tx.network_name || "Network",
+      phone: tx.phone,
+      amount: Number(tx.amount) || 0,
+      status: String(tx.status || "PENDING"),
+      createdAt: tx.createdAt,
+      type: "airtime",
+    }));
+
+    // Merge and sort by date
+    const allTransactions = [...formattedData, ...formattedAirtime]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 50);
 
     return NextResponse.json(
       {
         success: true,
-        transactions: transactions || [],
+        transactions: allTransactions,
       },
       { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } }
     );
   } catch (error) {
-    console.error("Transactions fetch error:", error);
+    if (process.env.NODE_ENV === 'development') console.error("Transactions fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch transactions" },
       { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } }

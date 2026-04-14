@@ -36,17 +36,16 @@ export async function GET(
     const dataTransactions = await query(
       `SELECT 
         dt.id,
-        dt.phone as phone_number,
+        dt.phone,
         dt.amount,
         dt.status,
-        dt."providerUsed" as provider_used,
-        dt."providerRef" as provider_ref,
-        dt."customerRef" as customer_ref,
-        dt."createdAt" as created_at,
-        dp.name as plan_name,
-        dp."sizeLabel" as size_label,
-        dp."networkName" as network_name,
-        'data' as transaction_type
+        dt."providerUsed",
+        dt."providerRef",
+        dt."customerRef",
+        dt."createdAt",
+        dp.name,
+        dp."sizeLabel",
+        dp."networkName"
       FROM "DataTransaction" dt
       LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
       WHERE dt."userId" = $1
@@ -59,15 +58,13 @@ export async function GET(
     const airtimeTransactions = await query(
       `SELECT 
         id,
-        mobile_number as phone_number,
+        mobile_number as phone,
         amount,
         status,
-        provider_id as provider_used,
-        ident as provider_ref,
-        ident as customer_ref,
-        created_at,
+        ident,
+        created_at as "createdAt",
         network_name,
-        'airtime' as transaction_type
+        NULL as name
       FROM airtime_transactions
       WHERE user_id = $1
       ORDER BY created_at DESC
@@ -75,41 +72,35 @@ export async function GET(
       [userId]
     );
 
-    // Format data transactions
-    const formattedDataTx = (dataTransactions || []).map((tx: any) => ({
+    // Format data transactions to camelCase
+    const formattedData = (dataTransactions || []).map((tx: any) => ({
       id: String(tx.id || ""),
-      phone_number: String(tx.phone_number || ""),
+      planName: String(tx.name || "Data Plan"),
+      sizeLabel: tx.sizeLabel ? String(tx.sizeLabel) : "",
+      networkName: String(tx.networkName || ""),
+      phone: String(tx.phone || ""),
       amount: Number(tx.amount || 0),
       status: String(tx.status || "PENDING").toUpperCase(),
-      plan_name: String(tx.plan_name || "Data Plan"),
-      size_label: tx.size_label ? String(tx.size_label) : undefined,
-      network_name: String(tx.network_name || ""),
-      provider_used: String(tx.provider_used || ""),
-      provider_ref: String(tx.provider_ref || ""),
-      customer_ref: String(tx.customer_ref || ""),
-      created_at: tx.created_at ? new Date(tx.created_at).toISOString() : new Date().toISOString(),
-      transaction_type: "data",
+      createdAt: tx.createdAt ? new Date(tx.createdAt).toISOString() : new Date().toISOString(),
+      type: "data",
     }));
 
-    // Format airtime transactions
-    const formattedAirtimeTx = (airtimeTransactions || []).map((tx: any) => ({
+    // Format airtime transactions to camelCase
+    const formattedAirtime = (airtimeTransactions || []).map((tx: any) => ({
       id: String(tx.id || ""),
-      phone_number: String(tx.phone_number || ""),
+      planName: `${String(tx.network_name || "Unknown")} Airtime`,
+      sizeLabel: "",
+      networkName: String(tx.network_name || ""),
+      phone: String(tx.phone || ""),
       amount: Number(tx.amount || 0),
       status: String(tx.status || "PENDING").toUpperCase(),
-      plan_name: `Airtime - ${String(tx.network_name || "Unknown")}`,
-      size_label: undefined,
-      network_name: String(tx.network_name || ""),
-      provider_used: String(tx.provider_used || ""),
-      provider_ref: String(tx.provider_ref || ""),
-      customer_ref: String(tx.customer_ref || ""),
-      created_at: tx.created_at ? new Date(tx.created_at).toISOString() : new Date().toISOString(),
-      transaction_type: "airtime",
+      createdAt: tx.createdAt ? new Date(tx.createdAt).toISOString() : new Date().toISOString(),
+      type: "airtime",
     }));
 
     // Merge and sort by date
-    const allTransactions = [...formattedDataTx, ...formattedAirtimeTx]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    const allTransactions = [...formattedData, ...formattedAirtime]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 50);
 
     return NextResponse.json(allTransactions, {
