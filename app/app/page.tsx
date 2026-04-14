@@ -1131,7 +1131,7 @@ export default function DanbaiwaApp() {
           <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Network</h2>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             {AIRTIME_NETWORKS.map((net) => (
-              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setBuyAirtimeStage(2); setAirtimePhone(""); setAirtimeError(""); }}
+              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setBuyAirtimeStage(2); setAirtimePhone(""); setBuyAirtimeError(""); }}
                 style={{
                   padding: 20, borderRadius: 16, background: airtimeNetwork?.id === net.id ? `${net.color}15` : T.bgCard,
                   border: `2px solid ${airtimeNetwork?.id === net.id ? net.color : T.border}`, cursor: "pointer",
