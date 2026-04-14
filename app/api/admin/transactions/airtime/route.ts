@@ -7,15 +7,12 @@ export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin access (assumes X-Admin-Token or similar)
-    const authHeader = request.headers.get("Authorization");
-    const adminPassword = request.headers.get("X-Admin-Password");
-    
-    // Basic admin check - could be improved with dedicated admin middleware
-    if (!adminPassword || adminPassword !== process.env.ADMIN_PASSWORD) {
+    // Verify admin access using JWT role
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { error: "Unauthorized - Admin access required" },
+        { status: 403, headers: { "Content-Type": "application/json; charset=utf-8" } }
       );
     }
 
@@ -72,17 +69,18 @@ export async function GET(request: NextRequest) {
     const total = countResult[0]?.total || 0;
 
     return NextResponse.json({
+      success: true,
       data: transactions,
       total,
       page,
       limit,
       pages: Math.ceil(total / limit),
-    });
+    }, { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } });
   } catch (error: any) {
     console.error("[ADMIN_AIRTIME_ERROR]", error);
     return NextResponse.json(
-      { error: "Failed to fetch transactions" },
-      { status: 500 }
+      { success: false, error: "Failed to fetch transactions" },
+      { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } }
     );
   }
 }

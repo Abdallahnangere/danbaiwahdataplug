@@ -1,49 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
+
+const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
+    // Verify user is authenticated and has ADMIN role
+    const sessionUser = await getSessionUser(request);
 
-    if (!password) {
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "Password required" },
-        { status: 400, headers: { "Content-Type": "application/json; charset=utf-8" } }
+        { error: "Unauthorized - Admin access required" },
+        { status: 403, headers: utf8Headers }
       );
     }
 
-    const adminPassword = process.env.ADMIN_PASSWORD;
-
-    if (!adminPassword) {
-      return NextResponse.json(
-        { error: "Admin password not configured" },
-        { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } }
-      );
-    }
-
-    // Compare the provided password with the admin password
-    if (password === adminPassword) {
-      // Create a response with admin session cookie
-      const response = NextResponse.json(
-        { success: true },
-        { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } }
-      );
-
-      // Set admin session cookie (valid for 6 hours)
-      response.cookies.set("admin-session", "authenticated", {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 6 * 60 * 60, // 6 hours
-        path: "/",
-      });
-
-      return response;
-    } else {
-      return NextResponse.json(
-        { error: "Invalid password" },
-        { status: 401, headers: { "Content-Type": "application/json; charset=utf-8" } }
-      );
-    }
+    // If verification passes, return success
+    return NextResponse.json(
+      { success: true, message: "Admin access verified" },
+      { status: 200, headers: utf8Headers }
+    );
   } catch (error) {
     console.error("Admin auth error:", error);
     return NextResponse.json(

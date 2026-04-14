@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { query, queryOne, execute } from "@/lib/db";
+import bcrypt from "bcryptjs";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -30,13 +31,13 @@ export async function POST(request: NextRequest) {
 
     // 2. PARSE REQUEST BODY
     const body = await request.json();
-    const { network, mobile_number, amount } = body;
-    log("REQUEST_BODY", { network, mobile_number, amount });
+    const { network, mobile_number, amount, pin } = body;
+    log("REQUEST_BODY", { network, mobile_number, amount, pinProvided: !!pin });
 
-    if (!network || !mobile_number || !amount) {
-      log("VALIDATION_ERROR", { missingFields: { network: !network, mobile_number: !mobile_number, amount: !amount } });
+    if (!network || !mobile_number || !amount || !pin) {
+      log("VALIDATION_ERROR", { missingFields: { network: !network, mobile_number: !mobile_number, amount: !amount, pin: !pin } });
       return NextResponse.json(
-        { errors: { amount: amount ? [] : ["Amount is required"], mobile_number: mobile_number ? [] : ["Mobile number is required"], network: network ? [] : ["Network is required"] } },
+        { errors: { amount: amount ? [] : ["Amount is required"], mobile_number: mobile_number ? [] : ["Mobile number is required"], network: network ? [] : ["Network is required"], pin: pin ? [] : ["PIN is required"] } },
         { status: 422, headers: { "Content-Type": "application/json; charset=utf-8" } }
       );
     }
@@ -69,9 +70,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. GET USER AND CHECK BALANCE
-    const user = await queryOne<{ balance: number }>(
-      `SELECT balance FROM "User" WHERE id = $1`,
+    // 3. VALIDATE PIN AND GET USER DETAILS
+    const user = await queryOne<{ balance: number; pin: string | null }>(
+      `SELECT balance, pin FROM "User" WHERE id = $1`,
       [userId]
     );
 
@@ -82,6 +83,29 @@ export async function POST(request: NextRequest) {
         { status: 404, headers: { "Content-Type": "application/json; charset=utf-8" } }
       );
     }
+
+    log("USER_FETCHED", { userId, hasPin: !!user.pin, balance: user.balance });
+
+    // Check if PIN is set
+    if (!user.pin) {
+      log("PIN_NOT_SET", { userId });
+      return NextResponse.json(
+        { error: "PIN not set. Please set your PIN first." },
+        { status: 400, headers: { "Content-Type": "application/json; charset=utf-8" } }
+      );
+    }
+
+    // Validate PIN with bcrypt
+    const isPinValid = await bcrypt.compare(pin, user.pin);
+    if (!isPinValid) {
+      log("PIN_INVALID", { userId });
+      return NextResponse.json(
+        { error: "Incorrect PIN." },
+        { status: 401, headers: { "Content-Type": "application/json; charset=utf-8" } }
+      );
+    }
+
+    log("PIN_VALID", { userId });
 
     const userBalance = typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance));
     log("BALANCE_CHECK", { userBalance, amountNum, sufficient: userBalance >= amountNum });

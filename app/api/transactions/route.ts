@@ -37,20 +37,21 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch user's transactions
-    const transactions = await query(
+    // Fetch user's transactions from both data and airtime
+    const dataTransactions = await query(
       `SELECT 
         dt.id,
-        dt.phone,
+        dt.phone as phone_number,
         dt.amount,
         dt.status,
-        dt."providerUsed",
-        dt."providerRef",
-        dt."customerRef",
-        dt."createdAt",
-        dp.name as "planName",
-        dp."sizeLabel",
-        dp."networkName"
+        dt."providerUsed" as provider,
+        dt."providerRef" as reference,
+        dt."customerRef" as customer_ref,
+        dt."createdAt" as created_at,
+        dp.name as plan_name,
+        dp."sizeLabel" as size_label,
+        dp."networkName" as network_name,
+        'data' as type
        FROM "DataTransaction" dt
        LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
        WHERE dt."userId" = $1
@@ -58,6 +59,32 @@ export async function GET(request: NextRequest) {
        LIMIT 50`,
       [userId]
     );
+
+    const airtimeTransactions = await query(
+      `SELECT 
+        at.id,
+        at.mobile_number as phone_number,
+        at.amount,
+        at.status,
+        at.provider_id as provider,
+        at.ident as reference,
+        at.ident as customer_ref,
+        at.created_at,
+        at.network_name,
+        'airtime' as type
+       FROM airtime_transactions at
+       WHERE at.user_id = $1
+       ORDER BY at.created_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    // Merge and sort by date
+    const allTransactions = [...(dataTransactions || []), ...(airtimeTransactions || [])]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 50);
+
+    const transactions = allTransactions;
 
     return NextResponse.json(
       {

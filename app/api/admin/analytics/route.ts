@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
@@ -8,11 +9,10 @@ const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 
 export async function GET(request: NextRequest) {
   try {
-    // Check admin session cookie
-    const adminSession = request.cookies.get("admin-session");
-    
-    if (!adminSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
+    // Verify admin access using JWT role
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403, headers: utf8Headers });
     }
 
     // Fetch user count

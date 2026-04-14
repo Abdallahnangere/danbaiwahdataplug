@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getSessionUser } from "@/lib/auth";
 import { queryOne, execute } from "@/lib/db";
 
 export const dynamic = 'force-dynamic';
@@ -8,17 +9,16 @@ const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Verify admin access
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403, headers: utf8Headers });
+    }
+
     const id = request.nextUrl.pathname.split("/").pop();
 
     if (!id) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400, headers: utf8Headers });
-    }
-
-    // Check admin session cookie
-    const adminSession = request.cookies.get("admin-session");
-    
-    if (!adminSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     const body = await request.json();
@@ -80,17 +80,16 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Verify admin access
+    const sessionUser = await getSessionUser(request);
+    if (!sessionUser || sessionUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403, headers: utf8Headers });
+    }
+
     const id = request.nextUrl.pathname.split("/").pop();
 
     if (!id) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400, headers: utf8Headers });
-    }
-
-    // Check admin session cookie
-    const adminSession = request.cookies.get("admin-session");
-    
-    if (!adminSession) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: utf8Headers });
     }
 
     // Delete user and all related data
