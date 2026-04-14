@@ -105,6 +105,7 @@ export default function DanbaiwaApp() {
   const [buyAirtimeLoading, setBuyAirtimeLoading] = useState(false);
   const [buyAirtimeError, setBuyAirtimeError] = useState("");
   const [airtimeSuccessData, setAirtimeSuccessData] = useState<any | null>(null);
+  const [showNetworkWarning, setShowNetworkWarning] = useState(false);
   const airtimePhoneInputRef = useRef<HTMLInputElement>(null);
 
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -1111,7 +1112,7 @@ export default function DanbaiwaApp() {
     // Progress indicator
     const ProgressIndicator = () => (
       <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 24 }}>
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3].map((s) => (
           <div key={s} style={{
             width: 8, height: 8, borderRadius: "50%",
             background: s <= buyAirtimeStage ? T.blue : T.border,
@@ -1123,172 +1124,113 @@ export default function DanbaiwaApp() {
       </div>
     );
 
-    // STAGE 1: Network Selection
+    // STAGE 1: Combined Network + Phone + Amount Selection
     if (buyAirtimeStage === 1) {
-      return (
-        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
-          <ProgressIndicator />
-          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Network</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            {AIRTIME_NETWORKS.map((net) => (
-              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setBuyAirtimeStage(2); setAirtimePhone(""); setBuyAirtimeError(""); }}
-                style={{
-                  padding: 20, borderRadius: 16, background: airtimeNetwork?.id === net.id ? `${net.color}15` : T.bgCard,
-                  border: `2px solid ${airtimeNetwork?.id === net.id ? net.color : T.border}`, cursor: "pointer",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 8, transition: "all 150ms",
-                  fontFamily: font,
-                }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: net.color, opacity: 0.2 }} />
-                <span style={{ fontSize: 14, fontWeight: 700, color: T.textPrimary }}>{net.name}</span>
-                {airtimeNetwork?.id === net.id && <Check size={16} color={net.color} style={{ position: "absolute", top: 8, right: 8 }} />}
-              </button>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // STAGE 2: Phone Input
-    if (buyAirtimeStage === 2) {
-      const phoneValid = airtimePhone.length === 11 && /^0\d{10}$/.test(airtimePhone);
-      const detectedNet = detectNetwork(airtimePhone);
-      const networkMismatch = phoneValid && detectedNet && detectedNet.id !== airtimeNetwork?.id;
-      const [showNetworkWarning, setShowNetworkWarning] = useState(false);
-
-      const handleContinue = () => {
-        if (networkMismatch) {
-          setShowNetworkWarning(true);
-        } else {
-          setBuyAirtimeStage(3);
-          setAirtimeAmount("");
-        }
-      };
-
-      return (
-        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
-          <ProgressIndicator />
-          <button onClick={() => setBuyAirtimeStage(1)} style={{
-            background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 16px",
-            display: "flex", alignItems: "center", gap: 8, color: T.blue, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", marginBottom: 24, fontFamily: font,
-          }}><ArrowLeft size={14} /> Back</button>
-
-          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Enter Phone Number</h2>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: T.textSecondary, marginBottom: 8 }}>
-            Recipient Phone ({airtimeNetwork?.name})
-          </label>
-          <input type="tel" inputMode="numeric" maxLength={11} placeholder="08012345678" value={airtimePhone}
-            onChange={(e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 11); setAirtimePhone(d); }}
-            style={{
-              width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,
-              border: `1.5px solid ${phoneValid ? T.green : T.border}`, color: T.textPrimary, fontSize: 15,
-              fontFamily: font, boxSizing: "border-box", transition: "all 150ms",
-            }} />
-          <div style={{ fontSize: 12, color: phoneValid ? T.green : T.textMuted, marginTop: 6, fontWeight: 500 }}>
-            {airtimePhone.length}/11
-          </div>
-
-          {networkMismatch && (
-            <div style={{
-              background: `${T.amber}20`, border: `1px solid ${T.amber}50`, borderRadius: 12, padding: 12,
-              marginTop: 16, marginBottom: 16, color: T.amber, fontSize: 13, fontWeight: 500,
-            }}>
-              ⚠ This number looks like {detectedNet?.name}, but you selected {airtimeNetwork?.name}. Continue anyway?
-            </div>
-          )}
-
-          {showNetworkWarning && (
-            <div style={{ display: "flex", gap: 10, marginTop: 16, marginBottom: 16 }}>
-              <button onClick={() => { setBuyAirtimeStage(1); setShowNetworkWarning(false); }}
-                style={{
-                  flex: 1, padding: 10, borderRadius: 8, background: T.bgElevated, border: `1px solid ${T.border}`,
-                  color: T.textPrimary, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font,
-                }}>Change Network</button>
-              <button onClick={() => { setShowNetworkWarning(false); setBuyAirtimeStage(3); setAirtimeAmount(""); }}
-                style={{
-                  flex: 1, padding: 10, borderRadius: 8, background: T.blue, border: "none",
-                  color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: font,
-                }}>Yes, Continue</button>
-            </div>
-          )}
-
-          <button onClick={handleContinue} disabled={!phoneValid}
-            style={{
-              width: "100%", padding: 14, borderRadius: 12, background: phoneValid ? T.blue : T.bgElevated,
-              border: "none", color: phoneValid ? "#fff" : T.textMuted, fontSize: 16, fontWeight: 600,
-              cursor: phoneValid ? "pointer" : "not-allowed", opacity: phoneValid ? 1 : 0.5,
-              fontFamily: font, transition: "all 150ms",
-            }}>Continue</button>
-        </div>
-      );
-    }
-
-    // STAGE 3: Amount Input
-    if (buyAirtimeStage === 3) {
       const PRESETS = [50, 100, 200, 500, 1000];
+      const phoneValid = airtimePhone.length === 11 && /^0\d{10}$/.test(airtimePhone);
       const amountNum = parseInt(airtimeAmount) || 0;
       const amountValid = amountNum >= 50 && amountNum <= 5000;
       const selectedPreset = PRESETS.includes(amountNum) ? amountNum : null;
+      const detectedNet = detectNetwork(airtimePhone);
+      const networkMismatch = phoneValid && detectedNet && detectedNet.id !== airtimeNetwork?.id;
+      const allValid = airtimeNetwork && phoneValid && amountValid;
 
       return (
         <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
           <ProgressIndicator />
-          <button onClick={() => setBuyAirtimeStage(2)} style={{
-            background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 16px",
-            display: "flex", alignItems: "center", gap: 8, color: T.blue, fontSize: 12, fontWeight: 600,
-            cursor: "pointer", marginBottom: 24, fontFamily: font,
-          }}><ArrowLeft size={14} /> Back</button>
 
-          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Amount</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 24 }}>
-            {PRESETS.map((amt) => (
-              <button key={amt} onClick={() => setAirtimeAmount(String(amt))}
+          {/* Network Selection */}
+          <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Network</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 20 }}>
+            {AIRTIME_NETWORKS.map((net) => (
+              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setAirtimePhone(""); setShowNetworkWarning(false); setBuyAirtimeError(""); }}
                 style={{
-                  padding: 12, borderRadius: 10, background: selectedPreset === amt ? T.blue : T.bgCard,
-                  border: `1.5px solid ${selectedPreset === amt ? T.blue : T.border}`, color: selectedPreset === amt ? "#fff" : T.textPrimary,
-                  fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: font, transition: "all 150ms",
-                }}>₦{amt.toLocaleString()}</button>
+                  padding: 12, borderRadius: 12, background: airtimeNetwork?.id === net.id ? `${net.color}15` : T.bgCard,
+                  border: `2px solid ${airtimeNetwork?.id === net.id ? net.color : T.border}`, cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 6, transition: "all 150ms",
+                  fontFamily: font,
+                }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: net.color, opacity: 0.3 }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: T.textPrimary }}>{net.name}</span>
+              </button>
             ))}
           </div>
 
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: T.textSecondary, marginBottom: 8 }}>
-            Custom Amount (₦50 - ₦5,000)
-          </label>
-          <input type="number" inputMode="decimal" placeholder="0" value={airtimeAmount}
-            onChange={(e) => setAirtimeAmount(e.target.value.replace(/\D/g, ""))}
-            min="50" max="5000"
-            style={{
-              width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,
-              border: `1.5px solid ${amountValid ? T.green : T.border}`, color: T.textPrimary, fontSize: 15,
-              fontFamily: font, boxSizing: "border-box", transition: "all 150ms",
-            }} />
+          {/* Phone Input */}
+          {airtimeNetwork && (
+            <>
+              <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Phone Number</h3>
+              <input type="tel" inputMode="numeric" maxLength={11} placeholder="08012345678" value={airtimePhone}
+                onChange={(e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 11); setAirtimePhone(d); }}
+                ref={airtimePhoneInputRef}
+                style={{
+                  width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,
+                  border: `1.5px solid ${phoneValid ? T.green : T.border}`, color: T.textPrimary, fontSize: 15,
+                  fontFamily: font, boxSizing: "border-box", transition: "all 150ms", marginBottom: 6,
+                }} />
+              <div style={{ fontSize: 12, color: phoneValid ? T.green : T.textMuted, marginBottom: 16, fontWeight: 500 }}>
+                {airtimePhone.length}/11 digits
+              </div>
 
-          {!amountValid && airtimeAmount && (
-            <div style={{ fontSize: 12, color: T.red, marginTop: 6 }}>
-              {amountNum < 50 ? "Minimum is ₦50" : "Maximum is ₦5,000"}
-            </div>
+              {networkMismatch && !showNetworkWarning && (
+                <div style={{
+                  background: `${T.amber}20`, border: `1px solid ${T.amber}50`, borderRadius: 12, padding: 12,
+                  marginBottom: 16, color: T.amber, fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <span>⚠ Looks like {detectedNet?.name}, not {airtimeNetwork?.name}</span>
+                  <button onClick={() => setShowNetworkWarning(true)} style={{ background: "transparent", border: "none", color: T.amber, cursor: "pointer", fontWeight: 600 }}>Use anyway →</button>
+                </div>
+              )}
+            </>
           )}
 
-          {amountValid && (
-            <div style={{ fontSize: 13, color: T.textSecondary, marginTop: 16, padding: 12, background: T.bgElevated, borderRadius: 8 }}>
-              Sending ₦{amountNum.toLocaleString()} airtime to{" "}
-              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{airtimePhone}</span> ({airtimeNetwork?.name})
-            </div>
+          {/* Amount Selection */}
+          {phoneValid && (
+            <>
+              <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Amount</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 }}>
+                {PRESETS.map((amt) => (
+                  <button key={amt} onClick={() => setAirtimeAmount(String(amt))}
+                    style={{
+                      padding: 10, borderRadius: 10, background: selectedPreset === amt ? T.blue : T.bgCard,
+                      border: `1.5px solid ${selectedPreset === amt ? T.blue : T.border}`, color: selectedPreset === amt ? "#fff" : T.textPrimary,
+                      fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: font, transition: "all 150ms",
+                    }}>₦{amt.toLocaleString()}</button>
+                ))}
+              </div>
+
+              <input type="number" inputMode="decimal" placeholder="Custom (₦50-₦5,000)" value={airtimeAmount}
+                onChange={(e) => setAirtimeAmount(e.target.value.replace(/\D/g, ""))}
+                min="50" max="5000"
+                style={{
+                  width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,
+                  border: `1.5px solid ${amountValid && airtimeAmount ? T.green : T.border}`, color: T.textPrimary, fontSize: 14,
+                  fontFamily: font, boxSizing: "border-box", transition: "all 150ms", marginBottom: 6,
+                }} />
+              {!amountValid && airtimeAmount && (
+                <div style={{ fontSize: 12, color: T.red, marginBottom: 16 }}>
+                  {amountNum < 50 ? "Minimum is ₦50" : "Maximum is ₦5,000"}
+                </div>
+              )}
+              {amountValid && (
+                <div style={{ fontSize: 12, color: T.green, marginBottom: 16, fontWeight: 600 }}>✓ Valid amount</div>
+              )}
+            </>
           )}
 
-          <button onClick={() => setBuyAirtimeStage(4)} disabled={!amountValid}
+          <button onClick={() => { if (showNetworkWarning) setShowNetworkWarning(false); setBuyAirtimeStage(2); }} disabled={!allValid}
             style={{
-              width: "100%", padding: 14, borderRadius: 12, marginTop: 24, background: amountValid ? T.blue : T.bgElevated,
-              border: "none", color: amountValid ? "#fff" : T.textMuted, fontSize: 16, fontWeight: 600,
-              cursor: amountValid ? "pointer" : "not-allowed", opacity: amountValid ? 1 : 0.5,
-              fontFamily: font, transition: "all 150ms",
-            }}>Continue to Review</button>
+              width: "100%", padding: 14, borderRadius: 12, background: allValid ? T.blue : T.bgElevated,
+              border: "none", color: allValid ? "#fff" : T.textMuted, fontSize: 16, fontWeight: 600,
+              cursor: allValid ? "pointer" : "not-allowed", opacity: allValid ? 1 : 0.5,
+              fontFamily: font, transition: "all 150ms", marginTop: 8,
+            }}>{allValid ? "Review Order" : "Complete Selection"}</button>
         </div>
       );
     }
 
-    // STAGE 4: Confirm & Submit
-    if (buyAirtimeStage === 4) {
+    // STAGE 2: Confirm & Submit
+    if (buyAirtimeStage === 2) {
       const amountNum = parseInt(airtimeAmount) || 0;
 
       const handleSubmit = async () => {
@@ -1313,7 +1255,7 @@ export default function DanbaiwaApp() {
 
           toast.success(`₦${amountNum.toLocaleString()} sent to ${airtimePhone} ✓`);
           setAirtimeSuccessData(data);
-          setBuyAirtimeStage(5);
+          setBuyAirtimeStage(3);
         } catch (err: any) {
           const msg = err.message || "Network error. Please try again.";
           setBuyAirtimeError(msg);
@@ -1326,7 +1268,7 @@ export default function DanbaiwaApp() {
       return (
         <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
           <ProgressIndicator />
-          <button onClick={() => setBuyAirtimeStage(3)} style={{
+          <button onClick={() => setBuyAirtimeStage(1)} style={{
             background: T.bgElevated, border: `1px solid ${T.border}`, borderRadius: 12, padding: "10px 16px",
             display: "flex", alignItems: "center", gap: 8, color: T.blue, fontSize: 12, fontWeight: 600,
             cursor: "pointer", marginBottom: 24, fontFamily: font,
@@ -1373,8 +1315,8 @@ export default function DanbaiwaApp() {
       );
     }
 
-    // STAGE 5: Success
-    if (buyAirtimeStage === 5) {
+    // STAGE 3: Success
+    if (buyAirtimeStage === 3) {
       return (
         <div style={{ padding: "20px 20px 120px", fontFamily: font, textAlign: "center" }}>
           <ProgressIndicator />
@@ -1394,7 +1336,7 @@ export default function DanbaiwaApp() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <button onClick={() => { setBuyAirtimeStage(1); setAirtimePhone(""); setAirtimeAmount(""); setAirtimeNetwork(null); setAirtimeSuccessData(null); setBuyAirtimeError(""); }}
+            <button onClick={() => { setBuyAirtimeStage(1); setAirtimePhone(""); setAirtimeAmount(""); setAirtimeNetwork(null); setAirtimeSuccessData(null); setBuyAirtimeError(""); setShowNetworkWarning(false); }}
               style={{
                 width: "100%", padding: 12, borderRadius: 12, background: T.blue, border: "none",
                 color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: font,
