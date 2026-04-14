@@ -26,7 +26,7 @@ export function Logo({
     <div className={`flex items-center gap-3 ${className}`}>
       <div className="relative" style={{ width: dimensions.logo, height: dimensions.logo }}>
         <Image
-          src="/logo.png"
+          src="/logo.jpeg"
           alt="Danbaiwa Data Plug Logo"
           fill
           className="object-contain"
@@ -64,7 +64,7 @@ export function LogoIcon({ size = "md", className = "" }: Omit<LogoProps, "varia
   return (
     <div className={`relative ${className}`} style={{ width: dimensions.logo, height: dimensions.logo }}>
       <Image
-        src="/logo.png"
+        src="/logo.jpeg"
         alt="Danbaiwa Data Plug"
         fill
         className="object-contain"

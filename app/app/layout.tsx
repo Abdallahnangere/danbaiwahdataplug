@@ -12,14 +12,14 @@ export const metadata: Metadata = {
   themeColor: "#06b6d4",
   viewport: "width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover, user-scalable=no",
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/logo.jpeg",
+    shortcut: "/logo.jpeg",
+    apple: "/logo.jpeg",
   },
   openGraph: {
     title: "DANBAIWA DATA PLUG",
     description: "Your one-stop platform for mobile recharges and utility bills",
-    images: ["/logo.png"],
+    images: ["/og-image.png"],
   },
 };
 

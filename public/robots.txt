@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+
+# Disallow crawling of dynamic routes that don't need indexing
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /app/auth
+
+# Allow specific paths needed by search engines
+Allow: /
+
+# Sitemaps
+Sitemap: https://danbaiwahdataplug.com/sitemap.xml
+
+# Crawl delay (be nice to servers)
+Crawl-delay: 1

@@ -21,11 +21,11 @@ export const metadata: Metadata = {
     "🚀 Ultimate data & airtime platform. Buy data for MTN, GLO, Airtel & 9Mobile instantly. Electricity, Cable TV & Exam PINs too!",
   keywords: ["buy data", "cheap data", "MTN data", "GLO data", "Airtel data", "9mobile data", "Nigeria data", "airtime", "cable tv", "electricity"],
   viewport: "width=device-width, initial-scale=1, maximum-scale=5",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://danbaiwahdataplug.com"),
   themeColor: "#06b6d4",
   icons: {
     icon: [
-      { url: "/logo.png", type: "image/png" },
+      { url: "/logo.jpeg", type: "image/jpeg" },
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
       { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" },
@@ -45,10 +45,21 @@ export const metadata: Metadata = {
     email: true,
     address: true,
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     type: "website",
     locale: "en_NG",
-    url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+    url: process.env.NEXT_PUBLIC_APP_URL || "https://danbaiwahdataplug.com",
     siteName: "DANBAIWA DATA PLUG",
     title: "DANBAIWA DATA PLUG — Buy Data Instantly",
     description: "Affordable, always connected. Buy data and airtime for all Nigerian networks at the best prices.",
@@ -64,7 +75,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SY DATA SUB — Buy Data Instantly",
+    title: "DANBAIWA DATA PLUG — Buy Data Instantly",
     description: "Affordable, always connected. Buy data and airtime for all Nigerian networks.",
     images: ["/og-image.png"],
     creator: "@danbaiwa",

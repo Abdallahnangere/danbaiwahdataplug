@@ -205,7 +205,7 @@ export default function AuthPage() {
             }}
           >
             <img
-              src="/logo.png"
+              src="/logo.jpeg"
               alt="DANBAIWA DATA PLUG"
               style={{
                 width: "100%",
