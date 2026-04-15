@@ -24,16 +24,16 @@ export function Logo({
 
   const logoContent = (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div className="relative" style={{ width: dimensions.logo, height: dimensions.logo }}>
+      <div style={{ width: dimensions.logo, height: dimensions.logo }}>
         <Image
           src="/logo.jpeg"
           alt="Danbaiwa Data Plug"
-          fill
+          width={dimensions.logo}
+          height={dimensions.logo}
           className="object-contain"
           priority={true}
           quality={100}
-          sizes={`${dimensions.logo}px`}
-          unoptimized={false}
+          style={{ width: "100%", height: "auto" }}
         />
       </div>
       {variant !== "compact" && (

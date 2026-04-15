@@ -25,16 +25,15 @@ export function HeroSection() {
       <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
         {/* Logo Section */}
         <div className="flex justify-center mb-8">
-          <div className="relative w-32 h-32 sm:w-40 sm:h-40 drop-shadow-2xl hover:scale-105 transition-transform duration-300">
+          <div className="drop-shadow-2xl hover:scale-105 transition-transform duration-300">
             <Image
               src="/logo.jpeg"
               alt="Danbaiwa Data Plug"
-              fill
+              width={160}
+              height={160}
               className="object-contain"
               priority={true}
-              sizes="(max-width: 640px) 128px, 160px"
               quality={100}
-              unoptimized={false}
             />
           </div>
         </div>

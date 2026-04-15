@@ -14,18 +14,15 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="flex items-center gap-2 mb-6">
-              <div className="relative h-7 w-7">
-                <Image
-                  src="/logo.jpeg"
-                  alt="DANBAIWA DATA"
-                  fill
-                  className="object-contain"
-                  priority={true}
-                  sizes="28px"
-                  quality={100}
-                  unoptimized={false}
-                />
-              </div>
+              <Image
+                src="/logo.jpeg"
+                alt="DANBAIWA DATA"
+                width={28}
+                height={28}
+                className="object-contain"
+                priority={true}
+                quality={100}
+              />
               <span className="font-semibold text-sm">DANBAIWA DATA PLUG</span>
             </Link>
             <p className="text-gray-400 text-sm mb-4">

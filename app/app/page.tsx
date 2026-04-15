@@ -737,7 +737,19 @@ export default function DanbaiwaApp() {
               gridTemplateColumns: "1fr 1fr",
               gap: 12,
             }}>
-              {plans.map((plan) => (
+              {plans
+                .reduce((unique: any[], plan: any) => {
+                  // Deduplicate by networkId + sizeLabel + validity + price combination
+                  const isDuplicate = unique.some(
+                    (p) => 
+                      p.networkId === plan.networkId &&
+                      p.sizeLabel === plan.sizeLabel &&
+                      p.validity === plan.validity &&
+                      p.price === plan.price
+                  );
+                  return isDuplicate ? unique : [...unique, plan];
+                }, [])
+                .map((plan) => (
                 <button
                   key={plan.id}
                   onClick={() => {

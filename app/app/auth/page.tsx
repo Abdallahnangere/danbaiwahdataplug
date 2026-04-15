@@ -208,12 +208,11 @@ export default function AuthPage() {
             <Image
               src="/logo.jpeg"
               alt="DANBAIWA DATA PLUG"
-              fill
+              width={72}
+              height={72}
               className="object-cover"
               priority={true}
-              sizes="72px"
               quality={100}
-              unoptimized={false}
             />
           </div>
 
