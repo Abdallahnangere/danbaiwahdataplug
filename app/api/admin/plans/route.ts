@@ -53,6 +53,8 @@ async function createHandler(request: NextRequest) {
     }
 
     const body = await request.json();
+    console.log("[DATA_PLAN_CREATE] REQUEST_BODY:", JSON.stringify(body, null, 2));
+
     const {
       name,
       networkId,
@@ -69,60 +71,86 @@ async function createHandler(request: NextRequest) {
     } = body;
 
     if (!name || !networkId || !sizeLabel || !validity || !price) {
+      const missingFields = {
+        name: !name,
+        networkId: !networkId,
+        sizeLabel: !sizeLabel,
+        validity: !validity,
+        price: !price,
+      };
+      console.log("[DATA_PLAN_CREATE] MISSING_FIELDS:", missingFields);
       return NextResponse.json(
-        { error: "Missing required fields" },
+        { error: "Missing required fields: " + Object.keys(missingFields).filter(k => missingFields[k as keyof typeof missingFields]).join(", ") },
         { status: 400, headers: utf8Headers }
       );
     }
 
     // Validate numeric fields
-    const networkIdNum = parseInt(String(networkId));
+    const networkIdNum = typeof networkId === "number" ? networkId : parseInt(String(networkId));
     if (isNaN(networkIdNum) || networkIdNum <= 0) {
+      console.log("[DATA_PLAN_CREATE] INVALID_NETWORK_ID:", { received: networkId, parsed: networkIdNum });
       return NextResponse.json(
-        { error: "Invalid networkId - must be a positive integer" },
+        { error: `Invalid networkId: received '${networkId}', must be a positive integer (1=MTN, 2=Glo, 3=9mobile, 4=Airtel)` },
         { status: 400, headers: utf8Headers }
       );
     }
 
     const priceNum = parseFloat(String(price));
     if (isNaN(priceNum) || priceNum <= 0) {
+      console.log("[DATA_PLAN_CREATE] INVALID_PRICE:", { received: price, parsed: priceNum });
       return NextResponse.json(
-        { error: "Invalid price - must be a positive number" },
+        { error: `Invalid price: received '${price}', must be a positive number` },
         { status: 400, headers: utf8Headers }
       );
     }
 
     const userPriceNum = userPrice ? parseFloat(String(userPrice)) : null;
     if (userPrice && (isNaN(userPriceNum!) || userPriceNum! <= 0)) {
+      console.log("[DATA_PLAN_CREATE] INVALID_USER_PRICE:", { received: userPrice, parsed: userPriceNum });
       return NextResponse.json(
-        { error: "Invalid userPrice - must be a positive number" },
+        { error: `Invalid userPrice: received '${userPrice}', must be a positive number` },
         { status: 400, headers: utf8Headers }
       );
     }
 
     const agentPriceNum = agentPrice ? parseFloat(String(agentPrice)) : null;
     if (agentPrice && (isNaN(agentPriceNum!) || agentPriceNum! <= 0)) {
+      console.log("[DATA_PLAN_CREATE] INVALID_AGENT_PRICE:", { received: agentPrice, parsed: agentPriceNum });
       return NextResponse.json(
-        { error: "Invalid agentPrice - must be a positive number" },
+        { error: `Invalid agentPrice: received '${agentPrice}', must be a positive number` },
         { status: 400, headers: utf8Headers }
       );
     }
 
     const apiAIdNum = apiAId ? parseInt(String(apiAId)) : null;
     if (apiAId && (isNaN(apiAIdNum!) || apiAIdNum! <= 0)) {
+      console.log("[DATA_PLAN_CREATE] INVALID_API_A_ID:", { received: apiAId, parsed: apiAIdNum });
       return NextResponse.json(
-        { error: "Invalid apiAId - must be a positive integer" },
+        { error: `Invalid apiAId: received '${apiAId}', must be a positive integer` },
         { status: 400, headers: utf8Headers }
       );
     }
 
     const apiBIdNum = apiBId ? parseInt(String(apiBId)) : null;
     if (apiBId && (isNaN(apiBIdNum!) || apiBIdNum! <= 0)) {
+      console.log("[DATA_PLAN_CREATE] INVALID_API_B_ID:", { received: apiBId, parsed: apiBIdNum });
       return NextResponse.json(
-        { error: "Invalid apiBId - must be a positive integer" },
+        { error: `Invalid apiBId: received '${apiBId}', must be a positive integer` },
         { status: 400, headers: utf8Headers }
       );
     }
+
+    console.log("[DATA_PLAN_CREATE] VALIDATED_DATA:", {
+      name,
+      networkIdNum,
+      sizeLabel,
+      validity,
+      priceNum,
+      userPriceNum,
+      agentPriceNum,
+      apiAIdNum,
+      apiBIdNum,
+    });
 
     const plan = await queryOne<any>(
       `INSERT INTO "DataPlan" 
@@ -150,6 +178,8 @@ async function createHandler(request: NextRequest) {
       throw new Error("Failed to create plan");
     }
 
+    console.log("[DATA_PLAN_CREATE] SUCCESS:", { planId: plan.id, name: plan.name, networkId: plan.networkId });
+
     return NextResponse.json(
       {
         ...plan,
@@ -160,9 +190,9 @@ async function createHandler(request: NextRequest) {
       { status: 201, headers: utf8Headers }
     );
   } catch (error) {
-    console.error("Plan creation error:", error);
+    console.error("[DATA_PLAN_CREATE] ERROR:", error);
     return NextResponse.json(
-      { error: "Failed to create plan" },
+      { error: error instanceof Error ? error.message : "Failed to create plan" },
       { status: 500, headers: utf8Headers }
     );
   }

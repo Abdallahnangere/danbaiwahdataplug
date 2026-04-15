@@ -38,10 +38,10 @@ interface DataPlan {
 }
 
 const NETWORKS = [
-  { id: "MTN", name: "MTN" },
-  { id: "GLO", name: "Glo" },
-  { id: "AIRTEL", name: "Airtel" },
-  { id: "9MOBILE", name: "9Mobile" },
+  { id: 1, name: "MTN" },
+  { id: 2, name: "Glo" },
+  { id: 4, name: "Airtel" },
+  { id: 3, name: "9Mobile" },
 ];
 
 // Modal wrapper
@@ -214,15 +214,15 @@ export default function DataPlansTab() {
     try {
       const payload = {
         name: formData.name,
-        networkId: formData.networkId,
-        networkName: NETWORKS.find((n) => n.id === formData.networkId)?.name || formData.networkId,
+        networkId: parseInt(String(formData.networkId)), // Convert to number
+        networkName: NETWORKS.find((n) => n.id === parseInt(String(formData.networkId)))?.name || formData.networkId,
         sizeLabel: formData.sizeLabel,
         validity: formData.validity,
         price: parseFloat(formData.price),
-        userPrice: parseFloat(formData.userPrice) || 0,
-        agentPrice: parseFloat(formData.agentPrice) || 0,
-        apiAId: formData.apiAId,
-        apiBId: formData.apiBId,
+        userPrice: formData.userPrice ? parseFloat(formData.userPrice) : undefined,
+        agentPrice: formData.agentPrice ? parseFloat(formData.agentPrice) : undefined,
+        apiAId: formData.apiAId || undefined,
+        apiBId: formData.apiBId || undefined,
         activeApi: formData.activeApi,
         isActive: formData.isActive,
       };
@@ -235,7 +235,10 @@ export default function DataPlansTab() {
           credentials: "include",
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Failed to update plan");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to update plan");
+        }
         const updated = await res.json();
         setPlans(plans.map((p) => (p.id === updated.id ? updated : p)));
         toast.success("Plan updated");
@@ -247,7 +250,10 @@ export default function DataPlansTab() {
           credentials: "include",
           body: JSON.stringify(payload),
         });
-        if (!res.ok) throw new Error("Failed to create plan");
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.error || "Failed to create plan");
+        }
         const created = await res.json();
         setPlans([...plans, created]);
         toast.success("Plan created");
@@ -257,7 +263,8 @@ export default function DataPlansTab() {
       setShowEditModal(false);
       setEditingPlan(null);
     } catch (error) {
-      toast.error(editingPlan ? "Failed to update plan" : "Failed to create plan");
+      const errorMessage = error instanceof Error ? error.message : (editingPlan ? "Failed to update plan" : "Failed to create plan");
+      toast.error(errorMessage);
     } finally {
       setFormLoading(false);
     }
