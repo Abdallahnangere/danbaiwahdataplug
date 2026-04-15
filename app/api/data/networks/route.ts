@@ -2,11 +2,12 @@ import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
 
+// Logging helper - LOGS TO VERCEL IN PRODUCTION + DEVELOPMENT
 const log = (step: string, data: any) => {
-  // Only log in development environment
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[NETWORKS] ${step}:`, JSON.stringify(data, null, 2));
-  }
+  const timestamp = new Date().toISOString();
+  const logMessage = `[NETWORKS] ${timestamp} ${step}: ${JSON.stringify(data, null, 2)}`;
+  console.log(logMessage);  // Always logs - visible in Vercel
+  console.error(`[NETWORKS_LOG] ${step}`, JSON.stringify(data, null, 2));
 };
 
 export async function GET() {

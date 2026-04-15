@@ -6,11 +6,12 @@ import { queryOne } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// Logging helper - LOGS TO VERCEL IN PRODUCTION + DEVELOPMENT
 const log = (step: string, data: any) => {
-  // Only log in development environment
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[VALIDATE_PIN] ${step}:`, JSON.stringify(data, null, 2));
-  }
+  const timestamp = new Date().toISOString();
+  const logMessage = `[VALIDATE_PIN] ${timestamp} ${step}: ${JSON.stringify(data, null, 2)}`;
+  console.log(logMessage);  // Always logs - visible in Vercel
+  console.error(`[VALIDATE_PIN_LOG] ${step}`, JSON.stringify(data, null, 2));
 };
 
 export async function POST(request: NextRequest) {

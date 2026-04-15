@@ -6,12 +6,14 @@ import bcrypt from "bcryptjs";
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-// Logging helper
+// Logging helper - LOGS TO VERCEL IN PRODUCTION + DEVELOPMENT
 const log = (step: string, data: any) => {
-  // Only log in development environment
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[PURCHASE] ${step}:`, JSON.stringify(data, null, 2));
-  }
+  const timestamp = new Date().toISOString();
+  const logMessage = `[DATA_PURCHASE] ${timestamp} ${step}: ${JSON.stringify(data, null, 2)}`;
+  console.log(logMessage);  // Always logs - visible in Vercel
+  
+  // Also log to stderr for guaranteed visibility
+  console.error(`[DATA_PURCHASE_LOG] ${step}`, JSON.stringify(data, null, 2));
 };
 
 export async function POST(request: NextRequest) {
