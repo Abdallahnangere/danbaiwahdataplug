@@ -2,19 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-
-// Fallback gradient logo when image fails to load
-function LogoFallback() {
-  return (
-    <div className="h-7 w-7 rounded bg-gradient-to-br from-cyan-400 to-orange-500 flex items-center justify-center font-bold text-white text-xs">
-      DB
-    </div>
-  );
-}
 
 export function Footer() {
-  const [logoError, setLogoError] = useState(false);
   const currentYear = new Date().getFullYear();
 
   return (
@@ -26,20 +15,16 @@ export function Footer() {
           <div>
             <Link href="/" className="flex items-center gap-2 mb-6">
               <div className="relative h-7 w-7">
-                {logoError ? (
-                  <LogoFallback />
-                ) : (
-                  <Image
-                    src="/logo.jpeg"
-                    alt="DANBAIWA DATA"
-                    fill
-                    className="object-contain"
-                    priority
-                    sizes="28px"
-                    quality={90}
-                    onError={() => setLogoError(true)}
-                  />
-                )}
+                <Image
+                  src="/logo.jpeg"
+                  alt="DANBAIWA DATA"
+                  fill
+                  className="object-contain"
+                  priority={true}
+                  sizes="28px"
+                  quality={100}
+                  unoptimized={false}
+                />
               </div>
               <span className="font-semibold text-sm">DANBAIWA DATA PLUG</span>
             </Link>

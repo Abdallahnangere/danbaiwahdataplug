@@ -25,12 +25,12 @@ export const metadata: Metadata = {
   themeColor: "#06b6d4",
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
       { url: "/favicon-192x192.png", type: "image/png", sizes: "192x192" },
       { url: "/favicon-512x512.png", type: "image/png", sizes: "512x512" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
-    shortcut: "/favicon.svg",
+    shortcut: "/favicon-32x32.png",
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",

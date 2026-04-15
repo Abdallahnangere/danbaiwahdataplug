@@ -2,19 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
-
-// Fallback gradient logo when image fails to load
-function LogoFallback() {
-  return (
-    <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-lg bg-gradient-to-br from-cyan-400 to-orange-500 flex items-center justify-center font-bold text-white text-3xl sm:text-4xl">
-      DB
-    </div>
-  );
-}
 
 export function HeroSection() {
-  const [logoError, setLogoError] = useState(false);
   return (
     <section className="relative bg-gradient-to-br from-white via-cyan-50/30 to-orange-50/20 pt-28 pb-20 sm:pt-40 sm:pb-32 overflow-hidden">
       {/* Animated gradient background elements */}
@@ -37,20 +26,16 @@ export function HeroSection() {
         {/* Logo Section */}
         <div className="flex justify-center mb-8">
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 drop-shadow-2xl hover:scale-105 transition-transform duration-300">
-            {logoError ? (
-              <LogoFallback />
-            ) : (
-              <Image
-                src="/logo.jpeg"
-                alt="Danbaiwa Data Plug Logo"
-                fill
-                className="object-contain"
-                priority
-                sizes="(max-width: 640px) 128px, 160px"
-                quality={90}
-                onError={() => setLogoError(true)}
-              />
-            )}
+            <Image
+              src="/logo.jpeg"
+              alt="Danbaiwa Data Plug"
+              fill
+              className="object-contain"
+              priority={true}
+              sizes="(max-width: 640px) 128px, 160px"
+              quality={100}
+              unoptimized={false}
+            />
           </div>
         </div>
 

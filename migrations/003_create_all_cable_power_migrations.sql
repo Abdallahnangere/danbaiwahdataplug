@@ -2,13 +2,16 @@
 -- CONSOLIDATED MIGRATION: Cable & Power Services (All 4 Migrations Combined)
 -- ═════════════════════════════════════════════════════════════════════════════════
 
+-- Ensure UUID extension is available
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- ─────────────────────────────────────────────────────────────────────────────────
 -- Migration 1: Create cable_transactions table
 -- ─────────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS cable_transactions (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
   provider_id TEXT,
   ident TEXT UNIQUE,
   provider TEXT, -- e.g., "DSTV", "GOTV", "STARTIMES"
@@ -56,8 +59,8 @@ EXECUTE FUNCTION update_cable_transactions_timestamp();
 -- ─────────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS power_transactions (
-  id UUID PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
   provider_id TEXT,
   ident TEXT UNIQUE,
   provider TEXT, -- e.g., "EKEDC", "IBADANELECTRICITY", "ENUGU", etc.
@@ -105,7 +108,7 @@ EXECUTE FUNCTION update_power_transactions_timestamp();
 -- ─────────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS cable_plans (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL, -- DSTV, GOTV, STARTIMES
   "planName" TEXT NOT NULL,
   "planCode" TEXT UNIQUE NOT NULL,
@@ -140,7 +143,7 @@ EXECUTE FUNCTION update_cable_plans_timestamp();
 -- ─────────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS power_plans (
-  id UUID PRIMARY KEY,
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL, -- EKEDC, IBADANELECTRICITY, ABUJA, ENUGU, KANO, etc.
   "planName" TEXT NOT NULL,
   "meterType" TEXT NOT NULL, -- PREPAID, POSTPAID
