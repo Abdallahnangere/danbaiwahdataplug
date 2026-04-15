@@ -190,8 +190,22 @@ export default function DanbaiwaApp() {
   // the keyboard. Moving the useEffect up and calling BuyDataCard as a plain
   // function ({BuyDataCard()}) instead of JSX (<BuyDataCard />) eliminates
   // the unmount/remount cycle entirely.
+  // CRITICAL FIX: Clear plans when stage changes away from 2, or when network changes
   useEffect(() => {
-    if (buyDataStage !== 2 || plans.length > 0 || !selectedNetwork) return;
+    // If not in stage 2, clear the plans array
+    if (buyDataStage !== 2) {
+      if (plans.length > 0) setPlans([]);
+      return;
+    }
+
+    // If no network selected, clear plans
+    if (!selectedNetwork) {
+      if (plans.length > 0) setPlans([]);
+      return;
+    }
+
+    // If plans already loaded for this network, don't fetch again
+    if (plans.length > 0) return;
 
     (async () => {
       setBuyDataLoading(true);
@@ -199,15 +213,29 @@ export default function DanbaiwaApp() {
         const res = await fetch(`/api/data/plans?networkId=${selectedNetwork.id}`);
         if (!res.ok) throw new Error();
         const data = await res.json();
-        setPlans(data);
+        // Deduplicate plans locally as well
+        const uniquePlans = Array.isArray(data) 
+          ? data.reduce((unique: any[], plan: any) => {
+              const isDuplicate = unique.some(
+                (p) => 
+                  p.networkId === plan.networkId &&
+                  p.sizeLabel === plan.sizeLabel &&
+                  p.validity === plan.validity &&
+                  p.price === plan.price
+              );
+              return isDuplicate ? unique : [...unique, plan];
+            }, [])
+          : [];
+        setPlans(uniquePlans);
       } catch {
         toast.error("Couldn't load plans. Check your connection.");
         setBuyDataStage(1);
+        setPlans([]);
       } finally {
         setBuyDataLoading(false);
       }
     })();
-  }, [buyDataStage, selectedNetwork, plans.length]);
+  }, [buyDataStage, selectedNetwork?.id]);
 
   // Load cable plans when buying cable
   useEffect(() => {
@@ -737,19 +765,7 @@ export default function DanbaiwaApp() {
               gridTemplateColumns: "1fr 1fr",
               gap: 12,
             }}>
-              {plans
-                .reduce((unique: any[], plan: any) => {
-                  // Deduplicate by networkId + sizeLabel + validity + price combination
-                  const isDuplicate = unique.some(
-                    (p) => 
-                      p.networkId === plan.networkId &&
-                      p.sizeLabel === plan.sizeLabel &&
-                      p.validity === plan.validity &&
-                      p.price === plan.price
-                  );
-                  return isDuplicate ? unique : [...unique, plan];
-                }, [])
-                .map((plan) => (
+              {plans.map((plan) => (
                 <button
                   key={plan.id}
                   onClick={() => {

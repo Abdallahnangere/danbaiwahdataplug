@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -14,14 +13,13 @@ export function Footer() {
           {/* Brand */}
           <div>
             <Link href="/" className="flex items-center gap-2 mb-6">
-              <Image
+              <img
                 src="/logo.jpeg"
                 alt="DANBAIWA DATA"
                 width={28}
                 height={28}
                 className="object-contain"
-                priority={true}
-                quality={100}
+                style={{ width: "28px", height: "28px", display: "block" }}
               />
               <span className="font-semibold text-sm">DANBAIWA DATA PLUG</span>
             </Link>

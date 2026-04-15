@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 interface LogoProps {
@@ -24,18 +23,18 @@ export function Logo({
 
   const logoContent = (
     <div className={`flex items-center gap-3 ${className}`}>
-      <div style={{ width: dimensions.logo, height: dimensions.logo }}>
-        <Image
-          src="/logo.jpeg"
-          alt="Danbaiwa Data Plug"
-          width={dimensions.logo}
-          height={dimensions.logo}
-          className="object-contain"
-          priority={true}
-          quality={100}
-          style={{ width: "100%", height: "auto" }}
-        />
-      </div>
+      <img
+        src="/logo.jpeg"
+        alt="Danbaiwa Data Plug"
+        width={dimensions.logo}
+        height={dimensions.logo}
+        style={{
+          width: `${dimensions.logo}px`,
+          height: `${dimensions.logo}px`,
+          objectFit: "contain",
+          display: "block",
+        }}
+      />
       {variant !== "compact" && (
         <div className="flex flex-col">
           <span
@@ -64,17 +63,18 @@ export function LogoIcon({ size = "md", className = "" }: Omit<LogoProps, "varia
   const dimensions = sizeMap[size];
 
   return (
-    <div className={`relative ${className}`} style={{ width: dimensions.logo, height: dimensions.logo }}>
-      <Image
-        src="/logo.jpeg"
-        alt="Danbaiwa Data Plug"
-        fill
-        className="object-contain"
-        priority={true}
-        quality={100}
-        sizes={`${dimensions.logo}px`}
-        unoptimized={false}
-      />
-    </div>
+    <img
+      src="/logo.jpeg"
+      alt="Danbaiwa Data Plug"
+      width={dimensions.logo}
+      height={dimensions.logo}
+      className={className}
+      style={{
+        width: `${dimensions.logo}px`,
+        height: `${dimensions.logo}px`,
+        objectFit: "contain",
+        display: "block",
+      }}
+    />
   );
 }

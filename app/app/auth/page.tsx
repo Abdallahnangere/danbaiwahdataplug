@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, User } from "lucide-react";
-import Image from "next/image";
 import { toast } from "sonner";
 
 const T = {
@@ -205,14 +204,12 @@ export default function AuthPage() {
               justifyContent: "center",
             }}
           >
-            <Image
+            <img
               src="/logo.jpeg"
               alt="DANBAIWA DATA PLUG"
               width={72}
               height={72}
-              className="object-cover"
-              priority={true}
-              quality={100}
+              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
             />
           </div>
 

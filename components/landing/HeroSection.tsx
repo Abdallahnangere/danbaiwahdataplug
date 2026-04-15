@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 
 export function HeroSection() {
   return (
@@ -26,14 +25,13 @@ export function HeroSection() {
         {/* Logo Section */}
         <div className="flex justify-center mb-8">
           <div className="drop-shadow-2xl hover:scale-105 transition-transform duration-300">
-            <Image
+            <img
               src="/logo.jpeg"
               alt="Danbaiwa Data Plug"
               width={160}
               height={160}
               className="object-contain"
-              priority={true}
-              quality={100}
+              style={{ width: "160px", height: "auto", display: "block" }}
             />
           </div>
         </div>
