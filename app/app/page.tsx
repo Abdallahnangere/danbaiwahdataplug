@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 import {
   Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
@@ -10,6 +11,7 @@ import {
 import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
 import SuccessCheck from "@/components/SuccessCheck";
+import EnhancedSettingsPanel from "@/components/EnhancedSettingsPanel";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const T = {
@@ -108,6 +110,29 @@ export default function DanbaiwaApp() {
   const [showNetworkWarning, setShowNetworkWarning] = useState(false);
   const airtimePhoneInputRef = useRef<HTMLInputElement>(null);
 
+  // Buy-Cable Flow State
+  const [buyCableStage, setBuyCableStage] = useState(1);
+  const [cableProvider, setCableProvider] = useState<any | null>(null);
+  const [smartCardNumber, setSmartCardNumber] = useState("");
+  const [cablePlans, setCablePlans] = useState<any[]>([]);
+  const [selectedCablePlan, setSelectedCablePlan] = useState<any | null>(null);
+  const [cablePinInput, setCablePinInput] = useState(["", "", "", "", "", ""]);
+  const [buyCableLoading, setBuyCableLoading] = useState(false);
+  const [buyCableError, setBuyCableError] = useState("");
+  const [cableSuccessData, setCableSuccessData] = useState<any | null>(null);
+
+  // Buy-Power Flow State
+  const [buyPowerStage, setBuyPowerStage] = useState(1);
+  const [meterType, setMeterType] = useState<"PREPAID" | "POSTPAID" | null>(null);
+  const [meterNumber, setMeterNumber] = useState("");
+  const [powerProvider, setPowerProvider] = useState<any | null>(null);
+  const [powerPlans, setPowerPlans] = useState<any[]>([]);
+  const [selectedPowerPlan, setSelectedPowerPlan] = useState<any | null>(null);
+  const [powerPinInput, setPowerPinInput] = useState(["", "", "", "", "", ""]);
+  const [buyPowerLoading, setBuyPowerLoading] = useState(false);
+  const [buyPowerError, setBuyPowerError] = useState("");
+  const [powerSuccessData, setPowerSuccessData] = useState<any | null>(null);
+
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const checkAuth = async () => {
@@ -183,6 +208,46 @@ export default function DanbaiwaApp() {
       }
     })();
   }, [buyDataStage, selectedNetwork, plans.length]);
+
+  // Load cable plans when buying cable
+  useEffect(() => {
+    if (buyCableStage !== 2 || cablePlans.length > 0 || !cableProvider) return;
+
+    (async () => {
+      setBuyCableLoading(true);
+      try {
+        const res = await fetch(`/api/admin/cable/plans?provider=${cableProvider.id}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setCablePlans(Array.isArray(data) ? data : data.plans || []);
+      } catch {
+        toast.error("Couldn't load cable plans. Check your connection.");
+        setBuyCableStage(1);
+      } finally {
+        setBuyCableLoading(false);
+      }
+    })();
+  }, [buyCableStage, cableProvider, cablePlans.length]);
+
+  // Load power plans when buying power
+  useEffect(() => {
+    if (buyPowerStage !== 3 || powerPlans.length > 0 || !powerProvider) return;
+
+    (async () => {
+      setBuyPowerLoading(true);
+      try {
+        const res = await fetch(`/api/admin/power/plans?provider=${powerProvider.id}&meterType=${meterType}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        setPowerPlans(Array.isArray(data) ? data : data.plans || []);
+      } catch {
+        toast.error("Couldn't load power plans. Check your connection.");
+        setBuyPowerStage(2);
+      } finally {
+        setBuyPowerLoading(false);
+      }
+    })();
+  }, [buyPowerStage, powerProvider, meterType, powerPlans.length]);
 
   const handleLogout = async () => {
     try {
@@ -441,7 +506,20 @@ export default function DanbaiwaApp() {
                   role="radio"
                   aria-checked={isSelected}
                 >
-                  <img src={net.logo} alt={net.name} style={{ width: 28, height: 28 }} />
+                  <div style={{ position: "relative", width: 28, height: 28 }}>
+                    <Image
+                      src={net.logo}
+                      alt={net.name}
+                      fill
+                      className="object-contain"
+                      sizes="28px"
+                      priority
+                      onError={(e) => {
+                        // Fallback if image fails to load
+                        (e.target as any).style.display = "none";
+                      }}
+                    />
+                  </div>
                   <span style={{
                     fontSize: 13,
                     fontWeight: 600,
@@ -1101,6 +1179,25 @@ export default function DanbaiwaApp() {
     { id: 4, name: "Airtel", prefix: /^0801|0802|0808|0812|0902|0904/, color: "#DC143C", hexColor: "#dc143c" },
   ];
 
+  const CABLE_PROVIDERS = [
+    { id: "dstv", name: "DSTV", logo: "📺" },
+    { id: "gotv", name: "GOTV", logo: "📺" },
+    { id: "startimes", name: "Startimes", logo: "📺" },
+  ];
+
+  const POWER_PROVIDERS = [
+    { id: "ekedc", name: "EKEDC", logo: "⚡" },
+    { id: "ibadanelectricity", name: "Ibadan Electricity", logo: "⚡" },
+    { id: "enugu", name: "Enugu Electricity", logo: "⚡" },
+    { id: "kano", name: "Kano Electricity", logo: "⚡" },
+    { id: "kaduna", name: "Kaduna Electricity", logo: "⚡" },
+  ];
+
+  const METER_TYPES = [
+    { id: "PREPAID", label: "Prepaid Meter", description: "Buy credit upfront" },
+    { id: "POSTPAID", label: "Postpaid Meter", description: "Pay after usage" },
+  ];
+
   const BuyAirtimeCard = () => {
     // Detect which network a phone prefix belongs to
     const detectNetwork = (phone: string) => {
@@ -1346,6 +1443,1008 @@ export default function DanbaiwaApp() {
                 width: "100%", padding: 12, borderRadius: 12, background: "transparent", border: `1px solid ${T.border}`,
                 color: T.textPrimary, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: font,
               }}>View History</button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const BuyCableCard = () => {
+    const ProgressIndicator = () => (
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 24 }}>
+        {[1, 2, 3, 4].map((stage) => (
+          <div
+            key={stage}
+            style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: stage < buyCableStage ? T.blue : stage === buyCableStage ? T.blue : T.border,
+              cursor: "pointer", opacity: stage <= buyCableStage ? 1 : 0.3,
+              transform: stage === buyCableStage ? "scale(1.2)" : "scale(1)",
+              transition: "all 0.2s ease-out",
+            }}
+            onClick={() => stage < buyCableStage && setBuyCableStage(stage)}
+          />
+        ))}
+      </div>
+    );
+
+    // Stage 1: Provider + Smart Card
+    if (buyCableStage === 1) {
+      const smartCardValid = smartCardNumber.length >= 10 && /^\d+$/.test(smartCardNumber);
+      const canContinue = cableProvider !== null && smartCardValid;
+
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Provider</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
+            {CABLE_PROVIDERS.map((provider) => {
+              const isSelected = cableProvider?.id === provider.id;
+              return (
+                <button
+                  key={provider.id}
+                  onClick={() => setCableProvider(provider)}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: isSelected ? `${T.blue}15` : T.bgCard,
+                    border: `2px solid ${isSelected ? T.blue : T.border}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: font,
+                  }}
+                >
+                  <div style={{ fontSize: 32 }}>{provider.logo}</div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: T.textPrimary }}>{provider.name}</span>
+                  {isSelected && (
+                    <div style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: T.blue, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Check size={14} color="#fff" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Smart Card Number</h2>
+          <div style={{ position: "relative", marginBottom: 24 }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={20}
+              placeholder="e.g. 1234567890"
+              value={smartCardNumber}
+              onChange={(e) => setSmartCardNumber(e.target.value.replace(/\D/g, "").slice(0, 20))}
+              style={{
+                width: "100%",
+                padding: "12px 40px 12px 14px",
+                borderRadius: 12,
+                background: T.bgCard,
+                border: `1.5px solid ${smartCardValid ? T.green : T.border}`,
+                color: T.textPrimary,
+                fontSize: 16,
+                fontFamily: font,
+                boxSizing: "border-box",
+                transition: "all 150ms ease",
+              }}
+            />
+            <div style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              opacity: smartCardValid ? 1 : 0,
+              transition: "opacity 150ms ease",
+              pointerEvents: smartCardValid ? "auto" : "none",
+            }}>
+              <Check size={20} color={T.green} strokeWidth={3} />
+            </div>
+            <div style={{ fontSize: 12, color: smartCardValid ? T.green : T.textMuted, textAlign: "right", marginTop: 6, fontWeight: 500 }}>
+              {smartCardNumber.length}/10
+            </div>
+          </div>
+
+          <button
+            onClick={() => canContinue && setBuyCableStage(2)}
+            disabled={!canContinue}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: canContinue ? T.blue : T.bgElevated,
+              border: `1.5px solid ${canContinue ? T.blue : T.border}`,
+              color: canContinue ? "#fff" : T.textMuted,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: canContinue ? "pointer" : "not-allowed",
+              opacity: canContinue ? 1 : 0.5,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+          >
+            Continue
+          </button>
+        </div>
+      );
+    }
+
+    // Stage 2: Plan Selection
+    if (buyCableStage === 2) {
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button
+            onClick={() => setBuyCableStage(1)}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Plan</h2>
+
+          {buyCableLoading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} style={{ padding: 16, borderRadius: 16, background: T.bgElevated, border: `1px solid ${T.border}`, height: 80, animation: "pulse 1.5s ease-in-out infinite" }} />
+              ))}
+            </div>
+          ) : cablePlans.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: T.textSecondary }}>
+              <p style={{ fontSize: 15, margin: "0 0 8px", fontWeight: 500 }}>No plans available</p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+              {cablePlans.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => {
+                    setSelectedCablePlan(plan);
+                    setBuyCableStage(3);
+                  }}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: T.bgCard,
+                    border: `1.5px solid ${T.border}`,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: font,
+                  }}
+                >
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{plan.planName}</div>
+                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Plan Code: {plan.planCode}</div>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>₦{(plan.price || 0).toLocaleString()}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Stage 3: PIN Confirmation
+    if (buyCableStage === 3) {
+      const pinFull = cablePinInput.every((d) => d !== "");
+
+      const handlePinSubmit = async () => {
+        if (!pinFull) return;
+
+        setBuyCableLoading(true);
+        setBuyCableError("");
+
+        try {
+          const validateRes = await fetch("/api/data/validate-pin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ pin: cablePinInput.join("") }),
+          });
+
+          if (!validateRes.ok) {
+            const error = await validateRes.json();
+            setBuyCableError(error.error || "Incorrect PIN");
+            setCablePinInput(["", "", "", "", "", ""]);
+            setBuyCableLoading(false);
+            return;
+          }
+
+          const purchaseRes = await fetch("/api/cable/purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              provider: cableProvider.id,
+              smartCardNumber,
+              planCode: selectedCablePlan.planCode,
+              pin: cablePinInput.join(""),
+            }),
+          });
+
+          if (!purchaseRes.ok) {
+            const error = await purchaseRes.json();
+            if (error.error?.includes("Insufficient balance")) {
+              setBuyCableError("Insufficient balance. Please fund your wallet.");
+            } else if (error.error?.includes("refunded")) {
+              toast.error("Delivery failed. Your balance has been refunded.");
+              setBuyCableError("Delivery failed. Your balance has been refunded.");
+            } else {
+              setBuyCableError(error.error || "Purchase failed");
+            }
+            setCablePinInput(["", "", "", "", "", ""]);
+            setBuyCableLoading(false);
+            return;
+          }
+
+          const data = await purchaseRes.json();
+          toast.success(`₦${(data.amount || 0).toLocaleString()} – ${selectedCablePlan.planName} subscribed ✓`);
+          setCableSuccessData(data);
+          setCablePinInput(["", "", "", "", "", ""]);
+          setBuyCableStage(4);
+        } catch (error: any) {
+          toast.error("Something went wrong. Please try again.");
+          setBuyCableError(error.message || "An error occurred");
+          setCablePinInput(["", "", "", "", "", ""]);
+        } finally {
+          setBuyCableLoading(false);
+        }
+      };
+
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button
+            onClick={() => {
+              setBuyCableStage(2);
+              setCablePinInput(["", "", "", "", "", ""]);
+              setBuyCableError("");
+            }}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Confirm Purchase</h2>
+
+          <div style={{
+            background: T.bgElevated,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 24,
+            border: `1px solid ${T.border}`,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Provider</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{cableProvider?.name}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Smart Card</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{smartCardNumber}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Plan</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{selectedCablePlan?.planName}</span>
+            </div>
+            <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>₦{(selectedCablePlan?.price || 0).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <label style={{
+            display: "block",
+            fontSize: 14,
+            fontWeight: 600,
+            color: T.textSecondary,
+            marginBottom: 12,
+          }}>
+            Enter your 6-digit PIN
+          </label>
+
+          <div style={{ marginBottom: 16 }}>
+            <PinInput
+              value={cablePinInput}
+              onChange={setCablePinInput}
+              error={buyCableError.length > 0}
+              disabled={buyCableLoading}
+              bgColor={T.bgCard}
+              bgElevated={T.bgElevated}
+              borderColor={T.border}
+              borderStrong={T.borderStrong}
+              textPrimary={T.textPrimary}
+              textSecondary={T.textSecondary}
+              errorColor={T.red}
+              blueColor={T.blue}
+            />
+          </div>
+
+          <div
+            style={{
+              background: `${T.red}20`,
+              border: `1px solid ${T.red}50`,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 16,
+              color: T.red,
+              fontSize: 13,
+              fontWeight: 500,
+              opacity: buyCableError ? 1 : 0,
+              maxHeight: buyCableError ? "100%" : "0",
+              overflow: "hidden",
+              transition: "opacity 150ms ease, max-height 150ms ease",
+              pointerEvents: buyCableError ? "auto" : "none",
+            }}
+            role="alert"
+          >
+            {buyCableError}
+          </div>
+
+          <button
+            onClick={handlePinSubmit}
+            disabled={!pinFull || buyCableLoading}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: pinFull && !buyCableLoading ? T.blue : T.bgElevated,
+              border: "none",
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: pinFull && !buyCableLoading ? "pointer" : "not-allowed",
+              opacity: pinFull && !buyCableLoading ? 1 : 0.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+          >
+            {buyCableLoading && <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />}
+            {buyCableLoading ? "Processing..." : "Confirm & Pay"}
+          </button>
+        </div>
+      );
+    }
+
+    // Stage 4: Success
+    if (buyCableStage === 4) {
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font, textAlign: "center" }}>
+          <ProgressIndicator />
+          <SuccessCheck greenColor={T.green} size={80} />
+          <h2 style={{ margin: "16px 0 8px", fontSize: 26, fontWeight: 800, color: T.textPrimary }}>Subscription Activated!</h2>
+          <p style={{ margin: "0 0 28px", fontSize: 14, color: T.textSecondary }}>
+            Your {selectedCablePlan?.planName} subscription is now active
+          </p>
+
+          <div style={{
+            background: T.bgElevated,
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 28,
+            border: `1px solid ${T.border}`,
+            textAlign: "left",
+          }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Reference</div>
+              <div style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: T.textPrimary,
+                fontFamily: "monospace",
+                wordBreak: "break-all",
+              }}>
+                {cableSuccessData?.reference || cableSuccessData?.ident}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Amount Paid</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
+                ₦{(cableSuccessData?.amount || 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button
+              onClick={() => {
+                setBuyCableStage(1);
+                setCableProvider(null);
+                setSmartCardNumber("");
+                setSelectedCablePlan(null);
+                setCablePinInput(["", "", "", "", "", ""]);
+                setBuyCableError("");
+                setCableSuccessData(null);
+                setCablePlans([]);
+                setActiveTab("home");
+              }}
+              style={{
+                width: "100%",
+                padding: 14,
+                borderRadius: 12,
+                background: T.blue,
+                border: "none",
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: font,
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
+  const BuyPowerCard = () => {
+    const ProgressIndicator = () => (
+      <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 24 }}>
+        {[1, 2, 3, 4].map((stage) => (
+          <div
+            key={stage}
+            style={{
+              width: 8, height: 8, borderRadius: "50%",
+              background: stage < buyPowerStage ? T.blue : stage === buyPowerStage ? T.blue : T.border,
+              cursor: "pointer", opacity: stage <= buyPowerStage ? 1 : 0.3,
+              transform: stage === buyPowerStage ? "scale(1.2)" : "scale(1)",
+              transition: "all 0.2s ease-out",
+            }}
+            onClick={() => stage < buyPowerStage && setBuyPowerStage(stage)}
+          />
+        ))}
+      </div>
+    );
+
+    // Stage 1: Meter Type Selection
+    if (buyPowerStage === 1) {
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Meter Type</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12, marginBottom: 28 }}>
+            {METER_TYPES.map((type) => (
+              <button
+                key={type.id}
+                onClick={() => {
+                  setMeterType(type.id as "PREPAID" | "POSTPAID");
+                  setBuyPowerStage(2);
+                }}
+                style={{
+                  padding: 20,
+                  borderRadius: 16,
+                  background: T.bgCard,
+                  border: `1.5px solid ${T.border}`,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                  cursor: "pointer",
+                  transition: "all 150ms ease",
+                  fontFamily: font,
+                  textAlign: "left",
+                }}
+              >
+                <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{type.label}</div>
+                <div style={{ fontSize: 13, color: T.textSecondary }}>{type.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Stage 2: Provider + Meter Number
+    if (buyPowerStage === 2) {
+      const meterValid = meterNumber.length >= 9 && /^\d+$/.test(meterNumber);
+      const canContinue = powerProvider !== null && meterValid;
+
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button
+            onClick={() => setBuyPowerStage(1)}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Provider</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28 }}>
+            {POWER_PROVIDERS.map((provider) => {
+              const isSelected = powerProvider?.id === provider.id;
+              return (
+                <button
+                  key={provider.id}
+                  onClick={() => setPowerProvider(provider)}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: isSelected ? `${T.blue}15` : T.bgCard,
+                    border: `2px solid ${isSelected ? T.blue : T.border}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: font,
+                  }}
+                >
+                  <div style={{ fontSize: 32 }}>{provider.logo}</div>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: T.textPrimary, textAlign: "center" }}>{provider.name}</span>
+                  {isSelected && (
+                    <div style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: T.blue, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Check size={14} color="#fff" strokeWidth={3} />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          <h2 style={{ margin: "0 0 16px", fontSize: 16, fontWeight: 700, color: T.textPrimary }}>Meter Number</h2>
+          <div style={{ position: "relative", marginBottom: 24 }}>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={20}
+              placeholder="e.g. 09123456789"
+              value={meterNumber}
+              onChange={(e) => setMeterNumber(e.target.value.replace(/\D/g, "").slice(0, 20))}
+              style={{
+                width: "100%",
+                padding: "12px 40px 12px 14px",
+                borderRadius: 12,
+                background: T.bgCard,
+                border: `1.5px solid ${meterValid ? T.green : T.border}`,
+                color: T.textPrimary,
+                fontSize: 16,
+                fontFamily: font,
+                boxSizing: "border-box",
+                transition: "all 150ms ease",
+              }}
+            />
+            <div style={{
+              position: "absolute",
+              right: 12,
+              top: "50%",
+              transform: "translateY(-50%)",
+              opacity: meterValid ? 1 : 0,
+              transition: "opacity 150ms ease",
+              pointerEvents: meterValid ? "auto" : "none",
+            }}>
+              <Check size={20} color={T.green} strokeWidth={3} />
+            </div>
+            <div style={{ fontSize: 12, color: meterValid ? T.green : T.textMuted, textAlign: "right", marginTop: 6, fontWeight: 500 }}>
+              {meterNumber.length}/9
+            </div>
+          </div>
+
+          <button
+            onClick={() => canContinue && setBuyPowerStage(3)}
+            disabled={!canContinue}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: canContinue ? T.blue : T.bgElevated,
+              border: `1.5px solid ${canContinue ? T.blue : T.border}`,
+              color: canContinue ? "#fff" : T.textMuted,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: canContinue ? "pointer" : "not-allowed",
+              opacity: canContinue ? 1 : 0.5,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+          >
+            Continue
+          </button>
+        </div>
+      );
+    }
+
+    // Stage 3: Plan Selection
+    if (buyPowerStage === 3) {
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button
+            onClick={() => setBuyPowerStage(2)}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Select Plan</h2>
+
+          {buyPowerLoading ? (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+              {[...Array(3)].map((_, i) => (
+                <div key={i} style={{ padding: 16, borderRadius: 16, background: T.bgElevated, border: `1px solid ${T.border}`, height: 80, animation: "pulse 1.5s ease-in-out infinite" }} />
+              ))}
+            </div>
+          ) : powerPlans.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: T.textSecondary }}>
+              <p style={{ fontSize: 15, margin: "0 0 8px", fontWeight: 500 }}>No plans available</p>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 12 }}>
+              {powerPlans.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => {
+                    setSelectedPowerPlan(plan);
+                    setBuyPowerStage(4);
+                  }}
+                  style={{
+                    padding: 16,
+                    borderRadius: 16,
+                    background: T.bgCard,
+                    border: `1.5px solid ${T.border}`,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    cursor: "pointer",
+                    transition: "all 150ms ease",
+                    fontFamily: font,
+                  }}
+                >
+                  <div style={{ textAlign: "left" }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{plan.planName || "Electricity Plan"}</div>
+                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Amount: ₦{(plan.price || 0).toLocaleString()}</div>
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>₦{(plan.price || 0).toLocaleString()}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Stage 4: PIN Confirmation
+    if (buyPowerStage === 4) {
+      const pinFull = powerPinInput.every((d) => d !== "");
+
+      const handlePinSubmit = async () => {
+        if (!pinFull) return;
+
+        setBuyPowerLoading(true);
+        setBuyPowerError("");
+
+        try {
+          const validateRes = await fetch("/api/data/validate-pin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ pin: powerPinInput.join("") }),
+          });
+
+          if (!validateRes.ok) {
+            const error = await validateRes.json();
+            setBuyPowerError(error.error || "Incorrect PIN");
+            setPowerPinInput(["", "", "", "", "", ""]);
+            setBuyPowerLoading(false);
+            return;
+          }
+
+          const purchaseRes = await fetch("/api/power/purchase", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              provider: powerProvider.id,
+              meterType,
+              meterNumber,
+              amount: selectedPowerPlan.price,
+              pin: powerPinInput.join(""),
+            }),
+          });
+
+          if (!purchaseRes.ok) {
+            const error = await purchaseRes.json();
+            if (error.error?.includes("Insufficient balance")) {
+              setBuyPowerError("Insufficient balance. Please fund your wallet.");
+            } else if (error.error?.includes("refunded")) {
+              toast.error("Delivery failed. Your balance has been refunded.");
+              setBuyPowerError("Delivery failed. Your balance has been refunded.");
+            } else {
+              setBuyPowerError(error.error || "Purchase failed");
+            }
+            setPowerPinInput(["", "", "", "", "", ""]);
+            setBuyPowerLoading(false);
+            return;
+          }
+
+          const data = await purchaseRes.json();
+          toast.success(`₦${(data.amount || 0).toLocaleString()} – Power credit loaded ✓`);
+          setPowerSuccessData(data);
+          setPowerPinInput(["", "", "", "", "", ""]);
+          setBuyPowerStage(5);
+        } catch (error: any) {
+          toast.error("Something went wrong. Please try again.");
+          setBuyPowerError(error.message || "An error occurred");
+          setPowerPinInput(["", "", "", "", "", ""]);
+        } finally {
+          setBuyPowerLoading(false);
+        }
+      };
+
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+          <ProgressIndicator />
+          <button
+            onClick={() => {
+              setBuyPowerStage(3);
+              setPowerPinInput(["", "", "", "", "", ""]);
+              setBuyPowerError("");
+            }}
+            style={{
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              borderRadius: 12,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              color: T.blue,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              marginBottom: 24,
+              fontFamily: font,
+            }}
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <h2 style={{ margin: "0 0 20px", fontSize: 22, fontWeight: 800, color: T.textPrimary }}>Confirm Purchase</h2>
+
+          <div style={{
+            background: T.bgElevated,
+            borderRadius: 16,
+            padding: 16,
+            marginBottom: 24,
+            border: `1px solid ${T.border}`,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Provider</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{powerProvider?.name}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Meter Type</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{meterType}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12, fontSize: 14 }}>
+              <span style={{ color: T.textSecondary, fontWeight: 500 }}>Meter Number</span>
+              <span style={{ color: T.textPrimary, fontWeight: 600 }}>{meterNumber}</span>
+            </div>
+            <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>₦{(selectedPowerPlan?.price || 0).toLocaleString()}</span>
+            </div>
+          </div>
+
+          <label style={{
+            display: "block",
+            fontSize: 14,
+            fontWeight: 600,
+            color: T.textSecondary,
+            marginBottom: 12,
+          }}>
+            Enter your 6-digit PIN
+          </label>
+
+          <div style={{ marginBottom: 16 }}>
+            <PinInput
+              value={powerPinInput}
+              onChange={setPowerPinInput}
+              error={buyPowerError.length > 0}
+              disabled={buyPowerLoading}
+              bgColor={T.bgCard}
+              bgElevated={T.bgElevated}
+              borderColor={T.border}
+              borderStrong={T.borderStrong}
+              textPrimary={T.textPrimary}
+              textSecondary={T.textSecondary}
+              errorColor={T.red}
+              blueColor={T.blue}
+            />
+          </div>
+
+          <div
+            style={{
+              background: `${T.red}20`,
+              border: `1px solid ${T.red}50`,
+              borderRadius: 12,
+              padding: 12,
+              marginBottom: 16,
+              color: T.red,
+              fontSize: 13,
+              fontWeight: 500,
+              opacity: buyPowerError ? 1 : 0,
+              maxHeight: buyPowerError ? "100%" : "0",
+              overflow: "hidden",
+              transition: "opacity 150ms ease, max-height 150ms ease",
+              pointerEvents: buyPowerError ? "auto" : "none",
+            }}
+            role="alert"
+          >
+            {buyPowerError}
+          </div>
+
+          <button
+            onClick={handlePinSubmit}
+            disabled={!pinFull || buyPowerLoading}
+            style={{
+              width: "100%",
+              padding: 14,
+              borderRadius: 12,
+              background: pinFull && !buyPowerLoading ? T.blue : T.bgElevated,
+              border: "none",
+              color: "#fff",
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: pinFull && !buyPowerLoading ? "pointer" : "not-allowed",
+              opacity: pinFull && !buyPowerLoading ? 1 : 0.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              fontFamily: font,
+              transition: "all 150ms ease",
+            }}
+          >
+            {buyPowerLoading && <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />}
+            {buyPowerLoading ? "Processing..." : "Confirm & Pay"}
+          </button>
+        </div>
+      );
+    }
+
+    // Stage 5: Success
+    if (buyPowerStage === 5) {
+      return (
+        <div style={{ padding: "20px 20px 120px", fontFamily: font, textAlign: "center" }}>
+          <ProgressIndicator />
+          <SuccessCheck greenColor={T.green} size={80} />
+          <h2 style={{ margin: "16px 0 8px", fontSize: 26, fontWeight: 800, color: T.textPrimary }}>Payment Successful!</h2>
+          <p style={{ margin: "0 0 28px", fontSize: 14, color: T.textSecondary }}>
+            Power credit has been loaded to your meter
+          </p>
+
+          <div style={{
+            background: T.bgElevated,
+            borderRadius: 16,
+            padding: 20,
+            marginBottom: 28,
+            border: `1px solid ${T.border}`,
+            textAlign: "left",
+          }}>
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Reference</div>
+              <div style={{
+                fontSize: 15,
+                fontWeight: 700,
+                color: T.textPrimary,
+                fontFamily: "monospace",
+                wordBreak: "break-all",
+              }}>
+                {powerSuccessData?.reference || powerSuccessData?.ident}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Amount Paid</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
+                ₦{(powerSuccessData?.amount || 0).toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button
+              onClick={() => {
+                setBuyPowerStage(1);
+                setMeterType(null);
+                setMeterNumber("");
+                setPowerProvider(null);
+                setSelectedPowerPlan(null);
+                setPowerPinInput(["", "", "", "", "", ""]);
+                setBuyPowerError("");
+                setPowerSuccessData(null);
+                setPowerPlans([]);
+                setActiveTab("home");
+              }}
+              style={{
+                width: "100%",
+                padding: 14,
+                borderRadius: 12,
+                background: T.blue,
+                border: "none",
+                color: "#fff",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: font,
+              }}
+            >
+              Done
+            </button>
           </div>
         </div>
       );
@@ -1676,12 +2775,8 @@ export default function DanbaiwaApp() {
               the unmount/remount that was dismissing the keyboard. */}
           {activeTab === "data" && BuyDataCard()}
           {activeTab === "airtime" && BuyAirtimeCard()}
-          {activeTab === "cable" && (
-            <ComingSoon key="cable" icon={Tv} label="Cable TV" color={T.services.cable.icon} />
-          )}
-          {activeTab === "electricity" && (
-            <ComingSoon key="elec" icon={Zap} label="Electricity" color={T.services.electricity.icon} />
-          )}
+          {activeTab === "cable" && BuyCableCard()}
+          {activeTab === "electricity" && BuyPowerCard()}
           {activeTab === "exampin" && (
             <ComingSoon key="exam" icon={BookOpen} label="Exam PINs" color={T.services.exampin.icon} />
           )}
@@ -1775,6 +2870,32 @@ export default function DanbaiwaApp() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {transactions.map((tx: any, idx: number) => {
               const isSuccess = tx.status === "SUCCESS";
+              
+              // Select icon based on transaction type
+              let txIcon = History;
+              let txEmoji = "📱";
+              let txLabel = "Transaction";
+              
+              if (tx.type === "data") {
+                txIcon = Wifi;
+                txEmoji = "📊";
+                txLabel = "Data";
+              } else if (tx.type === "airtime") {
+                txIcon = Phone;
+                txEmoji = "📞";
+                txLabel = "Airtime";
+              } else if (tx.type === "cable") {
+                txIcon = Tv;
+                txEmoji = "📺";
+                txLabel = "Cable TV";
+              } else if (tx.type === "power") {
+                txIcon = Zap;
+                txEmoji = "⚡";
+                txLabel = "Power";
+              }
+              
+              const TxIcon = txIcon;
+              
               return (
                 <div
                   key={idx}
@@ -1794,14 +2915,14 @@ export default function DanbaiwaApp() {
                       background: isSuccess ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
                       display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      <History size={18} color={isSuccess ? T.green : T.red} strokeWidth={2} />
+                      <TxIcon size={18} color={isSuccess ? T.green : T.red} strokeWidth={2} />
                     </div>
                     <div style={{ flex: 1 }}>
                       <p style={{ margin: "0 0 3px", fontSize: 14, fontWeight: 600, color: T.textPrimary }}>
-                        {tx.planName || "Data Plan"} · {tx.networkName || "Network"}
+                        {tx.planName || `${txLabel} ${txLabel === "Cable TV" ? "Subscription" : txLabel === "Power" ? "Payment" : ""}`} · {tx.networkName || "Network"}
                       </p>
                       <p style={{ margin: "0 0 3px", fontSize: 12, color: T.textSecondary }}>
-                        📱 {tx.phone || "N/A"}
+                        {txEmoji} {tx.phone || "N/A"}
                       </p>
                       <p style={{ margin: 0, fontSize: 11, color: T.textMuted }}>
                         {new Date(tx.createdAt).toLocaleDateString("en-NG", {
@@ -1837,105 +2958,17 @@ export default function DanbaiwaApp() {
 
       {/* ══════════════════ SETTINGS MODAL ══════════════════ */}
       <Modal show={showSettingsModal} onClose={() => setShowSettingsModal(false)}>
-        <ModalHeader title="Settings" onClose={() => setShowSettingsModal(false)} />
-
-        {/* Profile card */}
-        <div style={{
-          background: `linear-gradient(135deg, ${T.bgElevated}, ${T.bgCard})`,
-          borderRadius: 20, padding: "20px",
-          border: `1px solid ${T.border}`,
-          marginBottom: 16,
-          display: "flex", alignItems: "center", gap: 16,
-        }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 18,
-            background: `linear-gradient(135deg, ${T.blue}, ${T.violet})`,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 20, fontWeight: 800, color: "white",
-            boxShadow: `0 6px 20px ${T.services.data.glow}`,
-            flexShrink: 0,
-          }}>
-            {getInitials(user.fullName)}
-          </div>
-          <div>
-            <p style={{ margin: "0 0 4px", fontSize: 17, fontWeight: 700, color: T.textPrimary }}>
-              {user.fullName}
-            </p>
-            <p style={{ margin: "0 0 6px", fontSize: 13, color: T.textMuted }}>
-              {user.phone}
-            </p>
-            <span style={{
-              fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.6px",
-              color: user.tier === "agent" ? T.amber : T.blue,
-              background: user.tier === "agent" ? "rgba(245,158,11,0.12)" : "rgba(59,130,246,0.12)",
-              borderRadius: 8, padding: "3px 10px",
-            }}>
-              {user.tier} account
-            </span>
-          </div>
-        </div>
-
-        {/* Info rows */}
-        {[
-          { label: "Full Name",    value: user.fullName },
-          { label: "Phone Number", value: user.phone    },
-          { label: "Account Type", value: user.tier     },
-        ].map((row) => (
-          <div
-            key={row.label}
-            style={{
-              background: T.bgElevated, borderRadius: 14,
-              padding: "14px 16px", marginBottom: 10,
-              border: `1px solid ${T.border}`,
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-            }}
-          >
-            <span style={{ fontSize: 13, color: T.textMuted, fontWeight: 600 }}>
-              {row.label}
-            </span>
-            <span style={{
-              fontSize: 14, color: T.textPrimary, fontWeight: 700,
-              textTransform: row.label === "Account Type" ? "capitalize" : "none",
-            }}>
-              {row.value}
-            </span>
-          </div>
-        ))}
-
-        <div style={{ height: 24 }} />
-
-        {/* Change PIN */}
-        <button
-          onClick={() => { setPinForm({ oldPin: "", newPin: "", confirmPin: "" }); setPinError(""); setShowPinChangeModal(true); }}
-          style={{
-            width: "100%", border: "none", borderRadius: 18,
-            padding: "15px",
-            background: `linear-gradient(135deg, ${T.blue}, ${T.blueMid})`,
-            color: "white", fontWeight: 700, fontSize: 16,
-            cursor: "pointer", letterSpacing: "-0.2px",
-            fontFamily: font,
-            marginBottom: 12,
-            boxShadow: "0 8px 24px rgba(59,130,246,0.3)",
+        <EnhancedSettingsPanel
+          user={user}
+          onClose={() => setShowSettingsModal(false)}
+          onPinChangeClick={() => {
+            setPinForm({ oldPin: "", newPin: "", confirmPin: "" });
+            setPinError("");
+            setShowSettingsModal(false);
+            setShowPinChangeModal(true);
           }}
-        >
-          Change PIN
-        </button>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          style={{
-            width: "100%", border: "none", borderRadius: 18,
-            padding: "15px",
-            background: "linear-gradient(135deg, #EF4444, #DC2626)",
-            color: "white", fontWeight: 700, fontSize: 16,
-            cursor: "pointer", letterSpacing: "-0.2px",
-            fontFamily: font,
-            boxShadow: "0 8px 24px rgba(239,68,68,0.3)",
-          }}
-        >
-          Sign Out
-        </button>
+          onLogoutClick={handleLogout}
+        />
       </Modal>
 
       {/* ══════════════════ CHANGE PIN MODAL ══════════════════ */}
