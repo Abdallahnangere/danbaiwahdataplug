@@ -27,7 +27,7 @@ export function HeroSection() {
         <div className="flex justify-center mb-8">
           <div className="relative w-32 h-32 sm:w-40 sm:h-40 drop-shadow-2xl hover:scale-105 transition-transform duration-300">
             <Image
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="Danbaiwa Data Plug Logo"
               fill
               className="object-contain"
