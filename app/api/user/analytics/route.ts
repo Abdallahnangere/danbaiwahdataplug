@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     log("AUTH_SUCCESS", { userId });
 
     // Fetch user info
-    const user = await queryOne<{ balance: number; fullName: string }>(
-      `SELECT balance, "fullName" FROM "User" WHERE id = $1`,
+    const user = await queryOne<{ balance: number; name: string }>(
+      `SELECT balance, name FROM "User" WHERE id = $1`,
       [userId]
     );
 

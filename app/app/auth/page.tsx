@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, User } from "lucide-react";
+import Image from "next/image";
 import { toast } from "sonner";
 
 const T = {
@@ -37,6 +38,7 @@ export default function AuthPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [savedPhone, setSavedPhone] = useState("");
+  const [logoError, setLogoError] = useState(false);
 
   // Refs for PIN inputs to prevent keyboard dismissal
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -204,15 +206,32 @@ export default function AuthPage() {
               justifyContent: "center",
             }}
           >
-            <img
-              src="/logo.jpeg"
-              alt="DANBAIWA DATA PLUG"
-              style={{
+            {logoError ? (
+              <div style={{
                 width: "100%",
                 height: "100%",
-                objectFit: "cover",
-              }}
-            />
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "linear-gradient(135deg, #06B6D4, #F97316)",
+                fontSize: 28,
+                fontWeight: 700,
+                color: "white",
+              }}>
+                DB
+              </div>
+            ) : (
+              <Image
+                src="/logo.jpeg"
+                alt="DANBAIWA DATA PLUG"
+                fill
+                className="object-cover"
+                priority
+                sizes="72px"
+                quality={90}
+                onError={() => setLogoError(true)}
+              />
+            )}
           </div>
 
           {/* Title */}
