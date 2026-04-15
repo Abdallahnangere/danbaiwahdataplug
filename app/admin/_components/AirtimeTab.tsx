@@ -35,7 +35,7 @@ const T = {
 
 const font = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif';
 
-export default function AirtimeTab({ adminPassword }: { adminPassword: string | null }) {
+export default function AirtimeTab() {
   const [transactions, setTransactions] = useState<AirtimeTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -45,8 +45,6 @@ export default function AirtimeTab({ adminPassword }: { adminPassword: string | 
   const [search, setSearch] = useState("");
 
   const fetchTransactions = async () => {
-    if (!adminPassword) return;
-    
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -58,15 +56,15 @@ export default function AirtimeTab({ adminPassword }: { adminPassword: string | 
       });
 
       const res = await fetch(`/api/admin/transactions/airtime?${params}`, {
-        headers: {
-          "X-Admin-Password": adminPassword,
-        },
+        credentials: "include",
       });
 
       if (res.ok) {
         const data = await res.json();
         setTransactions(data.data);
         setTotal(data.total);
+      } else if (res.status === 403) {
+        console.error("Admin access required");
       }
     } catch (error) {
       console.error("Failed to fetch airtime transactions", error);
@@ -77,7 +75,7 @@ export default function AirtimeTab({ adminPassword }: { adminPassword: string | 
 
   useEffect(() => {
     fetchTransactions();
-  }, [page, status, network, search, adminPassword]);
+  }, [page, status, network, search]);
 
   const getStatusColor = (s: string) => {
     switch (s.toUpperCase()) {

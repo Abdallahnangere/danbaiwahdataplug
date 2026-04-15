@@ -34,11 +34,32 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"analytics" | "plans" | "users" | "airtime">("analytics");
 
-  // Check if already authenticated via sessionStorage
+  // Check if already authenticated via JWT/session
   useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/admin/auth", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({}),
+        });
+
+        if (res.ok) {
+          setAuthenticated(true);
+          sessionStorage.setItem("admin-authenticated", "true");
+        }
+      } catch (error) {
+        // Not authenticated
+        sessionStorage.removeItem("admin-authenticated");
+      }
+    };
+
     const isAuth = sessionStorage.getItem("admin-authenticated") === "true";
     if (isAuth) {
       setAuthenticated(true);
+    } else {
+      checkAuth();
     }
   }, []);
 
@@ -47,20 +68,21 @@ export default function AdminDashboard() {
     setLoading(true);
     
     try {
-      // Send password to backend to verify against ADMIN_PASSWORD env variable
+      // In JWT-based auth, this should verify admin status
       const res = await fetch("/api/admin/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include", // Include cookies in request
+        credentials: "include",
         body: JSON.stringify({ password }),
       });
 
       if (res.ok) {
         setAuthenticated(true);
+        sessionStorage.setItem("admin-authenticated", "true");
         setPassword("");
         toast.success("Authentication successful");
       } else {
-        toast.error("Invalid admin password");
+        toast.error("Admin access denied");
         setPassword("");
       }
     } catch (error) {
@@ -72,9 +94,10 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = async () => {
-    // Clear the admin session on the backend if needed
+    // Clear the admin session
     setAuthenticated(false);
     setPassword("");
+    sessionStorage.removeItem("admin-authenticated");
     // Redirect to home
     router.push("/");
   };
@@ -284,7 +307,7 @@ export default function AdminDashboard() {
         {activeTab === "analytics" && <AnalyticsTab />}
         {activeTab === "plans" && <DataPlansTab />}
         {activeTab === "users" && <UsersTab />}
-        {activeTab === "airtime" && <AirtimeTab adminPassword={authenticated ? password : null} />}
+        {activeTab === "airtime" && <AirtimeTab />}
       </div>
     </div>
   );
