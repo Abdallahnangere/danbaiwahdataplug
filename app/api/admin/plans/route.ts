@@ -68,9 +68,58 @@ async function createHandler(request: NextRequest) {
       isActive,
     } = body;
 
-    if (!name || !networkId || !sizeLabel || !validity ||!price) {
+    if (!name || !networkId || !sizeLabel || !validity || !price) {
       return NextResponse.json(
         { error: "Missing required fields" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    // Validate numeric fields
+    const networkIdNum = parseInt(String(networkId));
+    if (isNaN(networkIdNum) || networkIdNum <= 0) {
+      return NextResponse.json(
+        { error: "Invalid networkId - must be a positive integer" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    const priceNum = parseFloat(String(price));
+    if (isNaN(priceNum) || priceNum <= 0) {
+      return NextResponse.json(
+        { error: "Invalid price - must be a positive number" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    const userPriceNum = userPrice ? parseFloat(String(userPrice)) : null;
+    if (userPrice && (isNaN(userPriceNum!) || userPriceNum! <= 0)) {
+      return NextResponse.json(
+        { error: "Invalid userPrice - must be a positive number" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    const agentPriceNum = agentPrice ? parseFloat(String(agentPrice)) : null;
+    if (agentPrice && (isNaN(agentPriceNum!) || agentPriceNum! <= 0)) {
+      return NextResponse.json(
+        { error: "Invalid agentPrice - must be a positive number" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    const apiAIdNum = apiAId ? parseInt(String(apiAId)) : null;
+    if (apiAId && (isNaN(apiAIdNum!) || apiAIdNum! <= 0)) {
+      return NextResponse.json(
+        { error: "Invalid apiAId - must be a positive integer" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    const apiBIdNum = apiBId ? parseInt(String(apiBId)) : null;
+    if (apiBId && (isNaN(apiBIdNum!) || apiBIdNum! <= 0)) {
+      return NextResponse.json(
+        { error: "Invalid apiBId - must be a positive integer" },
         { status: 400, headers: utf8Headers }
       );
     }
@@ -83,15 +132,15 @@ async function createHandler(request: NextRequest) {
        RETURNING *`,
       [
         name,
-        parseInt(networkId),
+        networkIdNum,
         networkName || null,
         sizeLabel,
         validity,
-        parseFloat(price),
-        userPrice ? parseFloat(userPrice) : null,
-        agentPrice ? parseFloat(agentPrice) : null,
-        apiAId ? parseInt(apiAId) : null,
-        apiBId ? parseInt(apiBId) : null,
+        priceNum,
+        userPriceNum,
+        agentPriceNum,
+        apiAIdNum,
+        apiBIdNum,
         activeApi || "A",
         isActive !== false,
       ]

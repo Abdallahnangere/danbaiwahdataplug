@@ -51,8 +51,15 @@ export async function PATCH(request: NextRequest) {
       paramCount++;
     }
     if (networkId !== undefined) {
+      const networkIdNum = parseInt(String(networkId));
+      if (isNaN(networkIdNum) || networkIdNum <= 0) {
+        return NextResponse.json(
+          { error: "Invalid networkId - must be a positive integer" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`"networkId" = $${paramCount}`);
-      params.push(parseInt(networkId));
+      params.push(networkIdNum);
       paramCount++;
     }
     if (sizeLabel !== undefined) {
@@ -66,28 +73,63 @@ export async function PATCH(request: NextRequest) {
       paramCount++;
     }
     if (price !== undefined) {
+      const priceNum = parseFloat(String(price));
+      if (isNaN(priceNum) || priceNum <= 0) {
+        return NextResponse.json(
+          { error: "Invalid price - must be a positive number" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`price = $${paramCount}`);
-      params.push(parseFloat(price));
+      params.push(priceNum);
       paramCount++;
     }
     if (userPrice !== undefined) {
+      const userPriceNum = userPrice ? parseFloat(String(userPrice)) : null;
+      if (userPrice && (isNaN(userPriceNum!) || userPriceNum! <= 0)) {
+        return NextResponse.json(
+          { error: "Invalid userPrice - must be a positive number" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`"userPrice" = $${paramCount}`);
-      params.push(userPrice ? parseFloat(userPrice) : null);
+      params.push(userPriceNum);
       paramCount++;
     }
     if (agentPrice !== undefined) {
+      const agentPriceNum = agentPrice ? parseFloat(String(agentPrice)) : null;
+      if (agentPrice && (isNaN(agentPriceNum!) || agentPriceNum! <= 0)) {
+        return NextResponse.json(
+          { error: "Invalid agentPrice - must be a positive number" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`"agentPrice" = $${paramCount}`);
-      params.push(agentPrice ? parseFloat(agentPrice) : null);
+      params.push(agentPriceNum);
       paramCount++;
     }
     if (apiAId !== undefined) {
+      const apiAIdNum = apiAId ? parseInt(String(apiAId)) : null;
+      if (apiAId && (isNaN(apiAIdNum!) || apiAIdNum! <= 0)) {
+        return NextResponse.json(
+          { error: "Invalid apiAId - must be a positive integer" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`"apiAId" = $${paramCount}`);
-      params.push(apiAId ? parseInt(apiAId) : null);
+      params.push(apiAIdNum);
       paramCount++;
     }
     if (apiBId !== undefined) {
+      const apiBIdNum = apiBId ? parseInt(String(apiBId)) : null;
+      if (apiBId && (isNaN(apiBIdNum!) || apiBIdNum! <= 0)) {
+        return NextResponse.json(
+          { error: "Invalid apiBId - must be a positive integer" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`"apiBId" = $${paramCount}`);
-      params.push(apiBId ? parseInt(apiBId) : null);
+      params.push(apiBIdNum);
       paramCount++;
     }
     if (activeApi !== undefined) {
