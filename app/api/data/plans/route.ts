@@ -14,12 +14,25 @@ const log = (step: string, data: any) => {
 
 export async function GET(request: NextRequest) {
   try {
-    log("REQUEST", { timestamp: new Date().toISOString() });
+    // Extract networkId from query parameters
+    const { searchParams } = new URL(request.url);
+    const networkId = searchParams.get("networkId");
+    
+    log("REQUEST", { timestamp: new Date().toISOString(), networkId });
 
     // Get user session to check their role
     const sessionUser = await getSessionUser(request);
     const userRole = sessionUser?.role || "USER";
     log("SESSION", { userRole });
+
+    let sqlQuery = "SELECT id, name, \"networkId\", \"networkName\", \"sizeLabel\", validity, price, \"userPrice\", \"agentPrice\", \"isActive\" FROM \"DataPlan\" WHERE \"isActive\" = true";
+    
+    // Filter by networkId if provided
+    if (networkId) {
+      sqlQuery += ` AND "networkId" = ${parseInt(networkId)}`;
+    }
+    
+    sqlQuery += " ORDER BY \"networkId\", price";
 
     const plans = await query<{
       id: string;
@@ -32,9 +45,7 @@ export async function GET(request: NextRequest) {
       userPrice: number | null;
       agentPrice: number | null;
       isActive: boolean;
-    }>(
-      "SELECT id, name, \"networkId\", \"networkName\", \"sizeLabel\", validity, price, \"userPrice\", \"agentPrice\", \"isActive\" FROM \"DataPlan\" WHERE \"isActive\" = true ORDER BY \"networkId\", price"
-    );
+    }>(sqlQuery);
 
     // Apply role-based pricing
     const plansWithRoleBasedPrice = plans.map((plan) => {
