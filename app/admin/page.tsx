@@ -3,12 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Loader2, LogOut, BarChart3, Database, Users, Phone } from "lucide-react";
+import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap } from "lucide-react";
 import { toast } from "sonner";
 import AnalyticsTab from "./_components/AnalyticsTab";
 import DataPlansTab from "./_components/DataPlansTab";
 import UsersTab from "./_components/UsersTab";
 import AirtimeTab from "./_components/AirtimeTab";
+import CableTab from "./_components/CableTab";
+import PowerTab from "./_components/PowerTab";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────
 const T = {
@@ -32,7 +34,7 @@ export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"analytics" | "plans" | "users" | "airtime">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "plans" | "users" | "airtime" | "cable" | "power">("analytics");
 
   // Check if already authenticated via JWT/session
   useEffect(() => {
@@ -202,6 +204,8 @@ export default function AdminDashboard() {
     { id: "plans" as const, label: "Data Plans", icon: Database },
     { id: "users" as const, label: "Users", icon: Users },
     { id: "airtime" as const, label: "Airtime", icon: Phone },
+    { id: "cable" as const, label: "Cable TV", icon: Tv },
+    { id: "power" as const, label: "Power", icon: Zap },
   ];
 
   return (
@@ -308,6 +312,8 @@ export default function AdminDashboard() {
         {activeTab === "plans" && <DataPlansTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "airtime" && <AirtimeTab />}
+        {activeTab === "cable" && <CableTab />}
+        {activeTab === "power" && <PowerTab />}
       </div>
     </div>
   );
