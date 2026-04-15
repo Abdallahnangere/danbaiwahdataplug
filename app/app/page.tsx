@@ -183,37 +183,43 @@ export default function DanbaiwaApp() {
     }
   }, [activeTab, networks.length]);
 
-  // ── FIX: Plans loading moved here from inside BuyDataCard.
-  // Because BuyDataCard was defined inside this component's render, every
-  // parent state change (e.g. typing in the phone field) caused React to see
-  // it as a *brand-new component type*, unmount it, and remount — dismissing
-  // the keyboard. Moving the useEffect up and calling BuyDataCard as a plain
-  // function ({BuyDataCard()}) instead of JSX (<BuyDataCard />) eliminates
-  // the unmount/remount cycle entirely.
-  // CRITICAL FIX: Clear plans when stage changes away from 2, or when network changes
+  // ══════════════════════════════════════════════════════════════════════════
+  // CRITICAL: NO CACHING - Always fetch plans fresh from database
+  // ══════════════════════════════════════════════════════════════════════════
   useEffect(() => {
-    // If not in stage 2, clear the plans array
+    // Clear plans if not in plan-loading stage
     if (buyDataStage !== 2) {
       if (plans.length > 0) setPlans([]);
       return;
     }
 
-    // If no network selected, clear plans
+    // Must have network selected
     if (!selectedNetwork) {
       if (plans.length > 0) setPlans([]);
       return;
     }
 
-    // If plans already loaded for this network, don't fetch again
-    if (plans.length > 0) return;
-
+    // ALWAYS FETCH FRESH - NO CACHING (add timestamp to bust cache)
+    setBuyDataLoading(true);
     (async () => {
-      setBuyDataLoading(true);
       try {
-        const res = await fetch(`/api/data/plans?networkId=${selectedNetwork.id}`);
-        if (!res.ok) throw new Error();
+        const timestamp = Date.now();
+        const url = `/api/data/plans?networkId=${selectedNetwork.id}&t=${timestamp}`;
+        
+        const res = await fetch(url, {
+          cache: 'no-store',  // Disable Next.js caching
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch plans");
+        
         const data = await res.json();
-        // Deduplicate plans locally as well
+        
+        // Deduplicate plans
         const uniquePlans = Array.isArray(data) 
           ? data.reduce((unique: any[], plan: any) => {
               const isDuplicate = unique.some(
@@ -226,8 +232,9 @@ export default function DanbaiwaApp() {
               return isDuplicate ? unique : [...unique, plan];
             }, [])
           : [];
+        
         setPlans(uniquePlans);
-      } catch {
+      } catch (error) {
         toast.error("Couldn't load plans. Check your connection.");
         setBuyDataStage(1);
         setPlans([]);
