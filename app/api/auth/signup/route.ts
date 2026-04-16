@@ -5,6 +5,12 @@ import { cookies } from "next/headers";
 import { queryOne, execute } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { checkRateLimit, resetRateLimit } from "@/lib/rateLimiter";
+import {
+  createBillStackVirtualAccount,
+  generateBillStackReference,
+  splitName,
+  BillStackVirtualAccountResponse,
+} from "@/lib/billstack";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -103,6 +109,97 @@ export async function POST(request: NextRequest) {
       throw new Error("Failed to create user");
     }
 
+    console.log("[SIGNUP] User created successfully:", { userId, phone, name });
+
+    // ─── BILLSTACK VIRTUAL ACCOUNT CREATION ─────────────────────────────────
+    try {
+      const billstackReference = generateBillStackReference(userId);
+      const { firstName, lastName } = splitName(name);
+
+      console.log("[SIGNUP] Creating BillStack virtual account...", {
+        userId,
+        reference: billstackReference,
+        firstName,
+        lastName,
+        phone,
+      });
+
+      const billstackResponse: BillStackVirtualAccountResponse =
+        await createBillStackVirtualAccount({
+          email: "accounts@danbaiwahdataplug.com", // Use fixed email as per requirements
+          reference: billstackReference,
+          firstName,
+          lastName,
+          phone,
+          bank: "PALMPAY",
+        });
+
+      if (!billstackResponse.status || !billstackResponse.data?.account?.[0]) {
+        throw new Error(
+          billstackResponse.message || "BillStack account creation failed"
+        );
+      }
+
+      const account = billstackResponse.data.account[0];
+
+      console.log("[SIGNUP] BillStack account created:", {
+        reference: billstackResponse.data.reference,
+        accountNumber: account.account_number,
+        accountName: account.account_name,
+      });
+
+      // Update user with BillStack account details
+      await execute(
+        `UPDATE "User" 
+         SET "billstack_reference" = $1, 
+             "account_number" = $2,
+             "account_name" = $3,
+             "bank_name" = $4,
+             "bank_id" = $5,
+             "billstack_created_at" = $6
+         WHERE id = $7`,
+        [
+          billstackResponse.data.reference,
+          account.account_number,
+          account.account_name,
+          account.bank_name,
+          account.bank_id,
+          account.created_at,
+          userId,
+        ]
+      );
+
+      console.log("[SIGNUP] User updated with BillStack details:", { userId });
+    } catch (billstackError) {
+      // BillStack failed - delete the user and return error
+      console.error("[SIGNUP] BillStack integration failed:", billstackError);
+
+      try {
+        await execute(`DELETE FROM "User" WHERE id = $1`, [userId]);
+        console.log("[SIGNUP] User deleted due to BillStack failure:", { userId });
+      } catch (deleteError) {
+        console.error("[SIGNUP] Failed to delete user:", deleteError);
+      }
+
+      const errorMessage =
+        billstackError instanceof Error
+          ? billstackError.message
+          : "Failed to create virtual account";
+
+      return NextResponse.json(
+        {
+          error: "Account creation failed",
+          details:
+            "Virtual account creation failed. " +
+            errorMessage +
+            " Please try again.",
+        },
+        { status: 500, headers: utf8Headers }
+      );
+    }
+
+    // ─── GENERATE TOKEN AND SET COOKIE ─────────────────────────────────────
+
     // Generate JWT token
     const token = await signToken({
       userId,
@@ -120,6 +217,14 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
 
+    // Fetch user with BillStack details for response
+    const userWithBillStack = await queryOne<any>(
+      `SELECT id, name, phone, balance, role, "billstack_reference", 
+              "account_number", "account_name", "bank_name", "bank_id"
+       FROM "User" WHERE id = $1`,
+      [userId]
+    );
+
     return NextResponse.json(
       {
         message: "Account created successfully",
@@ -129,13 +234,18 @@ export async function POST(request: NextRequest) {
           phone,
           balance: 0,
           role: "USER",
+          billstackReference: userWithBillStack?.billstack_reference,
+          accountNumber: userWithBillStack?.account_number,
+          accountName: userWithBillStack?.account_name,
+          bankName: userWithBillStack?.bank_name,
+          bankId: userWithBillStack?.bank_id,
         },
         token,
       },
       { status: 201, headers: utf8Headers }
     );
   } catch (error: any) {
-    console.error("Signup error:", error);
+    console.error("[SIGNUP] Error:", error);
     return NextResponse.json(
       { error: "Failed to create account", details: error.message },
       { status: 500, headers: utf8Headers }

@@ -37,6 +37,8 @@ export default function AuthPage() {
   const [acceptTerms, setAcceptTerms] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [savedPhone, setSavedPhone] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successData, setSuccessData] = useState<any>(null);
 
   // Refs for PIN inputs to prevent keyboard dismissal
   const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -147,8 +149,10 @@ export default function AuthPage() {
       }
 
       if (res.ok) {
-        toast.success("Account created!");
-        router.push("/app");
+        const data = await res.json();
+        toast.success("Account created! Virtual account ready.");
+        setSuccessData(data.user);
+        setShowSuccessModal(true);
       } else {
         const data = await res.json();
         toast.error(data.error || "Signup failed");
@@ -589,6 +593,203 @@ export default function AuthPage() {
           </>
         </div>
       </div>
+
+      {/* ─── SUCCESS MODAL ─────────────────────────────────────────────────── */}
+      {showSuccessModal && successData && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            fontFamily: T.font,
+          }}
+          onClick={() => {
+            setShowSuccessModal(false);
+            router.push("/app");
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: T.bg,
+              borderRadius: 20,
+              padding: 32,
+              maxWidth: 500,
+              width: "100%",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+            }}
+          >
+            {/* Success Icon */}
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background: T.greenDim,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 20px",
+                fontSize: 32,
+              }}
+            >
+              ✓
+            </div>
+
+            {/* Title */}
+            <h2
+              style={{
+                textAlign: "center",
+                fontSize: 20,
+                fontWeight: 700,
+                color: T.text,
+                margin: "0 0 12px",
+              }}
+            >
+              Account Created Successfully!
+            </h2>
+
+            {/* Message */}
+            <p
+              style={{
+                textAlign: "center",
+                fontSize: 14,
+                color: T.textMid,
+                margin: "0 0 24px",
+              }}
+            >
+              Your virtual account is ready to receive payments from anyone.
+            </p>
+
+            {/* Virtual Account Details */}
+            <div
+              style={{
+                background: T.surface,
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 24,
+              }}
+            >
+              {/* Account Number */}
+              <div style={{ marginBottom: 16 }}>
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: T.textDim,
+                    textTransform: "uppercase",
+                    margin: "0 0 8px",
+                  }}
+                >
+                  Account Number
+                </p>
+                <p
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: T.text,
+                    margin: 0,
+                    fontFamily: T.mono,
+                  }}
+                >
+                  {successData.accountNumber || "N/A"}
+                </p>
+              </div>
+
+              {/* Account Name */}
+              <div style={{ marginBottom: 16 }}>
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: T.textDim,
+                    textTransform: "uppercase",
+                    margin: "0 0 8px",
+                  }}
+                >
+                  Account Name
+                </p>
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: T.text,
+                    margin: 0,
+                  }}
+                >
+                  {successData.accountName || "N/A"}
+                </p>
+              </div>
+
+              {/* Bank */}
+              <div>
+                <p
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: T.textDim,
+                    textTransform: "uppercase",
+                    margin: "0 0 8px",
+                  }}
+                >
+                  Bank
+                </p>
+                <p
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 500,
+                    color: T.text,
+                    margin: 0,
+                  }}
+                >
+                  {successData.bankName || "N/A"}
+                </p>
+              </div>
+            </div>
+
+            {/* Info Text */}
+            <p
+              style={{
+                fontSize: 12,
+                color: T.textDim,
+                textAlign: "center",
+                margin: "0 0 24px",
+              }}
+            >
+              Share your account number to receive payments. All deposits go directly to your wallet.
+            </p>
+
+            {/* Continue Button */}
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                router.push("/app");
+              }}
+              style={{
+                width: "100%",
+                padding: "14px 24px",
+                borderRadius: 14,
+                background: T.green,
+                border: "none",
+                color: "#fff",
+                fontFamily: T.font,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Continue to Dashboard
+            </button>
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
     </>
   );
