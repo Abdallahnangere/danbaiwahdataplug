@@ -26,8 +26,11 @@ export async function GET(request: NextRequest) {
       balance: number;
       role: string;
       isActive: boolean;
+      account_number: string | null;
+      bank_name: string | null;
+      account_name: string | null;
     }>(
-      `SELECT id, name, phone, balance, role, "isActive"
+      `SELECT id, name, phone, balance, role, "isActive", "account_number", "bank_name", "account_name"
        FROM "User"
        WHERE id = $1`,
       [sessionUser.userId]
@@ -51,6 +54,9 @@ export async function GET(request: NextRequest) {
       tier: tier,
       role: user.role,
       isActive: user.isActive,
+      accountNumber: user.account_number,
+      bankName: user.bank_name,
+      accountName: user.account_name,
     }, { headers: utf8Headers });
   } catch (error) {
     console.error("Get user error:", error);

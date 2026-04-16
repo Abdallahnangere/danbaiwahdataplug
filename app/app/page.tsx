@@ -61,6 +61,9 @@ interface User {
   phone: string;
   balance: number;
   tier: "user" | "agent";
+  accountNumber?: string;
+  bankName?: string;
+  accountName?: string;
 }
 
 const getInitials = (name: string) =>
@@ -2656,45 +2659,70 @@ export default function DanbaiwaApp() {
                   </button>
                 </div>
 
-                {/* Phone row */}
+                {/* Virtual Account Info Row */}
                 <div style={{
                   borderTop: "1px solid rgba(255,255,255,0.2)",
                   paddingTop: 14,
                   display: "flex", justifyContent: "space-between",
-                  alignItems: "center", position: "relative",
+                  alignItems: "flex-start", position: "relative",
                 }}>
-                  <div>
-                    <p style={{
-                      margin: "0 0 5px", fontSize: 10, fontWeight: 700,
-                      color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "1px",
-                    }}>
-                      Registered Phone
-                    </p>
-                    <p style={{
-                      margin: 0, fontSize: 16, fontWeight: 700, color: "white",
-                      letterSpacing: "0.5px", fontVariantNumeric: "tabular-nums",
-                    }}>
-                      {user.phone}
-                    </p>
+                  <div style={{ flex: 1 }}>
+                    {user.accountNumber && user.bankName ? (
+                      <>
+                        <p style={{
+                          margin: "0 0 5px", fontSize: 10, fontWeight: 700,
+                          color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "1px",
+                        }}>
+                          Account Number
+                        </p>
+                        <p style={{
+                          margin: "0 0 10px", fontSize: 16, fontWeight: 700, color: "white",
+                          letterSpacing: "0.5px", fontVariantNumeric: "tabular-nums", fontFamily: "monospace",
+                        }}>
+                          {user.accountNumber}
+                        </p>
+                        <p style={{
+                          margin: "0 0 5px", fontSize: 10, fontWeight: 700,
+                          color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "1px",
+                        }}>
+                          Bank
+                        </p>
+                        <p style={{
+                          margin: 0, fontSize: 14, fontWeight: 700, color: "white",
+                          letterSpacing: "0.5px",
+                        }}>
+                          {user.bankName}
+                        </p>
+                      </>
+                    ) : (
+                      <p style={{
+                        margin: 0, fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.7)",
+                      }}>
+                        Virtual account not available. Please contact support.
+                      </p>
+                    )}
                   </div>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(user.phone);
-                      toast.success("Phone copied!");
-                    }}
-                    style={{
-                      background: "rgba(255,255,255,0.18)",
-                      border: "1.5px solid rgba(255,255,255,0.35)",
-                      borderRadius: 12, padding: "9px 16px",
-                      color: "white", fontWeight: 700, cursor: "pointer",
-                      fontSize: 12, display: "flex", alignItems: "center",
-                      gap: 6, backdropFilter: "blur(10px)",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                    }}
-                  >
-                    <Copy size={13} strokeWidth={2.5} />
-                    Copy
-                  </button>
+                  {user.accountNumber && (
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(user.accountNumber!);
+                        toast.success("Account number copied!");
+                      }}
+                      style={{
+                        background: "rgba(255,255,255,0.18)",
+                        border: "1.5px solid rgba(255,255,255,0.35)",
+                        borderRadius: 12, padding: "9px 16px",
+                        color: "white", fontWeight: 700, cursor: "pointer",
+                        fontSize: 12, display: "flex", alignItems: "center",
+                        gap: 6, backdropFilter: "blur(10px)",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                        marginLeft: 12, flexShrink: 0,
+                      }}
+                    >
+                      <Copy size={13} strokeWidth={2.5} />
+                      Copy
+                    </button>
+                  )}
                 </div>
               </div>
 
