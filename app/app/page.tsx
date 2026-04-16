@@ -2664,36 +2664,48 @@ export default function DanbaiwaApp() {
                   borderTop: "1px solid rgba(255,255,255,0.2)",
                   paddingTop: 14,
                   display: "flex", justifyContent: "space-between",
-                  alignItems: "flex-start", position: "relative",
+                  alignItems: "center", position: "relative",
                 }}>
                   <div style={{ flex: 1 }}>
                     {user.accountNumber && user.bankName ? (
-                      <>
-                        <p style={{
-                          margin: "0 0 5px", fontSize: 10, fontWeight: 700,
-                          color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "1px",
-                        }}>
-                          Account Number
-                        </p>
-                        <p style={{
-                          margin: "0 0 10px", fontSize: 16, fontWeight: 700, color: "white",
-                          letterSpacing: "0.5px", fontVariantNumeric: "tabular-nums", fontFamily: "monospace",
-                        }}>
-                          {user.accountNumber}
-                        </p>
-                        <p style={{
-                          margin: "0 0 5px", fontSize: 10, fontWeight: 700,
-                          color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "1px",
-                        }}>
-                          Bank
-                        </p>
-                        <p style={{
-                          margin: 0, fontSize: 14, fontWeight: 700, color: "white",
-                          letterSpacing: "0.5px",
-                        }}>
-                          {user.bankName}
-                        </p>
-                      </>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{
+                            margin: "0 0 4px", fontSize: 10, fontWeight: 700,
+                            color: "rgba(255,255,255,0.55)", textTransform: "uppercase", letterSpacing: "1px",
+                          }}>
+                            Account Number · Bank
+                          </p>
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            fontSize: 14, fontWeight: 700, color: "white",
+                            letterSpacing: "0.5px",
+                          }}>
+                            <span style={{ fontFamily: "monospace" }}>{user.accountNumber}</span>
+                            <span style={{ color: "rgba(255,255,255,0.6)" }}>•</span>
+                            <span>{user.bankName}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(user.accountNumber!);
+                            toast.success("Account number copied!");
+                          }}
+                          style={{
+                            background: "rgba(255,255,255,0.18)",
+                            border: "1.5px solid rgba(255,255,255,0.35)",
+                            borderRadius: 12, padding: "8px 12px",
+                            color: "white", fontWeight: 700, cursor: "pointer",
+                            fontSize: 11, display: "flex", alignItems: "center",
+                            gap: 4, backdropFilter: "blur(10px)",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Copy size={12} strokeWidth={2.5} />
+                          Copy
+                        </button>
+                      </div>
                     ) : (
                       <p style={{
                         margin: 0, fontSize: 13, fontWeight: 500, color: "rgba(255,255,255,0.7)",
@@ -2702,27 +2714,33 @@ export default function DanbaiwaApp() {
                       </p>
                     )}
                   </div>
-                  {user.accountNumber && (
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(user.accountNumber!);
-                        toast.success("Account number copied!");
-                      }}
-                      style={{
-                        background: "rgba(255,255,255,0.18)",
-                        border: "1.5px solid rgba(255,255,255,0.35)",
-                        borderRadius: 12, padding: "9px 16px",
-                        color: "white", fontWeight: 700, cursor: "pointer",
-                        fontSize: 12, display: "flex", alignItems: "center",
-                        gap: 6, backdropFilter: "blur(10px)",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
-                        marginLeft: 12, flexShrink: 0,
-                      }}
-                    >
-                      <Copy size={13} strokeWidth={2.5} />
-                      Copy
-                    </button>
-                  )}
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch("/api/auth/me", { credentials: "include" });
+                        if (res.ok) {
+                          const updatedUser = await res.json();
+                          setUser(updatedUser);
+                          toast.success("Wallet synced!");
+                        }
+                      } catch {
+                        toast.error("Sync failed");
+                      }
+                    }}
+                    style={{
+                      background: "rgba(255,255,255,0.18)",
+                      border: "1.5px solid rgba(255,255,255,0.35)",
+                      borderRadius: 12, padding: "8px 12px",
+                      color: "white", fontWeight: 700, cursor: "pointer",
+                      fontSize: 11, display: "flex", alignItems: "center",
+                      gap: 4, backdropFilter: "blur(10px)",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                      flexShrink: 0, marginLeft: 8,
+                    }}
+                  >
+                    <Zap size={12} strokeWidth={2.5} />
+                    Sync
+                  </button>
                 </div>
               </div>
 

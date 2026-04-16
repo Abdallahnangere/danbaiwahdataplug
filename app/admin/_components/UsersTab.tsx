@@ -28,6 +28,9 @@ interface AdminUser {
   balance: number;
   tier: string;
   createdAt: string;
+  accountNumber?: string | null;
+  bankName?: string | null;
+  accountName?: string | null;
 }
 
 interface UserTransaction {
@@ -243,6 +246,12 @@ export default function UsersTab() {
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>
                 Phone
               </th>
+              <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>
+                Account #
+              </th>
+              <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>
+                Bank
+              </th>
               <th style={{ padding: "12px 8px", textAlign: "right", color: T.textMuted, fontWeight: 600 }}>
                 Balance
               </th>
@@ -306,6 +315,18 @@ export default function UsersTab() {
                       <MessageCircle size={14} />
                     </a>
                   )}
+                </td>
+                <td 
+                  style={{ padding: "12px 8px", color: T.textSecondary, fontFamily: "monospace", fontSize: 12 }}
+                  onClick={() => handleSelectUser(user)}
+                >
+                  {user.accountNumber || "—"}
+                </td>
+                <td 
+                  style={{ padding: "12px 8px", color: T.textSecondary }}
+                  onClick={() => handleSelectUser(user)}
+                >
+                  {user.bankName || "—"}
                 </td>
                 <td 
                   style={{ padding: "12px 8px", textAlign: "right", color: T.textPrimary, fontWeight: 600 }}
@@ -514,6 +535,31 @@ export default function UsersTab() {
                   </div>
                 </div>
               </div>
+
+              {/* BillStack Account Section */}
+              {(selectedUser.accountNumber || selectedUser.bankName) && (
+                <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16, marginBottom: 16 }}>
+                  <p style={{ margin: "0 0 12px", fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Virtual Account</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    {selectedUser.accountNumber && (
+                      <div>
+                        <p style={{ margin: "0 0 4px", fontSize: 11, color: T.textMuted, fontWeight: 600 }}>Account Number</p>
+                        <p style={{ margin: 0, fontSize: 14, color: T.textPrimary, fontFamily: "monospace", fontWeight: 600 }}>
+                          {selectedUser.accountNumber}
+                        </p>
+                      </div>
+                    )}
+                    {selectedUser.bankName && (
+                      <div>
+                        <p style={{ margin: "0 0 4px", fontSize: 11, color: T.textMuted, fontWeight: 600 }}>Bank</p>
+                        <p style={{ margin: 0, fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>
+                          {selectedUser.bankName}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 16 }}>
                 <p style={{ margin: "0 0 8px", fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Current Balance</p>

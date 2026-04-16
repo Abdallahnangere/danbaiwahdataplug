@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     // STEP 3: VALIDATE EVENT AND TYPE
     // ═══════════════════════════════════════════════════════════════════════════
     if (
-      payload.event !== "PAYMENT_NOTIFIFICATION" ||
+      payload.event !== "PAYMENT_NOTIFICATION" ||
       payload.data?.type !== "RESERVED_ACCOUNT_TRANSACTION"
     ) {
       console.log("[BILLSTACK_WEBHOOK] Event/type mismatch, ignoring", {
