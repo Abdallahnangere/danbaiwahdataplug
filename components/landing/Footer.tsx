@@ -98,7 +98,14 @@ export function Footer() {
         {/* Divider */}
         <div className="border-t border-gray-800 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center text-gray-400 text-xs gap-4">
-            <div>
+            <div className="flex items-center gap-2">
+              <img 
+                src="https://www.anjalventures.com/favicon.ico" 
+                alt="ANJAL VENTURES"
+                width={16}
+                height={16}
+                className="w-4 h-4 rounded"
+              />
               <span>
                 Built by{" "}
                 <a 
@@ -107,7 +114,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-white transition-colors font-semibold"
                 >
-                  Anjal Ventures
+                  ANJAL VENTURES
                 </a>
               </span>
             </div>

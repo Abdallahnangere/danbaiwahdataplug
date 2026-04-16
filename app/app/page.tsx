@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import {
   Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
-  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check,
+  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check, Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
@@ -49,6 +49,7 @@ const T = {
     cable:       { icon: "#8B5CF6", glow: "rgba(139,92,246,0.3)",  bg: "rgba(139,92,246,0.08)" },
     electricity: { icon: "#F59E0B", glow: "rgba(245,158,11,0.3)",  bg: "rgba(245,158,11,0.08)" },
     exampin:     { icon: "#10B981", glow: "rgba(16,185,129,0.3)",  bg: "rgba(16,185,129,0.08)" },
+    contact:     { icon: "#06B6D4", glow: "rgba(6,182,212,0.3)",   bg: "rgba(6,182,212,0.08)"  },
   },
 };
 
@@ -330,6 +331,7 @@ export default function DanbaiwaApp() {
     { id: "cable",       label: "Cable TV",     icon: Tv,       sc: T.services.cable       },
     { id: "electricity", label: "Power",        icon: Zap,      sc: T.services.electricity },
     { id: "exampin",     label: "Exams",        icon: BookOpen, sc: T.services.exampin     },
+    { id: "contact",     label: "Support",      icon: Mail,     sc: T.services.contact     },
   ];
 
   const NAV = [
@@ -2860,6 +2862,150 @@ export default function DanbaiwaApp() {
           {activeTab === "electricity" && BuyPowerCard()}
           {activeTab === "exampin" && (
             <ComingSoon key="exam" icon={BookOpen} label="Exam PINs" color={T.services.exampin.icon} />
+          )}
+          {activeTab === "contact" && (
+            <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+              <button
+                onClick={() => setActiveTab("home")}
+                style={{
+                  background: T.bgElevated, border: `1px solid ${T.border}`,
+                  borderRadius: 12, padding: "10px 16px",
+                  display: "flex", alignItems: "center", gap: 8,
+                  color: T.blue, fontSize: 14, fontWeight: 600,
+                  cursor: "pointer", marginBottom: 24, fontFamily: font,
+                }}
+              >
+                <ArrowLeft size={16} /> Back
+              </button>
+
+              <div style={{ textAlign: "center", padding: "20px 20px" }}>
+                <h1 style={{
+                  margin: "0 0 8px", fontSize: 28, fontWeight: 800,
+                  color: T.textPrimary, letterSpacing: "-0.6px",
+                }}>
+                  Contact Us
+                </h1>
+                <p style={{
+                  margin: "0 0 32px", fontSize: 14, color: T.textSecondary,
+                  lineHeight: 1.6,
+                }}>
+                  We're here to help! Reach out to us using any of the methods below.
+                </p>
+
+                {/* Contact Cards */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 16, maxWidth: 400, marginInline: "auto", marginBottom: 32 }}>
+                  {/* Call */}
+                  <div style={{
+                    background: T.bgElevated, borderRadius: 16, padding: 20,
+                    border: `1px solid ${T.border}`, textAlign: "left",
+                  }}>
+                    <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      📞 Call Us
+                    </p>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
+                      08069601974
+                    </p>
+                    <button
+                      onClick={() => {
+                        window.open("tel:08069601974", "_blank");
+                      }}
+                      style={{
+                        marginTop: 12, padding: "8px 16px", borderRadius: 8,
+                        background: T.blue, border: "none", color: "#fff",
+                        fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font,
+                      }}
+                    >
+                      Call Now
+                    </button>
+                  </div>
+
+                  {/* Chat */}
+                  <div style={{
+                    background: T.bgElevated, borderRadius: 16, padding: 20,
+                    border: `1px solid ${T.border}`, textAlign: "left",
+                  }}>
+                    <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      💬 Chat With Us
+                    </p>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
+                      08069601974
+                    </p>
+                    <button
+                      onClick={() => {
+                        window.open("https://wa.me/2348069601974?text=Hello", "_blank");
+                      }}
+                      style={{
+                        marginTop: 12, padding: "8px 16px", borderRadius: 8,
+                        background: "#25D366", border: "none", color: "#fff",
+                        fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: font,
+                      }}
+                    >
+                      WhatsApp
+                    </button>
+                  </div>
+
+                  {/* Location */}
+                  <div style={{
+                    background: T.bgElevated, borderRadius: 16, padding: 20,
+                    border: `1px solid ${T.border}`, textAlign: "left",
+                  }}>
+                    <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      📍 Location
+                    </p>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
+                      Jigawa State, Gagarawa
+                    </p>
+                    <p style={{ margin: "4px 0 0", fontSize: 13, color: T.textSecondary }}>
+                      Tasha
+                    </p>
+                  </div>
+                </div>
+
+                {/* Built By Section */}
+                <div style={{
+                  borderTop: `1px solid ${T.border}`,
+                  paddingTop: 24, marginTop: 24,
+                  textAlign: "center",
+                }}>
+                  <p style={{
+                    margin: "0 0 12px", fontSize: 13, color: T.textSecondary,
+                    fontWeight: 500,
+                  }}>
+                    Built by
+                  </p>
+                  <a
+                    href="https://anjalventures.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 8,
+                      padding: "8px 16px", borderRadius: 12,
+                      background: `${T.blue}15`, border: `1px solid ${T.blue}40`,
+                      textDecoration: "none", cursor: "pointer",
+                      transition: "all 150ms ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLAnchorElement).style.background = `${T.blue}25`;
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLAnchorElement).style.background = `${T.blue}15`;
+                    }}
+                  >
+                    <img
+                      src="https://anjalventures.com/favicon.ico"
+                      alt="ANJAL VENTURES"
+                      style={{ width: 20, height: 20, borderRadius: 4 }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: T.blue }}>
+                      ANJAL VENTURES
+                    </span>
+                  </a>
+                </div>
+              </div>
+            </div>
           )}
 
         </>
