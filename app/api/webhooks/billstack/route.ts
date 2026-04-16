@@ -103,14 +103,16 @@ export async function POST(request: NextRequest) {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 4: LOOK UP USER BY BILLSTACK REFERENCE
+    // STEP 4: LOOK UP USER BY ACCOUNT NUMBER
     // ═══════════════════════════════════════════════════════════════════════════
-    const merchantReference = payload.data.merchant_reference;
+    const accountNumber = payload.data.account.account_number;
     const transactionReference = payload.data.reference;
     const amount = parseInt(String(payload.data.amount)) || 0;
 
-    if (!merchantReference) {
-      console.error("[BILLSTACK_WEBHOOK] Missing merchant_reference");
+    const MAX_BALANCE = 30000; // ₦30,000 limit per user
+
+    if (!accountNumber) {
+      console.error("[BILLSTACK_WEBHOOK] Missing account_number");
       return NextResponse.json(
         { status: "processed" },
         { status: 200, headers: utf8Headers }
@@ -121,13 +123,13 @@ export async function POST(request: NextRequest) {
       id: string;
       balance: number;
     }>(
-      `SELECT id, balance FROM "User" WHERE "billstack_reference" = $1`,
-      [merchantReference]
+      `SELECT id, balance FROM "User" WHERE account_number = $1`,
+      [accountNumber]
     );
 
     if (!user) {
-      console.warn("[BILLSTACK_WEBHOOK] User not found for reference", {
-        merchantReference,
+      console.warn("[BILLSTACK_WEBHOOK] User not found for account_number", {
+        accountNumber,
       });
       return NextResponse.json(
         { status: "processed" },
@@ -158,9 +160,25 @@ export async function POST(request: NextRequest) {
     console.log("[BILLSTACK_WEBHOOK] New transaction, proceeding with credit");
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 6: CREDIT USER WALLET AND CREATE TRANSACTION RECORD
+    // STEP 6: CHECK BALANCE LIMIT AND CREDIT USER WALLET
     // ═══════════════════════════════════════════════════════════════════════════
-    const newBalance = user.balance + amount;
+    let creditAmount = amount;
+    let newBalance = user.balance + amount;
+
+    // Check if balance would exceed limit
+    if (newBalance > MAX_BALANCE) {
+      console.warn("[BILLSTACK_WEBHOOK] Balance would exceed limit", {
+        userId: user.id,
+        accountNumber,
+        currentBalance: user.balance,
+        depositAmount: amount,
+        maxAllowed: MAX_BALANCE,
+        calculated: newBalance,
+      });
+      // Cap balance at limit
+      creditAmount = Math.max(0, MAX_BALANCE - user.balance);
+      newBalance = MAX_BALANCE;
+    }
 
     // Update user balance
     await query(
@@ -175,13 +193,13 @@ export async function POST(request: NextRequest) {
       amount,
     });
 
-    // Create transaction record
+    // Create transaction record with actual credited amount
     await query(
       `INSERT INTO "Transaction" (user_id, amount, reference, type, status, created_at)
        VALUES ($1, $2, $3, $4, $5, NOW())`,
       [
         user.id,
-        amount,
+        creditAmount,
         transactionReference,
         "deposit",
         "success",

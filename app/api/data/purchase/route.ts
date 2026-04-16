@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { query, queryOne, execute, sql } from "@/lib/db";
+import { withRateLimit } from "@/lib/rateLimit";
 import bcrypt from "bcryptjs";
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +38,13 @@ export async function POST(request: NextRequest) {
 
     const userId = sessionUser.userId;
     log("AUTH_SUCCESS", { userId });
+
+    // 1.5. CHECK RATE LIMIT - Max 10 requests per minute per user
+    const rateLimitError = await withRateLimit(request, userId, "data:purchase", { limit: 10, windowMs: 60000 });
+    if (rateLimitError) {
+      log("RATE_LIMITED", { userId });
+      return rateLimitError;
+    }
 
     // 2. PARSE REQUEST BODY
     const body = await request.json();
@@ -152,8 +160,9 @@ export async function POST(request: NextRequest) {
     log("PLAN_LOADED", { planId, planName: plan.name, basePrice: plan.price, agentPrice: plan.agentPrice, userRole: user.role, appliedPrice: planPrice, activeApi: plan.activeApi });
 
     // 5. BALANCE CHECK
+    const MAX_BALANCE = 30000; // ₦30,000 limit
     const userBalance = typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance));
-    log("BALANCE_CHECK", { userBalance, planPrice, sufficient: userBalance >= planPrice });
+    log("BALANCE_CHECK", { userBalance, planPrice, sufficient: userBalance >= planPrice, maxAllowed: MAX_BALANCE });
 
     if (userBalance < planPrice) {
       log("INSUFFICIENT_BALANCE", { userBalance, required: planPrice, shortfall: planPrice - userBalance });
@@ -161,6 +170,17 @@ export async function POST(request: NextRequest) {
         { error: "Insufficient wallet balance." },
         { 
           status: 402,
+          headers: { "Content-Type": "application/json; charset=utf-8" }
+        }
+      );
+    }
+
+    if (userBalance > MAX_BALANCE) {
+      log("BALANCE_EXCEEDS_LIMIT", { userBalance, maxAllowed: MAX_BALANCE });
+      return NextResponse.json(
+        { error: `Maximum wallet balance is ₦${MAX_BALANCE.toLocaleString()}. Please use your credit before adding more.` },
+        { 
+          status: 400,
           headers: { "Content-Type": "application/json; charset=utf-8" }
         }
       );
