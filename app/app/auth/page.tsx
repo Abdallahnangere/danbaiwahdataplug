@@ -28,6 +28,7 @@ export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [pin, setPin] = useState(["", "", "", "", "", ""]);
   const [confirmPin, setConfirmPin] = useState(["", "", "", "", "", ""]);
   const [name, setName] = useState("");
@@ -114,6 +115,10 @@ export default function AuthPage() {
       toast.error("Enter valid 11-digit phone");
       return;
     }
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Enter a valid email");
+      return;
+    }
     if (pin.some((p) => !p)) {
       toast.error("Enter 6-digit PIN");
       return;
@@ -134,6 +139,7 @@ export default function AuthPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
+          email,
           phone,
           pin: pin.join(""),
           confirmPin: confirmPin.join(""),
@@ -142,9 +148,12 @@ export default function AuthPage() {
       });
 
       if (res.status === 409) {
-        toast.error("Phone already registered. Please login.");
-        setMode("login");
-        setPhone(phone);
+        const data = await res.json();
+        toast.error(data.error || "Account already exists. Please login.");
+        if (data.error === "Phone number already registered") {
+          setMode("login");
+          setPhone(phone);
+        }
         return;
       }
 
@@ -421,6 +430,30 @@ export default function AuthPage() {
                   />
                 </div>
 
+                {/* Email */}
+                <div>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: T.textDim, marginBottom: 8, textTransform: "uppercase" }}>Email</label>
+                  <input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value.trim())}
+                    style={{
+                      width: "100%",
+                      padding: "13px 12px",
+                      borderRadius: 14,
+                      background: T.surface,
+                      border: `1.5px solid ${T.border}`,
+                      fontFamily: T.font,
+                      fontSize: 15,
+                      color: T.text,
+                      outline: "none",
+                      boxSizing: "border-box",
+                      transition: "all 0.2s",
+                    }}
+                  />
+                </div>
+
                 {/* PIN */}
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
@@ -580,6 +613,7 @@ export default function AuthPage() {
                     onClick={() => {
                       setMode("login");
                       setName("");
+                      setEmail("");
                       setPhone("");
                       setPin(["", "", "", "", "", ""]);
                     }}

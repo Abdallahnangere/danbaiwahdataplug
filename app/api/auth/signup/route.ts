@@ -20,7 +20,7 @@ const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, phone, pin, confirmPin, acceptTerms } = body;
+    const { name, email, phone, pin, confirmPin, acceptTerms } = body;
 
     // Validation
     if (!name || name.length < 2) {
@@ -33,6 +33,13 @@ export async function POST(request: NextRequest) {
     if (!phone || !/^0[0-9]{10}$/.test(phone)) {
       return NextResponse.json(
         { error: "Phone number must be 11 digits starting with 0" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { error: "Enter a valid email address" },
         { status: 400, headers: utf8Headers }
       );
     }
@@ -87,6 +94,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const existingEmail = await queryOne<{ id: string }>(
+      `SELECT id FROM "User" WHERE email = $1`,
+      [email]
+    );
+
+    if (existingEmail) {
+      return NextResponse.json(
+        { error: "Email address already registered" },
+        { status: 409, headers: utf8Headers }
+      );
+    }
+
     // Reset rate limit on successful signup
     resetRateLimit(phone, "signup");
 
@@ -99,10 +118,10 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
 
     const result = await queryOne<{ id: string }>(
-      `INSERT INTO "User" (id, name, phone, "pin", balance, role, "isActive", "createdAt", "updatedAt")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-       RETURNING id, name, phone, balance, role`,
-      [userId, name, phone, hashedPin, 0, "USER", true, now, now]
+      `INSERT INTO "User" (id, name, email, phone, "pin", balance, role, "isActive", "createdAt", "updatedAt")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id, name, email, phone, balance, role`,
+      [userId, name, email, phone, hashedPin, 0, "USER", true, now, now]
     );
 
     if (!result) {
@@ -126,7 +145,7 @@ export async function POST(request: NextRequest) {
 
       const billstackResponse: BillStackVirtualAccountResponse =
         await createBillStackVirtualAccount({
-          email: "accounts@danbaiwahdataplug.com", // Use fixed email as per requirements
+          email,
           reference: billstackReference,
           firstName,
           lastName,
@@ -219,7 +238,7 @@ export async function POST(request: NextRequest) {
 
     // Fetch user with BillStack details for response
     const userWithBillStack = await queryOne<any>(
-      `SELECT id, name, phone, balance, role, "billstack_reference", 
+      `SELECT id, name, email, phone, balance, role, "billstack_reference", 
               "account_number", "account_name", "bank_name", "bank_id"
        FROM "User" WHERE id = $1`,
       [userId]
@@ -231,6 +250,7 @@ export async function POST(request: NextRequest) {
         user: {
           id: userId,
           name,
+          email,
           phone,
           balance: 0,
           role: "USER",
