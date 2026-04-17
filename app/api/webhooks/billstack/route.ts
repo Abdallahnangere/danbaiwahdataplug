@@ -149,11 +149,15 @@ export async function POST(request: NextRequest) {
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 5: IDEMPOTENCY CHECK - Ensure exact duplicate doesn't exist for this user
-    // Idempotency based on COMBINATION of: reference + amount + created_at (BillStack timestamp)
-    // This handles BillStack reusing reference for different transactions
+    // Idempotency based on: reference + amount + time window (1 minute)
+    // 
+    // Why time window instead of exact timestamp?
+    // - BillStack sends low-precision timestamps (no milliseconds)
+    // - Two transactions 5 seconds apart might have same created_at value
+    // - Time window prevents webhook retries AND handles timestamp precision issues
     // ═══════════════════════════════════════════════════════════════════════════
     const billstackTimestamp = new Date(payload.data.created_at);
-    const billstackTimestampStr = billstackTimestamp.toISOString();
+    const oneMinuteAgo = new Date(Date.now() - 60000); // 60 seconds
 
     const existingTransaction = await queryOne<{
       id: string;
@@ -162,18 +166,19 @@ export async function POST(request: NextRequest) {
       created_at: string;
     }>(
       `SELECT id, reference, amount, created_at FROM "Transaction" 
-       WHERE user_id = $1 AND reference = $2 AND amount = $3 AND created_at = $4`,
-      [user.id, transactionReference, amount, billstackTimestampStr]
+       WHERE user_id = $1 AND reference = $2 AND amount = $3 AND created_at > $4`,
+      [user.id, transactionReference, amount, oneMinuteAgo.toISOString()]
     );
 
     if (existingTransaction) {
-      // True duplicate - exact same transaction (reference + amount + timestamp) already exists
-      console.log("[BILLSTACK_WEBHOOK] Transaction already processed (exact duplicate)", {
+      // True duplicate - same reference + amount within last 60 seconds
+      console.log("[BILLSTACK_WEBHOOK] Transaction already processed (duplicate within 60s window)", {
         userId: user.id,
         reference: transactionReference,
         amount,
-        billstackTimestamp: billstackTimestampStr,
+        billstackTimestamp: billstackTimestamp.toISOString(),
         dbTimestamp: existingTransaction.created_at,
+        timeDifference: new Date().getTime() - new Date(existingTransaction.created_at).getTime() + "ms",
       });
       return NextResponse.json(
         { status: "processed" },
@@ -185,7 +190,7 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       reference: transactionReference,
       amount,
-      timestamp: billstackTimestampStr,
+      timestamp: billstackTimestamp.toISOString(),
     });
 
     // ═══════════════════════════════════════════════════════════════════════════

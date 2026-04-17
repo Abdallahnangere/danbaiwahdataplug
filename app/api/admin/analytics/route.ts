@@ -22,62 +22,77 @@ export async function GET(request: NextRequest) {
     );
     const userCount = userCountResult?.count || 0;
 
-    // Fetch all data transactions
-    const dataTransactions = await query<any>(
-      `SELECT 
-        dt.id,
-        dt.phone,
-        dt.amount,
-        dt.status,
-        dt."createdAt",
-        u.email,
-        u.name,
-        dp.name as "planName",
-        'DATA' as "type"
-       FROM "DataTransaction" dt
-       LEFT JOIN "User" u ON dt."userId" = u.id
-       LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
-       ORDER BY dt."createdAt" DESC`,
-      []
-    );
+    // Fetch all data transactions (gracefully handle if table doesn't exist)
+    let dataTransactions: any[] = [];
+    try {
+      dataTransactions = await query<any>(
+        `SELECT 
+          dt.id,
+          dt.phone,
+          dt.amount,
+          dt.status,
+          dt."createdAt",
+          u.email,
+          u.name,
+          dp.name as "planName",
+          'DATA' as "type"
+         FROM "DataTransaction" dt
+         LEFT JOIN "User" u ON dt."userId" = u.id
+         LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
+         ORDER BY dt."createdAt" DESC`,
+        []
+      );
+    } catch (error) {
+      console.warn("[ANALYTICS] DataTransaction table not found or error", { error: (error as any).message });
+    }
 
-    // Fetch all cable transactions
-    const cableTransactions = await query<any>(
-      `SELECT 
-        ct.id,
-        ct.phone,
-        ct.amount,
-        ct.status,
-        ct."createdAt",
-        u.email,
-        u.name,
-        cp.name as "planName",
-        'CABLE' as "type"
-       FROM "CableTransaction" ct
-       LEFT JOIN "User" u ON ct."userId" = u.id
-       LEFT JOIN "CablePlan" cp ON ct."planId" = cp.id
-       ORDER BY ct."createdAt" DESC`,
-      []
-    );
+    // Fetch all cable transactions (gracefully handle if table doesn't exist)
+    let cableTransactions: any[] = [];
+    try {
+      cableTransactions = await query<any>(
+        `SELECT 
+          ct.id,
+          ct.phone,
+          ct.amount,
+          ct.status,
+          ct."createdAt",
+          u.email,
+          u.name,
+          cp.name as "planName",
+          'CABLE' as "type"
+         FROM "CableTransaction" ct
+         LEFT JOIN "User" u ON ct."userId" = u.id
+         LEFT JOIN "CablePlan" cp ON ct."planId" = cp.id
+         ORDER BY ct."createdAt" DESC`,
+        []
+      );
+    } catch (error) {
+      console.warn("[ANALYTICS] CableTransaction table not found or error", { error: (error as any).message });
+    }
 
-    // Fetch all power transactions
-    const powerTransactions = await query<any>(
-      `SELECT 
-        pt.id,
-        pt.phone,
-        pt.amount,
-        pt.status,
-        pt."createdAt",
-        u.email,
-        u.name,
-        pp.name as "planName",
-        'POWER' as "type"
-       FROM "PowerTransaction" pt
-       LEFT JOIN "User" u ON pt."userId" = u.id
-       LEFT JOIN "PowerPlan" pp ON pt."planId" = pp.id
-       ORDER BY pt."createdAt" DESC`,
-      []
-    );
+    // Fetch all power transactions (gracefully handle if table doesn't exist)
+    let powerTransactions: any[] = [];
+    try {
+      powerTransactions = await query<any>(
+        `SELECT 
+          pt.id,
+          pt.phone,
+          pt.amount,
+          pt.status,
+          pt."createdAt",
+          u.email,
+          u.name,
+          pp.name as "planName",
+          'POWER' as "type"
+         FROM "PowerTransaction" pt
+         LEFT JOIN "User" u ON pt."userId" = u.id
+         LEFT JOIN "PowerPlan" pp ON pt."planId" = pp.id
+         ORDER BY pt."createdAt" DESC`,
+        []
+      );
+    } catch (error) {
+      console.warn("[ANALYTICS] PowerTransaction table not found or error", { error: (error as any).message });
+    }
 
     // Fetch all airtime transactions
     const airtimeTransactions = await query<any>(
