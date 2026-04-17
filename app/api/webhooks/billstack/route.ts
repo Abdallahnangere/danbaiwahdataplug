@@ -148,21 +148,36 @@ export async function POST(request: NextRequest) {
     console.log("[BILLSTACK_WEBHOOK] User found", { userId: user.id });
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 5: IDEMPOTENCY CHECK - Ensure transaction doesn't already exist
+    // STEP 5: IDEMPOTENCY CHECK - Ensure transaction doesn't already exist for this user
     // ═══════════════════════════════════════════════════════════════════════════
-    const existingTransaction = await queryOne<{ id: string }>(
-      `SELECT id FROM "Transaction" WHERE reference = $1`,
-      [transactionReference]
+    const existingTransaction = await queryOne<{ id: string; amount: number }>(
+      `SELECT id, amount FROM "Transaction" WHERE user_id = $1 AND reference = $2`,
+      [user.id, transactionReference]
     );
 
     if (existingTransaction) {
-      console.log("[BILLSTACK_WEBHOOK] Transaction already processed", {
-        reference: transactionReference,
-      });
-      return NextResponse.json(
-        { status: "processed" },
-        { status: 200, headers: utf8Headers }
-      );
+      // Check if this is a true duplicate (same user, same reference, SAME amount)
+      if (existingTransaction.amount === amount) {
+        // True duplicate - exact same transaction being retried
+        console.log("[BILLSTACK_WEBHOOK] Transaction already processed (true duplicate)", {
+          userId: user.id,
+          reference: transactionReference,
+          amount,
+        });
+        return NextResponse.json(
+          { status: "processed" },
+          { status: 200, headers: utf8Headers }
+        );
+      } else {
+        // Different amount with same reference - BillStack might be sending multiple deposits
+        console.warn("[BILLSTACK_WEBHOOK] Same reference with different amount - processing as new transaction", {
+          userId: user.id,
+          reference: transactionReference,
+          previousAmount: existingTransaction.amount,
+          newAmount: amount,
+        });
+        // Continue processing as new transaction
+      }
     }
 
     console.log("[BILLSTACK_WEBHOOK] New transaction, proceeding with credit");
@@ -210,23 +225,42 @@ export async function POST(request: NextRequest) {
     });
 
     // Create transaction record with actual credited amount
-    await query(
-      `INSERT INTO "Transaction" (user_id, amount, reference, type, status, created_at)
-       VALUES ($1, $2, $3, $4, $5, NOW())`,
-      [
-        user.id,
-        creditAmount,
-        transactionReference,
-        "deposit",
-        "success",
-      ]
-    );
+    try {
+      await query(
+        `INSERT INTO "Transaction" (user_id, amount, reference, type, status, created_at)
+         VALUES ($1, $2, $3, $4, $5, NOW())`,
+        [
+          user.id,
+          creditAmount,
+          transactionReference,
+          "deposit",
+          "success",
+        ]
+      );
 
-    console.log("[BILLSTACK_WEBHOOK] Transaction record created", {
-      userId: user.id,
-      amount,
-      reference: transactionReference,
-    });
+      console.log("[BILLSTACK_WEBHOOK] Transaction record created", {
+        userId: user.id,
+        amount: creditAmount,
+        reference: transactionReference,
+      });
+    } catch (insertError: any) {
+      // If it's a unique constraint violation, it means this exact transaction (user + ref) was already inserted
+      if (insertError.code === "23505" || insertError.message?.includes("unique constraint")) {
+        console.warn("[BILLSTACK_WEBHOOK] Transaction record already exists (constraint violation)", {
+          userId: user.id,
+          reference: transactionReference,
+          error: insertError.message,
+        });
+        // This is OK - balance was already updated, transaction just wasn't logged again
+      } else {
+        // Other error - log it but don't fail the webhook
+        console.error("[BILLSTACK_WEBHOOK] Error creating transaction record", {
+          userId: user.id,
+          reference: transactionReference,
+          error: insertError.message,
+        });
+      }
+    }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 7: RESPOND WITH SUCCESS
