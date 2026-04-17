@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 5: IDEMPOTENCY CHECK - Ensure exact duplicate doesn't exist for this user
-    // Idempotency based on: reference + amount + time window (1 minute)
+    // Idempotency based on: reference + amount + time window (30 seconds)
     // 
     // Why time window instead of exact timestamp?
     // - BillStack sends low-precision timestamps (no milliseconds)
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     // - Time window prevents webhook retries AND handles timestamp precision issues
     // ═══════════════════════════════════════════════════════════════════════════
     const billstackTimestamp = new Date(payload.data.created_at);
-    const oneMinuteAgo = new Date(Date.now() - 60000); // 60 seconds
+    const thirtySecondsAgo = new Date(Date.now() - 30000); // 30 seconds
 
     const existingTransaction = await queryOne<{
       id: string;
@@ -167,12 +167,12 @@ export async function POST(request: NextRequest) {
     }>(
       `SELECT id, reference, amount, created_at FROM "Transaction" 
        WHERE user_id = $1 AND reference = $2 AND amount = $3 AND created_at > $4`,
-      [user.id, transactionReference, amount, oneMinuteAgo.toISOString()]
+      [user.id, transactionReference, amount, thirtySecondsAgo.toISOString()]
     );
 
     if (existingTransaction) {
-      // True duplicate - same reference + amount within last 60 seconds
-      console.log("[BILLSTACK_WEBHOOK] Transaction already processed (duplicate within 60s window)", {
+      // True duplicate - same reference + amount within last 30 seconds
+      console.log("[BILLSTACK_WEBHOOK] Transaction already processed (duplicate within 30s window)", {
         userId: user.id,
         reference: transactionReference,
         amount,
