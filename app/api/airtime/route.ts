@@ -6,17 +6,28 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 const log = (step: string, data: any) => {
-  // Only log in development environment
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[AIRTIME] ${step}:`, JSON.stringify(data, null, 2));
-  }
+  // Always log to console - appears in Vercel logs
+  const timestamp = new Date().toISOString();
+  const logMessage = `[AIRTIME] ${timestamp} ${step}: ${JSON.stringify(data, null, 2)}`;
+  console.log(logMessage);  // Always logs - visible in Vercel
+  
+  // Also log to stderr for guaranteed visibility
+  console.error(`[AIRTIME_LOG] ${step}`, JSON.stringify(data, null, 2));
 };
 
 export async function POST(request: NextRequest) {
   let transactionId: string | null = null;
 
   try {
-    log("START", { timestamp: new Date().toISOString() });
+    log("START", { 
+      timestamp: new Date().toISOString(),
+      method: request.method,
+      url: request.url,
+      headers: {
+        contentType: request.headers.get('content-type'),
+        authorization: request.headers.get('authorization') ? 'present' : 'missing',
+      }
+    });
 
     // 1. AUTHENTICATE USER
     const sessionUser = await getSessionUser(request);
@@ -41,6 +52,14 @@ export async function POST(request: NextRequest) {
     // 2. PARSE REQUEST BODY
     const body = await request.json();
     const { network, mobile_number, amount, pin } = body;
+    log("REQUEST_BODY_RECEIVED", { 
+      allKeys: Object.keys(body),
+      network: { value: network, type: typeof network },
+      mobile_number: { value: mobile_number, type: typeof mobile_number },
+      amount: { value: amount, type: typeof amount },
+      pin: { provided: !!pin, type: typeof pin },
+      bodySize: JSON.stringify(body).length
+    });
     log("REQUEST_BODY", { network, mobile_number, amount, pinProvided: !!pin });
 
     if (!network || !mobile_number || !amount || !pin) {

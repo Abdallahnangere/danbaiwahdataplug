@@ -2662,50 +2662,7 @@ export default function DanbaiwaApp() {
                     </span>
                   </div>
 
-                  <button
-                    onClick={() => setBalanceVisible(!balanceVisible)}
-                    style={{
-                      background: "rgba(255,255,255,0.18)",
-                      border: "1.5px solid rgba(255,255,255,0.35)",
-                      borderRadius: 16, width: 50, height: 50,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "white", cursor: "pointer",
-                      backdropFilter: "blur(12px)",
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-                    }}
-                  >
-                    {balanceVisible
-                      ? <Eye size={22} strokeWidth={2} />
-                      : <EyeOff size={22} strokeWidth={2} />}
-                  </button>
 
-                  <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch("/api/auth/me", { credentials: "include" });
-                        if (res.ok) {
-                          const data = await res.json();
-                          setUser(data);
-                          toast.success("Balance updated");
-                        }
-                      } catch {
-                        toast.error("Failed to sync balance");
-                      }
-                    }}
-                    style={{
-                      background: "rgba(255,255,255,0.18)",
-                      border: "1.5px solid rgba(255,255,255,0.35)",
-                      borderRadius: 16, width: 50, height: 50,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      color: "white", cursor: "pointer",
-                      backdropFilter: "blur(12px)",
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-                      marginLeft: 8,
-                    }}
-                    title="Sync balance"
-                  >
-                    <Loader2 size={22} strokeWidth={2} />
-                  </button>
                 </div>
 
                 {/* Virtual Account Info Row */}

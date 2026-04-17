@@ -32,7 +32,15 @@ interface BillStackWebhookPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[BILLSTACK_WEBHOOK] Incoming webhook request");
+    console.log("[BILLSTACK_WEBHOOK] Incoming webhook request", {
+      timestamp: new Date().toISOString(),
+      method: request.method,
+      url: request.url,
+      headers: {
+        contentType: request.headers.get('content-type'),
+        signature: request.headers.get('x-wiaxy-signature') ? 'present' : 'missing',
+      }
+    });
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 1: VERIFY SIGNATURE

@@ -8,9 +8,13 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const log = (step: string, data: any) => {
-  if (process.env.NODE_ENV === "development") {
-    console.log(`[POWER_PURCHASE] ${step}:`, JSON.stringify(data, null, 2));
-  }
+  // Always log to console - appears in Vercel logs
+  const timestamp = new Date().toISOString();
+  const logMessage = `[POWER_PURCHASE] ${timestamp} ${step}: ${JSON.stringify(data, null, 2)}`;
+  console.log(logMessage);  // Always logs - visible in Vercel
+  
+  // Also log to stderr for guaranteed visibility
+  console.error(`[POWER_PURCHASE_LOG] ${step}`, JSON.stringify(data, null, 2));
 };
 
 export async function POST(request: NextRequest) {
