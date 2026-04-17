@@ -180,17 +180,25 @@ export async function POST(request: NextRequest) {
       newBalance = MAX_BALANCE;
     }
 
-    // Update user balance
-    await query(
-      `UPDATE "User" SET balance = $1 WHERE id = $2`,
+    // Update user balance with verification
+    const updateResult = await queryOne<{ balance: number }>(
+      `UPDATE "User" SET balance = $1 WHERE id = $2 RETURNING balance`,
       [newBalance, user.id]
     );
 
-    console.log("[BILLSTACK_WEBHOOK] User balance updated", {
+    if (!updateResult) {
+      console.error("[BILLSTACK_WEBHOOK] Failed to update user balance", { userId: user.id });
+      return NextResponse.json(
+        { status: "processed" },
+        { status: 200, headers: utf8Headers }
+      );
+    }
+
+    console.log("[BILLSTACK_WEBHOOK] User balance updated successfully", {
       userId: user.id,
       oldBalance: user.balance,
-      newBalance,
-      amount,
+      newBalance: updateResult.balance,
+      amount: creditAmount,
     });
 
     // Create transaction record with actual credited amount

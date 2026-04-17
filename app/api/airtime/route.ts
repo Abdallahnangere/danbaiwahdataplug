@@ -60,12 +60,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate amount
-    const amountNum = parseInt(amount);
-    if (isNaN(amountNum) || amountNum < 50 || amountNum > 5000) {
+    // Validate amount - convert to number safely
+    let amountNum = typeof amount === "string" ? parseInt(amount) : amount;
+    if (isNaN(amountNum) || amountNum < 50 || amountNum > 100000) {
       log("INVALID_AMOUNT", { amount: amountNum });
       return NextResponse.json(
-        { errors: { amount: ["Amount must be between ₦50 and ₦5,000"] } },
+        { errors: { amount: ["Amount must be between ₦50 and ₦100,000"] } },
         { status: 422, headers: { "Content-Type": "application/json; charset=utf-8" } }
       );
     }
