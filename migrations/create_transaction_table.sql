@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS "Transaction" (
   status VARCHAR(50) NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  UNIQUE(user_id, reference)
+  -- Composite unique constraint: same user + reference + amount + timestamp = idempotent
+  -- This handles BillStack reusing references for different transactions
+  UNIQUE(user_id, reference, amount, created_at)
 );
 
 -- Create indexes for performance

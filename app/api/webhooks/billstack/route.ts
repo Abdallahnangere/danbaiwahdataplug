@@ -148,55 +148,44 @@ export async function POST(request: NextRequest) {
     console.log("[BILLSTACK_WEBHOOK] User found", { userId: user.id });
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 5: IDEMPOTENCY CHECK - Ensure transaction doesn't already exist for this user
-    // Check within 24-hour window to handle webhook retries and timeout scenarios
+    // STEP 5: IDEMPOTENCY CHECK - Ensure exact duplicate doesn't exist for this user
+    // Idempotency based on COMBINATION of: reference + amount + created_at (BillStack timestamp)
+    // This handles BillStack reusing reference for different transactions
     // ═══════════════════════════════════════════════════════════════════════════
     const billstackTimestamp = new Date(payload.data.created_at);
-    const oneDayAgo = new Date(Date.now() - 86400000); // 24 hours
+    const billstackTimestampStr = billstackTimestamp.toISOString();
 
     const existingTransaction = await queryOne<{
       id: string;
+      reference: string;
       amount: number;
       created_at: string;
     }>(
-      `SELECT id, amount, created_at FROM "Transaction" 
-       WHERE user_id = $1 AND reference = $2 AND created_at > $3`,
-      [user.id, transactionReference, oneDayAgo.toISOString()]
+      `SELECT id, reference, amount, created_at FROM "Transaction" 
+       WHERE user_id = $1 AND reference = $2 AND amount = $3 AND created_at = $4`,
+      [user.id, transactionReference, amount, billstackTimestampStr]
     );
 
     if (existingTransaction) {
-      // Check if this is a true duplicate (same user, same reference, SAME amount, within 10 seconds)
-      if (existingTransaction.amount === amount) {
-        // True duplicate - webhook retry or duplicate request within 10 seconds
-        console.log("[BILLSTACK_WEBHOOK] Transaction already processed (true duplicate within 10s window)", {
-          userId: user.id,
-          reference: transactionReference,
-          amount,
-          existingTransactionTime: existingTransaction.created_at,
-          currentTime: new Date().toISOString(),
-        });
-        return NextResponse.json(
-          { status: "processed" },
-          { status: 200, headers: utf8Headers }
-        );
-      } else {
-        // Different amount with same reference - separate transactions
-        console.warn("[BILLSTACK_WEBHOOK] Same reference with different amount - processing as new transaction", {
-          userId: user.id,
-          reference: transactionReference,
-          previousAmount: existingTransaction.amount,
-          newAmount: amount,
-          timeDifference: new Date().getTime() - new Date(existingTransaction.created_at).getTime() + "ms",
-        });
-        // Continue processing as new transaction
-      }
+      // True duplicate - exact same transaction (reference + amount + timestamp) already exists
+      console.log("[BILLSTACK_WEBHOOK] Transaction already processed (exact duplicate)", {
+        userId: user.id,
+        reference: transactionReference,
+        amount,
+        billstackTimestamp: billstackTimestampStr,
+        dbTimestamp: existingTransaction.created_at,
+      });
+      return NextResponse.json(
+        { status: "processed" },
+        { status: 200, headers: utf8Headers }
+      );
     }
 
     console.log("[BILLSTACK_WEBHOOK] New transaction, proceeding with credit", {
       userId: user.id,
       reference: transactionReference,
       amount,
-      timestamp: billstackTimestamp.toISOString(),
+      timestamp: billstackTimestampStr,
     });
 
     // ═══════════════════════════════════════════════════════════════════════════
