@@ -149,10 +149,10 @@ export async function POST(request: NextRequest) {
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 5: IDEMPOTENCY CHECK - Ensure transaction doesn't already exist for this user
-    // Within a 10-second time window (handles webhook retries but allows multiple deposits)
+    // Check within 24-hour window to handle webhook retries and timeout scenarios
     // ═══════════════════════════════════════════════════════════════════════════
     const billstackTimestamp = new Date(payload.data.created_at);
-    const tenSecondsAgo = new Date(Date.now() - 10000);
+    const oneDayAgo = new Date(Date.now() - 86400000); // 24 hours
 
     const existingTransaction = await queryOne<{
       id: string;
@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
     }>(
       `SELECT id, amount, created_at FROM "Transaction" 
        WHERE user_id = $1 AND reference = $2 AND created_at > $3`,
-      [user.id, transactionReference, tenSecondsAgo.toISOString()]
+      [user.id, transactionReference, oneDayAgo.toISOString()]
     );
 
     if (existingTransaction) {
@@ -202,21 +202,26 @@ export async function POST(request: NextRequest) {
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 6: CHECK BALANCE LIMIT AND CREDIT USER WALLET
     // ═══════════════════════════════════════════════════════════════════════════
+    // Ensure balance is numeric (handle string values from database)
+    const currentBalance = typeof user.balance === 'string' 
+      ? parseFloat(user.balance) 
+      : user.balance;
+    
     let creditAmount = amount;
-    let newBalance = user.balance + amount;
+    let newBalance = currentBalance + amount;
 
     // Check if balance would exceed limit
     if (newBalance > MAX_BALANCE) {
       console.warn("[BILLSTACK_WEBHOOK] Balance would exceed limit", {
         userId: user.id,
         accountNumber,
-        currentBalance: user.balance,
+        currentBalance,
         depositAmount: amount,
         maxAllowed: MAX_BALANCE,
         calculated: newBalance,
       });
       // Cap balance at limit
-      creditAmount = Math.max(0, MAX_BALANCE - user.balance);
+      creditAmount = Math.max(0, MAX_BALANCE - currentBalance);
       newBalance = MAX_BALANCE;
     }
 
@@ -236,7 +241,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[BILLSTACK_WEBHOOK] User balance updated successfully", {
       userId: user.id,
-      oldBalance: user.balance,
+      oldBalance: currentBalance,
       newBalance: updateResult.balance,
       amount: creditAmount,
     });
