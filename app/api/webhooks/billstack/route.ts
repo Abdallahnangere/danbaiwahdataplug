@@ -149,38 +149,55 @@ export async function POST(request: NextRequest) {
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 5: IDEMPOTENCY CHECK - Ensure transaction doesn't already exist for this user
+    // Within a 10-second time window (handles webhook retries but allows multiple deposits)
     // ═══════════════════════════════════════════════════════════════════════════
-    const existingTransaction = await queryOne<{ id: string; amount: number }>(
-      `SELECT id, amount FROM "Transaction" WHERE user_id = $1 AND reference = $2`,
-      [user.id, transactionReference]
+    const billstackTimestamp = new Date(payload.data.created_at);
+    const tenSecondsAgo = new Date(Date.now() - 10000);
+
+    const existingTransaction = await queryOne<{
+      id: string;
+      amount: number;
+      created_at: string;
+    }>(
+      `SELECT id, amount, created_at FROM "Transaction" 
+       WHERE user_id = $1 AND reference = $2 AND created_at > $3`,
+      [user.id, transactionReference, tenSecondsAgo.toISOString()]
     );
 
     if (existingTransaction) {
-      // Check if this is a true duplicate (same user, same reference, SAME amount)
+      // Check if this is a true duplicate (same user, same reference, SAME amount, within 10 seconds)
       if (existingTransaction.amount === amount) {
-        // True duplicate - exact same transaction being retried
-        console.log("[BILLSTACK_WEBHOOK] Transaction already processed (true duplicate)", {
+        // True duplicate - webhook retry or duplicate request within 10 seconds
+        console.log("[BILLSTACK_WEBHOOK] Transaction already processed (true duplicate within 10s window)", {
           userId: user.id,
           reference: transactionReference,
           amount,
+          existingTransactionTime: existingTransaction.created_at,
+          currentTime: new Date().toISOString(),
         });
         return NextResponse.json(
           { status: "processed" },
           { status: 200, headers: utf8Headers }
         );
       } else {
-        // Different amount with same reference - BillStack might be sending multiple deposits
+        // Different amount with same reference - separate transactions
         console.warn("[BILLSTACK_WEBHOOK] Same reference with different amount - processing as new transaction", {
           userId: user.id,
           reference: transactionReference,
           previousAmount: existingTransaction.amount,
           newAmount: amount,
+          timeDifference: new Date().getTime() - new Date(existingTransaction.created_at).getTime() + "ms",
         });
         // Continue processing as new transaction
       }
     }
 
-    console.log("[BILLSTACK_WEBHOOK] New transaction, proceeding with credit");
+    console.log("[BILLSTACK_WEBHOOK] New transaction, proceeding with credit", {
+      userId: user.id,
+      reference: transactionReference,
+      amount,
+      timestamp: billstackTimestamp.toISOString(),
+    });
 
     // ═══════════════════════════════════════════════════════════════════════════
     // STEP 6: CHECK BALANCE LIMIT AND CREDIT USER WALLET
