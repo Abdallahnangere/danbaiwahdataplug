@@ -7,6 +7,7 @@ import { randomUUID } from "crypto";
 import { checkRateLimit, resetRateLimit } from "@/lib/rateLimiter";
 import {
   BillStackAccount,
+  BillStackBankCode,
   BILLSTACK_BANKS,
   createBillStackVirtualAccount,
   generateBillStackReference,
