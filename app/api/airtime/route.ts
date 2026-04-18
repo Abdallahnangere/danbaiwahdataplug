@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
-import { query, queryOne, execute } from "@/lib/db";import { withRateLimit } from "@/lib/rateLimit";import bcrypt from "bcryptjs";
+import { query, queryOne, execute } from "@/lib/db";
+import { withRateLimit } from "@/lib/rateLimit";
+import bcrypt from "bcryptjs";
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -157,7 +159,7 @@ export async function POST(request: NextRequest) {
 
     // 4. GENERATE REFERENCE
     const customerRef = `AIR-${Date.now()}-${userId.slice(-6)}`;
-    const networkNames = { 1: "MTN", 2: "Glo", 3: "9mobile", 4: "Airtel" };
+    const networkNames = { 1: "MTN", 2: "Airtel", 3: "Glo", 4: "9mobile" };
     const networkName = networkNames[network as keyof typeof networkNames] || "Unknown";
     log("REFERENCE_GENERATED", { customerRef, networkName });
 

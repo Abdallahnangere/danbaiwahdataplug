@@ -78,6 +78,14 @@ interface ReservedAccount {
   createdAt?: string | null;
 }
 
+interface AirtimeNetwork {
+  id: number;
+  name: string;
+  prefix: RegExp;
+  color: string;
+  hexColor: string;
+}
+
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -119,7 +127,7 @@ export default function DanbaiwaApp() {
 
   // Buy-Airtime Flow State
   const [buyAirtimeStage, setBuyAirtimeStage] = useState(1);
-  const [airtimeNetwork, setAirtimeNetwork] = useState<any | null>(null);
+  const [airtimeNetwork, setAirtimeNetwork] = useState<AirtimeNetwork | null>(null);
   const [airtimePhone, setAirtimePhone] = useState("");
   const [airtimeAmount, setAirtimeAmount] = useState("");
   const [airtimePinInput, setAirtimePinInput] = useState(["", "", "", "", "", ""]);
@@ -1266,11 +1274,11 @@ export default function DanbaiwaApp() {
     return null;
   };
 
-  const AIRTIME_NETWORKS = [
-    { id: 1, name: "MTN", prefix: /^0803|0806|0703|0706|0913/, color: "#FFD700", hexColor: "#ffd700" },
-    { id: 2, name: "Glo", prefix: /^0805|0807|0811|0815|0905/, color: "#228B22", hexColor: "#228b22" },
-    { id: 3, name: "9mobile", prefix: /^0809|0817|0818|0909/, color: "#006400", hexColor: "#006400" },
-    { id: 4, name: "Airtel", prefix: /^0801|0802|0808|0812|0902|0904/, color: "#DC143C", hexColor: "#dc143c" },
+  const AIRTIME_NETWORKS: AirtimeNetwork[] = [
+    { id: 1, name: "MTN", prefix: /^(0803|0806|0703|0706|0810|0813|0814|0816|0903|0906|0913|0916)/, color: "#FFD700", hexColor: "#ffd700" },
+    { id: 2, name: "Airtel", prefix: /^(0801|0802|0808|0812|0701|0708|0902|0904|0907|0912)/, color: "#DC143C", hexColor: "#dc143c" },
+    { id: 3, name: "Glo", prefix: /^(0805|0807|0811|0815|0705|0905|0915)/, color: "#228B22", hexColor: "#228b22" },
+    { id: 4, name: "9mobile", prefix: /^(0809|0817|0818|0908|0909)/, color: "#006400", hexColor: "#006400" },
   ];
 
   const CABLE_PROVIDERS = [
@@ -1334,7 +1342,7 @@ export default function DanbaiwaApp() {
           <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Network</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 20 }}>
             {AIRTIME_NETWORKS.map((net) => (
-              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setAirtimePhone(""); setShowNetworkWarning(false); setBuyAirtimeError(""); }}
+              <button key={net.id} onClick={() => { setAirtimeNetwork(net); setShowNetworkWarning(false); setBuyAirtimeError(""); }}
                 style={{
                   padding: 12, borderRadius: 12, background: airtimeNetwork?.id === net.id ? `${net.color}15` : T.bgCard,
                   border: `2px solid ${airtimeNetwork?.id === net.id ? net.color : T.border}`, cursor: "pointer",
@@ -1352,7 +1360,16 @@ export default function DanbaiwaApp() {
             <>
               <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.5px" }}>Phone Number</h3>
               <input type="tel" inputMode="numeric" maxLength={11} placeholder="08012345678" value={airtimePhone}
-                onChange={(e) => { const d = e.target.value.replace(/\D/g, "").slice(0, 11); setAirtimePhone(d); }}
+                onChange={(e) => {
+                  const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  const detected = detectNetwork(digits);
+                  setAirtimePhone(digits);
+                  setShowNetworkWarning(false);
+                  setBuyAirtimeError("");
+                  if (detected) {
+                    setAirtimeNetwork(detected);
+                  }
+                }}
                 ref={airtimePhoneInputRef}
                 style={{
                   width: "100%", padding: "12px 14px", borderRadius: 12, background: T.bgCard,

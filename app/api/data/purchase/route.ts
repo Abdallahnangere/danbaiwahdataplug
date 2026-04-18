@@ -304,7 +304,7 @@ export async function POST(request: NextRequest) {
         };
         log(`PROVIDER_${providerLabel}_REQUEST`, payload);
 
-        const providerResponse = await fetch(
+        const providerHttpResponse = await fetch(
           `${providerBaseUrl}/data`,
           {
             method: "POST",
@@ -317,8 +317,8 @@ export async function POST(request: NextRequest) {
           }
         );
 
-        providerStatus = providerResponse.status;
-        const providerData = await providerResponse.json();
+        providerStatus = providerHttpResponse.status;
+        const providerData = await providerHttpResponse.json();
         log(`PROVIDER_${providerLabel}_RESPONSE`, {
           status: providerStatus, 
           data: providerData
