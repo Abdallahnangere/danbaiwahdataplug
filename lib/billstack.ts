@@ -19,6 +19,14 @@ export type BillStackBankCode =
   | "BANKLY"
   | "9PSB";
 
+export const BILLSTACK_BANKS: BillStackBankCode[] = [
+  "PALMPAY",
+  "SAFEHAVEN",
+  "PROVIDUS",
+  "BANKLY",
+  "9PSB",
+];
+
 export interface BillStackAccount {
   account_number: string;
   account_name: string;

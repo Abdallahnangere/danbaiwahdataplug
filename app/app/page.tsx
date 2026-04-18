@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import {
   Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
-  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check, Mail, Landmark,
+  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check, Mail, Landmark, Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
@@ -78,6 +78,12 @@ interface ReservedAccount {
   createdAt?: string | null;
 }
 
+interface BroadcastMessage {
+  id: string;
+  message: string;
+  createdAt: string;
+}
+
 interface AirtimeNetwork {
   id: number;
   name: string;
@@ -95,6 +101,14 @@ const ACCOUNT_SERVICES = [
   { id: "settings",    label: "Settings",       icon: SettingsIcon },
 ];
 
+const AVAILABLE_RESERVED_BANKS = [
+  { id: "PALMPAY", label: "PalmPay" },
+  { id: "SAFEHAVEN", label: "Safe Haven" },
+  { id: "PROVIDUS", label: "Providus" },
+  { id: "BANKLY", label: "Bankly" },
+  { id: "9PSB", label: "9PSB" },
+] as const;
+
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function DanbaiwaApp() {
   const router = useRouter();
@@ -105,6 +119,11 @@ export default function DanbaiwaApp() {
   const [transactions, setTransactions]         = useState<any[]>([]);
   const [accounts, setAccounts]                 = useState<ReservedAccount[]>([]);
   const [accountsLoading, setAccountsLoading]   = useState(false);
+  const [broadcasts, setBroadcasts]             = useState<BroadcastMessage[]>([]);
+  const [broadcastsLoading, setBroadcastsLoading] = useState(false);
+  const [dismissingBroadcastId, setDismissingBroadcastId] = useState<string | null>(null);
+  const [selectedReservedBank, setSelectedReservedBank] = useState<string>("");
+  const [creatingReservedAccount, setCreatingReservedAccount] = useState(false);
   const [showSettingsModal, setShowSettingsModal]         = useState(false);
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [showPinChangeModal, setShowPinChangeModal]       = useState(false);
@@ -210,23 +229,43 @@ export default function DanbaiwaApp() {
     })();
   }, [showTransactionsModal]);
 
+  const fetchBroadcasts = async () => {
+    try {
+      setBroadcastsLoading(true);
+      const res = await fetch("/api/broadcasts", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch broadcasts");
+      const data = await res.json();
+      setBroadcasts(Array.isArray(data.broadcasts) ? data.broadcasts : []);
+    } catch {
+      setBroadcasts([]);
+    } finally {
+      setBroadcastsLoading(false);
+    }
+  };
+
+  const fetchAccounts = async () => {
+    try {
+      setAccountsLoading(true);
+      const res = await fetch("/api/accounts", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch accounts");
+      const data = await res.json();
+      setAccounts(Array.isArray(data.accounts) ? data.accounts : []);
+    } catch {
+      toast.error("Failed to load reserved accounts");
+      setAccounts([]);
+    } finally {
+      setAccountsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    fetchBroadcasts();
+  }, [user?.id]);
+
   useEffect(() => {
     if (activeTab !== "accounts") return;
-
-    (async () => {
-      try {
-        setAccountsLoading(true);
-        const res = await fetch("/api/accounts", { credentials: "include" });
-        if (!res.ok) throw new Error("Failed to fetch accounts");
-        const data = await res.json();
-        setAccounts(Array.isArray(data.accounts) ? data.accounts : []);
-      } catch {
-        toast.error("Failed to load reserved accounts");
-        setAccounts([]);
-      } finally {
-        setAccountsLoading(false);
-      }
-    })();
+    fetchAccounts();
   }, [activeTab]);
 
   // Load networks when data tab is accessed
@@ -355,6 +394,66 @@ export default function DanbaiwaApp() {
       router.push("/app/auth");
     } catch {
       toast.error("Logout failed");
+    }
+  };
+
+  const dismissBroadcast = async (broadcastId: string) => {
+    try {
+      setDismissingBroadcastId(broadcastId);
+      const res = await fetch(`/api/broadcasts/${broadcastId}/dismiss`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to dismiss broadcast");
+      setBroadcasts((current) => current.filter((item) => item.id !== broadcastId));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to dismiss broadcast");
+    } finally {
+      setDismissingBroadcastId(null);
+    }
+  };
+
+  const createReservedAccount = async () => {
+    if (!selectedReservedBank) {
+      toast.error("Select a bank first");
+      return;
+    }
+
+    try {
+      setCreatingReservedAccount(true);
+      const res = await fetch("/api/accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ bankId: selectedReservedBank }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to create account");
+
+      const updatedAccounts = Array.isArray(data.accounts) ? data.accounts : [];
+      setAccounts(updatedAccounts);
+      setSelectedReservedBank("");
+
+      const primaryAccount = updatedAccounts.find((account: ReservedAccount) => account.isPrimary);
+      if (primaryAccount) {
+        setUser((current) =>
+          current
+            ? {
+                ...current,
+                accountNumber: primaryAccount.accountNumber,
+                bankName: primaryAccount.bankName || primaryAccount.bankId,
+                accountName: primaryAccount.accountName || current.accountName,
+              }
+            : current
+        );
+      }
+
+      toast.success(`${data.account?.bankName || selectedReservedBank} account created`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create account");
+    } finally {
+      setCreatingReservedAccount(false);
     }
   };
 
@@ -2720,6 +2819,79 @@ export default function DanbaiwaApp() {
         </button>
       </div>
 
+      {!broadcastsLoading && broadcasts[0] && (
+        <div
+          style={{
+            padding: "0 20px 14px",
+            position: "relative",
+            zIndex: 10,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              borderRadius: 18,
+              border: `1px solid rgba(59,130,246,0.25)`,
+              background: "linear-gradient(135deg, rgba(59,130,246,0.18), rgba(6,182,212,0.12))",
+              boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+              padding: "14px 16px",
+              display: "flex",
+              gap: 12,
+              alignItems: "flex-start",
+            }}
+          >
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 12,
+                background: "rgba(255,255,255,0.08)",
+                border: `1px solid ${T.border}`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Megaphone size={18} color={T.blueLight} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 6 }}>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 800, color: T.blueLight, textTransform: "uppercase", letterSpacing: "1px" }}>
+                  Announcement
+                </p>
+                <button
+                  onClick={() => dismissBroadcast(broadcasts[0].id)}
+                  disabled={dismissingBroadcastId === broadcasts[0].id}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    color: T.textSecondary,
+                    cursor: dismissingBroadcastId === broadcasts[0].id ? "not-allowed" : "pointer",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontFamily: font,
+                  }}
+                >
+                  {dismissingBroadcastId === broadcasts[0].id ? (
+                    <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} />
+                  ) : (
+                    <X size={14} />
+                  )}
+                  Dismiss
+                </button>
+              </div>
+              <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: T.textPrimary }}>
+                {broadcasts[0].message}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══════════════════ SCROLLABLE CONTENT ══════════════════ */}
       <div style={{
         flex: 1, overflowY: "auto",
@@ -3020,6 +3192,84 @@ export default function DanbaiwaApp() {
                 }}>
                   All reserved accounts created for your wallet. Your primary account stays on the wallet card.
                 </p>
+              </div>
+
+              <div style={{
+                background: T.bgCard,
+                borderRadius: 20,
+                border: `1px solid ${T.border}`,
+                padding: 18,
+                marginBottom: 18,
+              }}>
+                <div style={{ marginBottom: 12 }}>
+                  <p style={{ margin: "0 0 6px", fontSize: 13, fontWeight: 700, color: T.textPrimary }}>
+                    Create another account
+                  </p>
+                  <p style={{ margin: 0, fontSize: 13, color: T.textSecondary, lineHeight: 1.6 }}>
+                    Choose a bank and create another reserved account with your saved name, email, and phone number.
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
+                  {AVAILABLE_RESERVED_BANKS.map((bank) => {
+                    const alreadyCreated = accounts.some((account) => account.bankId === bank.id);
+                    const selected = selectedReservedBank === bank.id;
+
+                    return (
+                      <button
+                        key={bank.id}
+                        onClick={() => !alreadyCreated && setSelectedReservedBank(bank.id)}
+                        disabled={alreadyCreated || creatingReservedAccount || accountsLoading}
+                        style={{
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          background: alreadyCreated
+                            ? `${T.green}14`
+                            : selected
+                              ? `${T.blue}20`
+                              : T.bgElevated,
+                          border: `1px solid ${
+                            alreadyCreated ? `${T.green}40` : selected ? T.blue : T.border
+                          }`,
+                          color: alreadyCreated ? T.green : selected ? T.blueLight : T.textPrimary,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          cursor: alreadyCreated || creatingReservedAccount || accountsLoading ? "not-allowed" : "pointer",
+                          fontFamily: font,
+                        }}
+                      >
+                        {bank.label}
+                        {alreadyCreated ? " • Added" : ""}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={createReservedAccount}
+                  disabled={!selectedReservedBank || creatingReservedAccount || accountsLoading}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: 12,
+                    background: selectedReservedBank && !creatingReservedAccount ? T.blue : T.bgElevated,
+                    border: `1px solid ${selectedReservedBank ? T.blue : T.border}`,
+                    color: selectedReservedBank && !creatingReservedAccount ? "#fff" : T.textMuted,
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: selectedReservedBank && !creatingReservedAccount && !accountsLoading ? "pointer" : "not-allowed",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    fontFamily: font,
+                  }}
+                >
+                  {creatingReservedAccount && (
+                    <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} />
+                  )}
+                  {creatingReservedAccount ? "Creating account..." : "Create account"}
+                </button>
               </div>
 
               {accountsLoading ? (

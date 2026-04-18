@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap } from "lucide-react";
+import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap, Megaphone } from "lucide-react";
 import { toast } from "sonner";
 import AnalyticsTab from "./_components/AnalyticsTab";
 import DataPlansTab from "./_components/DataPlansTab";
@@ -11,6 +11,7 @@ import UsersTab from "./_components/UsersTab";
 import AirtimeTab from "./_components/AirtimeTab";
 import CableTab from "./_components/CableTab";
 import PowerTab from "./_components/PowerTab";
+import BroadcastsTab from "./_components/BroadcastsTab";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────
 const T = {
@@ -34,7 +35,7 @@ export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"analytics" | "plans" | "users" | "airtime" | "cable" | "power">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "broadcasts" | "plans" | "users" | "airtime" | "cable" | "power">("analytics");
 
   // Check if already authenticated via JWT/session
   useEffect(() => {
@@ -201,6 +202,7 @@ export default function AdminDashboard() {
 
   const TABS = [
     { id: "analytics" as const, label: "Analytics", icon: BarChart3 },
+    { id: "broadcasts" as const, label: "Broadcasts", icon: Megaphone },
     { id: "plans" as const, label: "Data Plans", icon: Database },
     { id: "users" as const, label: "Users", icon: Users },
     { id: "airtime" as const, label: "Airtime", icon: Phone },
@@ -309,6 +311,7 @@ export default function AdminDashboard() {
         padding: "20px",
       }}>
         {activeTab === "analytics" && <AnalyticsTab />}
+        {activeTab === "broadcasts" && <BroadcastsTab />}
         {activeTab === "plans" && <DataPlansTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "airtime" && <AirtimeTab />}

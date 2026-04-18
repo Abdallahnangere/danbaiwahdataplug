@@ -7,7 +7,7 @@ import { randomUUID } from "crypto";
 import { checkRateLimit, resetRateLimit } from "@/lib/rateLimiter";
 import {
   BillStackAccount,
-  BillStackBankCode,
+  BILLSTACK_BANKS,
   createBillStackVirtualAccount,
   generateBillStackReference,
   splitName,
@@ -18,8 +18,6 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
-const BILLSTACK_BANKS: BillStackBankCode[] = ["PALMPAY", "SAFEHAVEN", "PROVIDUS", "BANKLY", "9PSB"];
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
