@@ -25,6 +25,20 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Plan ID is required" }, { status: 400, headers: utf8Headers });
     }
 
+    const existingPlan = await queryOne<{
+      apiAId: number | null;
+      apiBId: number | null;
+      apiCId: number | null;
+      activeApi: string | null;
+    }>(
+      `SELECT "apiAId", "apiBId", "apiCId", "activeApi" FROM "DataPlan" WHERE id = $1`,
+      [id]
+    );
+
+    if (!existingPlan) {
+      return NextResponse.json({ error: "Plan not found" }, { status: 404, headers: utf8Headers });
+    }
+
     const body = await request.json();
     const {
       name,
@@ -36,6 +50,7 @@ export async function PATCH(request: NextRequest) {
       agentPrice,
       apiAId,
       apiBId,
+      apiCId,
       activeApi,
       isActive,
     } = body;
@@ -132,7 +147,25 @@ export async function PATCH(request: NextRequest) {
       params.push(apiBIdNum);
       paramCount++;
     }
+    if (apiCId !== undefined) {
+      const apiCIdNum = apiCId ? parseInt(String(apiCId)) : null;
+      if (apiCId && (isNaN(apiCIdNum!) || apiCIdNum! <= 0)) {
+        return NextResponse.json(
+          { error: "Invalid apiCId - must be a positive integer" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
+      updates.push(`"apiCId" = $${paramCount}`);
+      params.push(apiCIdNum);
+      paramCount++;
+    }
     if (activeApi !== undefined) {
+      if (!["A", "B", "C"].includes(String(activeApi))) {
+        return NextResponse.json(
+          { error: "Invalid activeApi - must be A, B, or C" },
+          { status: 400, headers: utf8Headers }
+        );
+      }
       updates.push(`"activeApi" = $${paramCount}`);
       params.push(activeApi);
       paramCount++;
@@ -141,6 +174,40 @@ export async function PATCH(request: NextRequest) {
       updates.push(`"isActive" = $${paramCount}`);
       params.push(isActive);
       paramCount++;
+    }
+
+    const nextApiAId = apiAId !== undefined
+      ? (apiAId ? parseInt(String(apiAId)) : null)
+      : existingPlan.apiAId;
+    const nextApiBId = apiBId !== undefined
+      ? (apiBId ? parseInt(String(apiBId)) : null)
+      : existingPlan.apiBId;
+    const nextApiCId = apiCId !== undefined
+      ? (apiCId ? parseInt(String(apiCId)) : null)
+      : existingPlan.apiCId;
+    const nextActiveApi = activeApi !== undefined
+      ? String(activeApi)
+      : (existingPlan.activeApi || "A");
+
+    if (nextActiveApi === "A" && !nextApiAId) {
+      return NextResponse.json(
+        { error: "apiAId is required when activeApi is A" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (nextActiveApi === "B" && !nextApiBId) {
+      return NextResponse.json(
+        { error: "apiBId is required when activeApi is B" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (nextActiveApi === "C" && !nextApiCId) {
+      return NextResponse.json(
+        { error: "apiCId is required when activeApi is C" },
+        { status: 400, headers: utf8Headers }
+      );
     }
 
     if (updates.length === 0) {
@@ -158,7 +225,7 @@ export async function PATCH(request: NextRequest) {
       SET ${updates.join(", ")}
       WHERE id = $${paramCount}
       RETURNING id, name, "networkId", "sizeLabel", validity, price, "userPrice", "agentPrice", 
-                "apiAId", "apiBId", "activeApi", "isActive", "createdAt"
+                "apiAId", "apiBId", "apiCId", "activeApi", "isActive", "createdAt"
     `;
 
     const plan = await queryOne<any>(updateQuery, params);

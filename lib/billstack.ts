@@ -9,8 +9,15 @@ export interface BillStackVirtualAccountRequest {
   firstName: string;
   lastName: string;
   phone: string;
-  bank: string;
+  bank: BillStackBankCode;
 }
+
+export type BillStackBankCode =
+  | "PALMPAY"
+  | "SAFEHAVEN"
+  | "PROVIDUS"
+  | "BANKLY"
+  | "9PSB";
 
 export interface BillStackAccount {
   account_number: string;
@@ -100,10 +107,12 @@ export async function createBillStackVirtualAccount(
  * Generate a unique reference for a user
  * Format: DNBWH-<timestamp>-<userId>
  */
-export function generateBillStackReference(userId: string): string {
+export function generateBillStackReference(userId: string, suffix?: string): string {
   const timestamp = Date.now();
   const userSuffix = userId.slice(-6);
-  return `DNBWH-${timestamp}-${userSuffix}`;
+  return suffix
+    ? `DNBWH-${timestamp}-${userSuffix}-${suffix}`
+    : `DNBWH-${timestamp}-${userSuffix}`;
 }
 
 /**

@@ -121,9 +121,10 @@ export async function POST(request: NextRequest) {
       activeApi: string;
       apiAId: number | null;
       apiBId: number | null;
+      apiCId: number | null;
       isActive: boolean;
     }>(
-      `SELECT id, name, "networkId", price, "agentPrice", "activeApi", "apiAId", "apiBId", "isActive"
+      `SELECT id, name, "networkId", price, "agentPrice", "activeApi", "apiAId", "apiBId", "apiCId", "isActive"
        FROM "DataPlan"
        WHERE id = $1`,
       [planId]
@@ -279,44 +280,59 @@ export async function POST(request: NextRequest) {
           providerResponse = smePlugData.msg || "Provider request failed";
           log("PROVIDER_A_FAILED", { message: providerResponse, data: smePlugData });
         }
-      } else if (plan.activeApi === "B") {
-        // Provider B API
-        const payloadB = {
-          plan: plan.apiBId,
+      } else if (plan.activeApi === "B" || plan.activeApi === "C") {
+        const providerLabel = plan.activeApi === "B" ? "B" : "C";
+        const providerBaseUrl =
+          plan.activeApi === "B"
+            ? process.env.PROVIDER_B_BASE_URL
+            : process.env.PROVIDER_C_BASE_URL;
+        const providerToken =
+          plan.activeApi === "B"
+            ? process.env.PROVIDER_B_TOKEN
+            : process.env.PROVIDER_C_TOKEN;
+        const providerPlanId =
+          plan.activeApi === "B" ? plan.apiBId : plan.apiCId;
+
+        if (!providerBaseUrl || !providerToken || !providerPlanId) {
+          throw new Error(`Provider ${providerLabel} is not configured for this plan`);
+        }
+
+        const payload = {
+          plan: providerPlanId,
           mobile_number: phone,
           network: plan.networkId,
         };
-        log("PROVIDER_B_REQUEST", payloadB);
+        log(`PROVIDER_${providerLabel}_REQUEST`, payload);
 
-        const providerBResponse = await fetch(
-          `${process.env.PROVIDER_B_BASE_URL}/data`,
+        const providerResponse = await fetch(
+          `${providerBaseUrl}/data`,
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${process.env.PROVIDER_B_TOKEN}`,
+              Authorization: `Bearer ${providerToken}`,
               Accept: "application/json",
               "Content-Type": "application/json; charset=utf-8",
             },
-            body: JSON.stringify(payloadB),
+            body: JSON.stringify(payload),
           }
         );
 
-        providerStatus = providerBResponse.status;
-        const providerBData = await providerBResponse.json();
-        log("PROVIDER_B_RESPONSE", { 
+        providerStatus = providerResponse.status;
+        const providerData = await providerResponse.json();
+        log(`PROVIDER_${providerLabel}_RESPONSE`, {
           status: providerStatus, 
-          data: providerBData 
+          data: providerData
         });
 
-        if (providerBData && providerBData.Status === "successful") {
+        if (providerData && providerData.Status === "successful") {
           providerSuccess = true;
-          providerRef = providerBData.ident || customerRef;
-          providerResponse = providerBData.api_response || "Success";
-          log("PROVIDER_B_SUCCESS", { providerRef, message: providerResponse });
+          providerRef = providerData.ident || customerRef;
+          providerResponse = providerData.api_response || "Success";
+          log(`PROVIDER_${providerLabel}_SUCCESS`, { providerRef, message: providerResponse });
         } else {
           providerResponse =
-            providerBData?.api_response || "Provider request failed";
-          log("PROVIDER_B_FAILED", { message: providerResponse, data: providerBData });
+            providerData?.api_response || "Provider request failed";
+          log(`PROVIDER_${providerLabel}_FAILED`, { message: providerResponse, data: providerData });
         }
       } else {
         log("UNKNOWN_PROVIDER", { activeApi: plan.activeApi });

@@ -6,6 +6,8 @@ import { queryOne, execute } from "@/lib/db";
 import { randomUUID } from "crypto";
 import { checkRateLimit, resetRateLimit } from "@/lib/rateLimiter";
 import {
+  BillStackAccount,
+  BillStackBankCode,
   createBillStackVirtualAccount,
   generateBillStackReference,
   splitName,
@@ -16,6 +18,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+const BILLSTACK_BANKS: BillStackBankCode[] = ["PALMPAY", "SAFEHAVEN", "PROVIDUS", "BANKLY", "9PSB"];
 
 export async function POST(request: NextRequest) {
   try {
@@ -132,42 +135,63 @@ export async function POST(request: NextRequest) {
 
     // ─── BILLSTACK VIRTUAL ACCOUNT CREATION ─────────────────────────────────
     try {
-      const billstackReference = generateBillStackReference(userId);
       const { firstName, lastName } = splitName(name);
+      const createdAccounts: Array<{
+        bank: BillStackBankCode;
+        reference: string;
+        account: BillStackAccount;
+      }> = [];
 
-      console.log("[SIGNUP] Creating BillStack virtual account...", {
-        userId,
-        reference: billstackReference,
-        firstName,
-        lastName,
-        phone,
-      });
+      for (const bank of BILLSTACK_BANKS) {
+        const billstackReference = generateBillStackReference(userId, bank);
 
-      const billstackResponse: BillStackVirtualAccountResponse =
-        await createBillStackVirtualAccount({
-          email,
+        console.log("[SIGNUP] Creating BillStack virtual account...", {
+          userId,
           reference: billstackReference,
           firstName,
           lastName,
           phone,
-          bank: "PALMPAY",
+          bank,
         });
 
-      if (!billstackResponse.status || !billstackResponse.data?.account?.[0]) {
-        throw new Error(
-          billstackResponse.message || "BillStack account creation failed"
-        );
+        try {
+          const billstackResponse: BillStackVirtualAccountResponse =
+            await createBillStackVirtualAccount({
+              email,
+              reference: billstackReference,
+              firstName,
+              lastName,
+              phone,
+              bank,
+            });
+
+          if (billstackResponse.status && billstackResponse.data?.account?.[0]) {
+            createdAccounts.push({
+              bank,
+              reference: billstackResponse.data.reference,
+              account: billstackResponse.data.account[0],
+            });
+          }
+        } catch (singleBankError) {
+          console.error("[SIGNUP] BillStack bank creation failed:", {
+            userId,
+            bank,
+            error:
+              singleBankError instanceof Error
+                ? singleBankError.message
+                : String(singleBankError),
+          });
+        }
       }
 
-      const account = billstackResponse.data.account[0];
+      if (createdAccounts.length === 0) {
+        throw new Error("Unable to create any virtual account at the moment");
+      }
 
-      console.log("[SIGNUP] BillStack account created:", {
-        reference: billstackResponse.data.reference,
-        accountNumber: account.account_number,
-        accountName: account.account_name,
-      });
+      const primaryAccount =
+        createdAccounts.find((entry) => entry.bank === "PALMPAY") ||
+        createdAccounts[0];
 
-      // Update user with BillStack account details
       await execute(
         `UPDATE "User" 
          SET "billstack_reference" = $1, 
@@ -178,17 +202,39 @@ export async function POST(request: NextRequest) {
              "billstack_created_at" = $6
          WHERE id = $7`,
         [
-          billstackResponse.data.reference,
-          account.account_number,
-          account.account_name,
-          account.bank_name,
-          account.bank_id,
-          account.created_at,
+          primaryAccount.reference,
+          primaryAccount.account.account_number,
+          primaryAccount.account.account_name,
+          primaryAccount.account.bank_name,
+          primaryAccount.account.bank_id,
+          primaryAccount.account.created_at,
           userId,
         ]
       );
 
-      console.log("[SIGNUP] User updated with BillStack details:", { userId });
+      for (const entry of createdAccounts) {
+        await execute(
+          `INSERT INTO "UserReservedAccount"
+           ("userId", "billstackReference", "accountNumber", "accountName", "bankName", "bankId", "isPrimary", "createdAt", "updatedAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
+          [
+            userId,
+            entry.reference,
+            entry.account.account_number,
+            entry.account.account_name,
+            entry.account.bank_name,
+            entry.account.bank_id,
+            entry.account.bank_id === primaryAccount.account.bank_id,
+            entry.account.created_at,
+          ]
+        );
+      }
+
+      console.log("[SIGNUP] User updated with BillStack details:", {
+        userId,
+        accountCount: createdAccounts.length,
+        primaryBank: primaryAccount.account.bank_id,
+      });
     } catch (billstackError) {
       // BillStack failed - delete the user and return error
       console.error("[SIGNUP] BillStack integration failed:", billstackError);

@@ -2,27 +2,42 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { query, queryOne } from "@/lib/db";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+const lagosDateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Africa/Lagos",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+const toLagosDate = (value: string | Date) =>
+  lagosDateFormatter.format(new Date(value));
+
+const isSuccessfulStatus = (status: string | null | undefined) =>
+  String(status || "").toUpperCase() === "SUCCESS";
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin access using JWT role
     const sessionUser = await getSessionUser(request);
     if (!sessionUser || sessionUser.role !== "ADMIN") {
-      return NextResponse.json({ error: "Unauthorized - Admin access required" }, { status: 403, headers: utf8Headers });
+      return NextResponse.json(
+        { error: "Unauthorized - Admin access required" },
+        { status: 403, headers: utf8Headers }
+      );
     }
 
-    // Fetch user count
+    const { searchParams } = new URL(request.url);
+    const selectedDate = searchParams.get("date") || toLagosDate(new Date());
+
     const userCountResult = await queryOne<{ count: number }>(
       `SELECT COUNT(*) as count FROM "User"`,
       []
     );
     const userCount = userCountResult?.count || 0;
 
-    // Fetch all data transactions (gracefully handle if table doesn't exist)
     let dataTransactions: any[] = [];
     try {
       dataTransactions = await query<any>(
@@ -43,10 +58,11 @@ export async function GET(request: NextRequest) {
         []
       );
     } catch (error) {
-      console.warn("[ANALYTICS] DataTransaction table not found or error", { error: (error as any).message });
+      console.warn("[ANALYTICS] DataTransaction table not found or error", {
+        error: (error as any).message,
+      });
     }
 
-    // Fetch all cable transactions (gracefully handle if table doesn't exist)
     let cableTransactions: any[] = [];
     try {
       cableTransactions = await query<any>(
@@ -67,10 +83,11 @@ export async function GET(request: NextRequest) {
         []
       );
     } catch (error) {
-      console.warn("[ANALYTICS] CableTransaction table not found or error", { error: (error as any).message });
+      console.warn("[ANALYTICS] CableTransaction table not found or error", {
+        error: (error as any).message,
+      });
     }
 
-    // Fetch all power transactions (gracefully handle if table doesn't exist)
     let powerTransactions: any[] = [];
     try {
       powerTransactions = await query<any>(
@@ -91,10 +108,11 @@ export async function GET(request: NextRequest) {
         []
       );
     } catch (error) {
-      console.warn("[ANALYTICS] PowerTransaction table not found or error", { error: (error as any).message });
+      console.warn("[ANALYTICS] PowerTransaction table not found or error", {
+        error: (error as any).message,
+      });
     }
 
-    // Fetch all airtime transactions
     const airtimeTransactions = await query<any>(
       `SELECT 
         at.id,
@@ -112,7 +130,6 @@ export async function GET(request: NextRequest) {
       []
     );
 
-    // Fetch all wallet deposits (from webhook)
     const deposits = await query<any>(
       `SELECT 
         t.id,
@@ -126,12 +143,11 @@ export async function GET(request: NextRequest) {
         'DEPOSIT' as "type"
        FROM "Transaction" t
        LEFT JOIN "User" u ON t.user_id = u.id
-       WHERE t.type = 'deposit'
+       WHERE LOWER(t.type) = 'deposit'
        ORDER BY t.created_at DESC`,
       []
     );
 
-    // Combine all transactions
     const allTransactions = [
       ...dataTransactions,
       ...cableTransactions,
@@ -144,38 +160,77 @@ export async function GET(request: NextRequest) {
       return timeB - timeA;
     });
 
-    // Calculate metrics
-    const successfulTransactions = allTransactions.filter((t: any) => t.status === "SUCCESS");
-    const totalRevenue = successfulTransactions.reduce((sum: number, t: any) => {
-      const amount = typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0));
+    const filteredTransactions = allTransactions.filter(
+      (t: any) => t.createdAt && toLagosDate(t.createdAt) === selectedDate
+    );
+
+    const successfulTransactions = filteredTransactions.filter((t: any) =>
+      isSuccessfulStatus(t.status)
+    );
+    const successfulDeposits = successfulTransactions.filter(
+      (t: any) => String(t.type || "").toUpperCase() === "DEPOSIT"
+    );
+    const successfulSpends = successfulTransactions.filter(
+      (t: any) => String(t.type || "").toUpperCase() !== "DEPOSIT"
+    );
+
+    const totalDeposited = successfulDeposits.reduce((sum: number, t: any) => {
+      const amount =
+        typeof t.amount === "number"
+          ? t.amount
+          : parseFloat(String(t.amount || 0));
       return sum + amount;
     }, 0);
 
-    const recentTransactions = allTransactions.slice(0, 10).map((t: any) => ({
+    const totalSpent = successfulSpends.reduce((sum: number, t: any) => {
+      const amount =
+        typeof t.amount === "number"
+          ? t.amount
+          : parseFloat(String(t.amount || 0));
+      return sum + amount;
+    }, 0);
+
+    const totalUnspentDeposits = Math.max(totalDeposited - totalSpent, 0);
+
+    const recentTransactions = filteredTransactions.slice(0, 10).map((t: any) => ({
       id: t.id,
       type: t.type,
       user: { email: t.email || "N/A" },
       plan: { name: t.planName || "N/A" },
       phone: t.phone || "N/A",
-      amount: typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0)),
+      amount:
+        typeof t.amount === "number"
+          ? t.amount
+          : parseFloat(String(t.amount || 0)),
       status: t.status,
       createdAt: t.createdAt,
     }));
 
-    return NextResponse.json({
-      totalUsers: userCount,
-      totalRevenue,
-      totalTransactions: allTransactions.length,
-      successRate:
-        allTransactions.length > 0
-          ? Math.round((successfulTransactions.length / allTransactions.length) * 1000) / 10
-          : 0,
-      recentTransactions,
-    }, { headers: utf8Headers });
+    return NextResponse.json(
+      {
+        selectedDate,
+        totalUsers: userCount,
+        totalDeposited,
+        totalSpent,
+        totalUnspentDeposits,
+        totalTransactions: filteredTransactions.length,
+        successRate:
+          filteredTransactions.length > 0
+            ? Math.round(
+                (successfulTransactions.length / filteredTransactions.length) * 1000
+              ) / 10
+            : 0,
+        recentTransactions,
+      },
+      { headers: utf8Headers }
+    );
   } catch (error) {
     console.error("Analytics API error:", error);
     return NextResponse.json(
-      { error: "Failed to fetch analytics", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to fetch analytics",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500, headers: utf8Headers }
     );
   }

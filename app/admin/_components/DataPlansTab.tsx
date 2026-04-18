@@ -33,7 +33,8 @@ interface DataPlan {
   agentPrice: number;
   apiAId: string;
   apiBId: string;
-  activeApi: "A" | "B";
+  apiCId: string;
+  activeApi: "A" | "B" | "C";
   isActive: boolean;
 }
 
@@ -131,7 +132,8 @@ export default function DataPlansTab() {
     agentPrice: "",
     apiAId: "",
     apiBId: "",
-    activeApi: "A" as "A" | "B",
+    apiCId: "",
+    activeApi: "A" as "A" | "B" | "C",
     isActive: true,
   });
 
@@ -179,6 +181,7 @@ export default function DataPlansTab() {
       agentPrice: "",
       apiAId: "",
       apiBId: "",
+      apiCId: "",
       activeApi: "A",
       isActive: true,
     });
@@ -196,6 +199,7 @@ export default function DataPlansTab() {
       agentPrice: plan.agentPrice.toString(),
       apiAId: plan.apiAId,
       apiBId: plan.apiBId,
+      apiCId: plan.apiCId,
       activeApi: plan.activeApi,
       isActive: plan.isActive,
     });
@@ -206,6 +210,21 @@ export default function DataPlansTab() {
   const handleSavePlan = async () => {
     if (!formData.name || !formData.networkId || !formData.sizeLabel || !formData.validity || !formData.price) {
       toast.error("Please fill all required fields");
+      return;
+    }
+
+    if (formData.activeApi === "A" && !formData.apiAId) {
+      toast.error("API A ID is required when API A is active");
+      return;
+    }
+
+    if (formData.activeApi === "B" && !formData.apiBId) {
+      toast.error("API B ID is required when API B is active");
+      return;
+    }
+
+    if (formData.activeApi === "C" && !formData.apiCId) {
+      toast.error("API C ID is required when API C is active");
       return;
     }
 
@@ -223,6 +242,7 @@ export default function DataPlansTab() {
         agentPrice: formData.agentPrice ? parseFloat(formData.agentPrice) : undefined,
         apiAId: formData.apiAId || undefined,
         apiBId: formData.apiBId || undefined,
+        apiCId: formData.apiCId || undefined,
         activeApi: formData.activeApi,
         isActive: formData.isActive,
       };
@@ -290,9 +310,7 @@ export default function DataPlansTab() {
     }
   };
 
-  const handleToggleApi = async (plan: DataPlan) => {
-    const newActiveApi = plan.activeApi === "A" ? "B" : "A";
-
+  const handleSetActiveApi = async (plan: DataPlan, newActiveApi: DataPlan["activeApi"]) => {
     try {
       const res = await fetch(`/api/admin/plans/${plan.id}`, {
         method: "PATCH",
@@ -364,8 +382,9 @@ export default function DataPlansTab() {
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>Validity</th>
               <th style={{ padding: "12px 8px", textAlign: "right", color: T.textMuted, fontWeight: 600 }}>Price</th>
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>API A</th>
-              <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>API B</th>
-              <th style={{ padding: "12px 8px", textAlign: "center", color: T.textMuted, fontWeight: 600 }}>Active</th>
+                <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>API B</th>
+                <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>API C</th>
+                <th style={{ padding: "12px 8px", textAlign: "center", color: T.textMuted, fontWeight: 600 }}>Active</th>
               <th style={{ padding: "12px 8px", textAlign: "center", color: T.textMuted, fontWeight: 600 }}>Status</th>
               <th style={{ padding: "12px 8px", textAlign: "center", color: T.textMuted, fontWeight: 600 }}>Actions</th>
             </tr>
@@ -386,23 +405,31 @@ export default function DataPlansTab() {
                 <td style={{ padding: "12px 8px", color: T.textSecondary, fontSize: 11, fontFamily: "monospace" }}>
                   {plan.apiBId && String(plan.apiBId).length > 0 ? String(plan.apiBId).slice(0, 8) + "..." : "—"}
                 </td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary, fontSize: 11, fontFamily: "monospace" }}>
+                  {plan.apiCId && String(plan.apiCId).length > 0 ? String(plan.apiCId).slice(0, 8) + "..." : "—"}
+                </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
-                  <button
-                    onClick={() => handleToggleApi(plan)}
-                    style={{
-                      padding: "4px 12px",
-                      borderRadius: 6,
-                      background: plan.activeApi === "A" ? `${T.blue}30` : `${T.violet}30`,
-                      border: `1px solid ${plan.activeApi === "A" ? T.blue : T.violet}`,
-                      color: plan.activeApi === "A" ? T.blue : T.violet,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: font,
-                    }}
-                  >
-                    API {plan.activeApi}
-                  </button>
+                  <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+                    {(["A", "B", "C"] as const).map((api) => (
+                      <button
+                        key={api}
+                        onClick={() => handleSetActiveApi(plan, api)}
+                        style={{
+                          padding: "4px 10px",
+                          borderRadius: 6,
+                          background: plan.activeApi === api ? T.blue : T.bgElevated,
+                          border: `1px solid ${plan.activeApi === api ? T.blue : T.border}`,
+                          color: plan.activeApi === api ? "#fff" : T.textSecondary,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontFamily: font,
+                        }}
+                      >
+                        {api}
+                      </button>
+                    ))}
+                  </div>
                 </td>
                 <td style={{ padding: "12px 8px", textAlign: "center" }}>
                   <span
@@ -694,14 +721,38 @@ export default function DataPlansTab() {
             />
           </div>
 
+          {/* API C ID */}
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 600 }}>
+              API C ID
+            </label>
+            <input
+              type="text"
+              placeholder="Provider C plan ID"
+              value={formData.apiCId}
+              onChange={(e) => setFormData({ ...formData, apiCId: e.target.value })}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: T.bgElevated,
+                border: `1px solid ${T.border}`,
+                color: T.textPrimary,
+                fontSize: 14,
+                fontFamily: font,
+              }}
+            />
+          </div>
+
           {/* Active API */}
           <div>
             <label style={{ display: "block", fontSize: 12, color: T.textMuted, marginBottom: 8, fontWeight: 600 }}>
               Active API
             </label>
             <div style={{ display: "flex", gap: 8 }}>
-              {(["A", "B"] as const).map((api) => (
+              {(["A", "B", "C"] as const).map((api) => (
                 <button
+                  type="button"
                   key={api}
                   onClick={() => setFormData({ ...formData, activeApi: api })}
                   style={{

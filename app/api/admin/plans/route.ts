@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
       agentPrice: typeof plan.agentPrice === 'number' ? plan.agentPrice : parseFloat(String(plan.agentPrice || 0)),
       apiAId: String(plan.apiAId || ""),
       apiBId: String(plan.apiBId || ""),
+      apiCId: String(plan.apiCId || ""),
       activeApi: plan.activeApi || "A",
       isActive: plan.isActive === true,
     })), { headers: utf8Headers });
@@ -66,6 +67,7 @@ async function createHandler(request: NextRequest) {
       agentPrice,
       apiAId,
       apiBId,
+      apiCId,
       activeApi,
       isActive,
     } = body;
@@ -140,6 +142,43 @@ async function createHandler(request: NextRequest) {
       );
     }
 
+    const apiCIdNum = apiCId ? parseInt(String(apiCId)) : null;
+    if (apiCId && (isNaN(apiCIdNum!) || apiCIdNum! <= 0)) {
+      console.log("[DATA_PLAN_CREATE] INVALID_API_C_ID:", { received: apiCId, parsed: apiCIdNum });
+      return NextResponse.json(
+        { error: `Invalid apiCId: received '${apiCId}', must be a positive integer` },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (!["A", "B", "C"].includes(activeApi || "A")) {
+      return NextResponse.json(
+        { error: "activeApi must be one of A, B, or C" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (activeApi === "A" && !apiAIdNum) {
+      return NextResponse.json(
+        { error: "apiAId is required when activeApi is A" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (activeApi === "B" && !apiBIdNum) {
+      return NextResponse.json(
+        { error: "apiBId is required when activeApi is B" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
+    if (activeApi === "C" && !apiCIdNum) {
+      return NextResponse.json(
+        { error: "apiCId is required when activeApi is C" },
+        { status: 400, headers: utf8Headers }
+      );
+    }
+
     console.log("[DATA_PLAN_CREATE] VALIDATED_DATA:", {
       name,
       networkIdNum,
@@ -150,13 +189,14 @@ async function createHandler(request: NextRequest) {
       agentPriceNum,
       apiAIdNum,
       apiBIdNum,
+      apiCIdNum,
     });
 
     const plan = await queryOne<any>(
       `INSERT INTO "DataPlan" 
        (id, name, "networkId", "networkName", "sizeLabel", validity, price, "userPrice", 
-        "agentPrice", "apiAId", "apiBId", "activeApi", "isActive", "createdAt")
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+        "agentPrice", "apiAId", "apiBId", "apiCId", "activeApi", "isActive", "createdAt")
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW())
        RETURNING *`,
       [
         name,
@@ -169,6 +209,7 @@ async function createHandler(request: NextRequest) {
         agentPriceNum,
         apiAIdNum,
         apiBIdNum,
+        apiCIdNum,
         activeApi || "A",
         isActive !== false,
       ]

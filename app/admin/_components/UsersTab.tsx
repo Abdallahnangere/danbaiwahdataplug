@@ -45,6 +45,7 @@ interface UserTransaction {
 export default function UsersTab() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [userTransactions, setUserTransactions] = useState<UserTransaction[]>([]);
@@ -206,8 +207,13 @@ export default function UsersTab() {
     (user) => {
       const emailLower = String(user.email || "").toLowerCase();
       const fullNameLower = String(user.fullName || "").toLowerCase();
+      const phoneLower = String(user.phone || "").toLowerCase();
       const queryLower = searchQuery.toLowerCase();
-      return emailLower.includes(queryLower) || fullNameLower.includes(queryLower);
+      return (
+        emailLower.includes(queryLower) ||
+        fullNameLower.includes(queryLower) ||
+        phoneLower.includes(queryLower)
+      );
     }
   );
 
@@ -221,6 +227,79 @@ export default function UsersTab() {
 
   return (
     <div style={{ fontFamily: font }}>
+      <div style={{
+        display: "flex",
+        gap: 12,
+        alignItems: "center",
+        marginBottom: 16,
+        flexWrap: "wrap",
+      }}>
+        <div style={{ position: "relative", flex: "1 1 280px", maxWidth: 420 }}>
+          <Search size={16} color={T.textMuted} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }} />
+          <input
+            type="text"
+            placeholder="Search by name, email, or phone"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") setSearchQuery(searchInput.trim());
+            }}
+            style={{
+              width: "100%",
+              padding: "11px 12px 11px 36px",
+              borderRadius: 10,
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              color: T.textPrimary,
+              fontSize: 14,
+              fontFamily: font,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <button
+          onClick={() => setSearchQuery(searchInput.trim())}
+          style={{
+            padding: "11px 16px",
+            borderRadius: 10,
+            background: T.blue,
+            border: "none",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: font,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Search size={16} />
+          Search
+        </button>
+        {(searchQuery || searchInput) && (
+          <button
+            onClick={() => {
+              setSearchInput("");
+              setSearchQuery("");
+            }}
+            style={{
+              padding: "11px 16px",
+              borderRadius: 10,
+              background: T.bgElevated,
+              border: `1px solid ${T.border}`,
+              color: T.textSecondary,
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              fontFamily: font,
+            }}
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Users table */}
       <div style={{
         padding: 20,

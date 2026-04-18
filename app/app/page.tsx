@@ -6,7 +6,7 @@ import Image from "next/image";
 
 import {
   Wifi, Phone, Tv, Zap, BookOpen, Home, History, Settings as SettingsIcon,
-  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check, Mail,
+  Eye, EyeOff, Copy, Loader2, ChevronRight, X, ArrowLeft, Check, Mail, Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
@@ -67,10 +67,22 @@ interface User {
   accountName?: string;
 }
 
+interface ReservedAccount {
+  id: string;
+  billstackReference?: string | null;
+  accountNumber: string;
+  accountName?: string | null;
+  bankName?: string | null;
+  bankId: string;
+  isPrimary: boolean;
+  createdAt?: string | null;
+}
+
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
 const ACCOUNT_SERVICES = [
+  { id: "accounts",     label: "Accounts",      icon: Landmark },
   { id: "transactions", label: "Transactions",  icon: History },
   { id: "settings",    label: "Settings",       icon: SettingsIcon },
 ];
@@ -83,6 +95,8 @@ export default function DanbaiwaApp() {
   const [balanceVisible, setBalanceVisible]     = useState(true);
   const [loading, setLoading]                   = useState(true);
   const [transactions, setTransactions]         = useState<any[]>([]);
+  const [accounts, setAccounts]                 = useState<ReservedAccount[]>([]);
+  const [accountsLoading, setAccountsLoading]   = useState(false);
   const [showSettingsModal, setShowSettingsModal]         = useState(false);
   const [showTransactionsModal, setShowTransactionsModal] = useState(false);
   const [showPinChangeModal, setShowPinChangeModal]       = useState(false);
@@ -187,6 +201,25 @@ export default function DanbaiwaApp() {
       } catch {}
     })();
   }, [showTransactionsModal]);
+
+  useEffect(() => {
+    if (activeTab !== "accounts") return;
+
+    (async () => {
+      try {
+        setAccountsLoading(true);
+        const res = await fetch("/api/accounts", { credentials: "include" });
+        if (!res.ok) throw new Error("Failed to fetch accounts");
+        const data = await res.json();
+        setAccounts(Array.isArray(data.accounts) ? data.accounts : []);
+      } catch {
+        toast.error("Failed to load reserved accounts");
+        setAccounts([]);
+      } finally {
+        setAccountsLoading(false);
+      }
+    })();
+  }, [activeTab]);
 
   // Load networks when data tab is accessed
   useEffect(() => {
@@ -356,6 +389,7 @@ export default function DanbaiwaApp() {
 
   const NAV = [
     { id: "home",         icon: Home,           label: "Home"         },
+    { id: "accounts",     icon: Landmark,       label: "Accounts"     },
     { id: "transactions", icon: History,         label: "Transactions" },
     { id: "settings",     icon: SettingsIcon,    label: "Settings"     },
   ];
@@ -2907,7 +2941,8 @@ export default function DanbaiwaApp() {
                     <button
                       key={item.id}
                       onClick={() => {
-                        if (item.id === "transactions") setShowTransactionsModal(true);
+                        if (item.id === "accounts") setActiveTab("accounts");
+                        else if (item.id === "transactions") setShowTransactionsModal(true);
                         else setShowSettingsModal(true);
                       }}
                       style={{
@@ -2938,6 +2973,149 @@ export default function DanbaiwaApp() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {activeTab === "accounts" && (
+            <div style={{ padding: "20px 20px 120px", fontFamily: font }}>
+              <button
+                onClick={() => setActiveTab("home")}
+                style={{
+                  background: T.bgElevated, border: `1px solid ${T.border}`,
+                  borderRadius: 12, padding: "10px 16px",
+                  display: "flex", alignItems: "center", gap: 8,
+                  color: T.blue, fontSize: 14, fontWeight: 600,
+                  cursor: "pointer", marginBottom: 24, fontFamily: font,
+                }}
+              >
+                <ArrowLeft size={16} /> Back
+              </button>
+
+              <div style={{ marginBottom: 20 }}>
+                <h1 style={{
+                  margin: "0 0 8px", fontSize: 28, fontWeight: 800,
+                  color: T.textPrimary, letterSpacing: "-0.6px",
+                }}>
+                  Accounts
+                </h1>
+                <p style={{
+                  margin: 0, fontSize: 14, color: T.textSecondary, lineHeight: 1.6,
+                }}>
+                  All reserved accounts created for your wallet. Your primary account stays on the wallet card.
+                </p>
+              </div>
+
+              {accountsLoading ? (
+                <div style={{ display: "flex", justifyContent: "center", padding: "40px 20px" }}>
+                  <Loader2 size={28} style={{ color: T.blue, animation: "spin 1s linear infinite" }} />
+                </div>
+              ) : accounts.length === 0 ? (
+                <div style={{
+                  background: T.bgCard,
+                  borderRadius: 20,
+                  border: `1px solid ${T.border}`,
+                  padding: 24,
+                  textAlign: "center",
+                }}>
+                  <p style={{ margin: 0, color: T.textSecondary, fontSize: 14 }}>
+                    No reserved accounts available yet.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 14 }}>
+                  {accounts.map((account) => (
+                    <div
+                      key={account.id}
+                      style={{
+                        background: T.bgCard,
+                        borderRadius: 20,
+                        border: `1px solid ${T.border}`,
+                        padding: 18,
+                        boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+                        <div>
+                          <p style={{ margin: "0 0 6px", fontSize: 12, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "1px" }}>
+                            {account.bankName || account.bankId}
+                          </p>
+                          <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: T.textPrimary, fontFamily: "monospace", letterSpacing: "0.5px" }}>
+                            {account.accountNumber}
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          {account.isPrimary && (
+                            <span style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              padding: "6px 10px",
+                              borderRadius: 999,
+                              background: `${T.blue}20`,
+                              border: `1px solid ${T.blue}40`,
+                              color: T.blueLight,
+                              fontSize: 11,
+                              fontWeight: 700,
+                            }}>
+                              Primary
+                            </span>
+                          )}
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(account.accountNumber);
+                              toast.success("Account number copied!");
+                            }}
+                            style={{
+                              background: T.bgElevated,
+                              border: `1px solid ${T.border}`,
+                              borderRadius: 12,
+                              padding: "8px 12px",
+                              color: T.textPrimary,
+                              fontWeight: 700,
+                              cursor: "pointer",
+                              fontSize: 12,
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                            }}
+                          >
+                            <Copy size={14} />
+                            Copy
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ display: "grid", gap: 10 }}>
+                        <div>
+                          <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.8px" }}>
+                            Account Name
+                          </p>
+                          <p style={{ margin: 0, fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>
+                            {account.accountName || "—"}
+                          </p>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                          <div>
+                            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.8px" }}>
+                              Bank ID
+                            </p>
+                            <p style={{ margin: 0, fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
+                              {account.bankId}
+                            </p>
+                          </div>
+                          <div>
+                            <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: T.textMuted, textTransform: "uppercase", letterSpacing: "0.8px" }}>
+                              Reference
+                            </p>
+                            <p style={{ margin: 0, fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
+                              {account.billstackReference || "—"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -3115,13 +3293,16 @@ export default function DanbaiwaApp() {
           const Icon  = tab.icon;
           const isActive = tab.id === "home"
             ? activeTab === "home"
-            : false;
+            : tab.id === "accounts"
+              ? activeTab === "accounts"
+              : false;
 
           return (
             <button
               key={tab.id}
               onClick={() => {
                 if (tab.id === "home")         setActiveTab("home");
+                if (tab.id === "accounts")     setActiveTab("accounts");
                 if (tab.id === "transactions") setShowTransactionsModal(true);
                 if (tab.id === "settings")     setShowSettingsModal(true);
               }}
