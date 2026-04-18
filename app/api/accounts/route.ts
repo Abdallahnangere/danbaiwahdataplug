@@ -14,6 +14,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+const BILLSTACK_FALLBACK_EMAIL =
+  process.env.BILLSTACK_DEFAULT_EMAIL || "accounts@danbaiwahdataplug.com";
 
 type ReservedAccountRow = {
   id: string;
@@ -113,7 +115,7 @@ const createReservedAccountForUser = async (
   bank: BillStackBankCode
 ) => {
   const user = await getUserPrimaryAccount(userId);
-  if (!user || !user.name || !user.email || !user.phone) {
+  if (!user || !user.name || !user.phone) {
     throw new Error("User profile is incomplete for account creation");
   }
 
@@ -133,7 +135,7 @@ const createReservedAccountForUser = async (
   const { firstName, lastName } = splitName(user.name);
   const reference = generateBillStackReference(userId, bank);
   const billstackResponse = await createBillStackVirtualAccount({
-    email: user.email,
+    email: user.email || BILLSTACK_FALLBACK_EMAIL,
     reference,
     firstName,
     lastName,
