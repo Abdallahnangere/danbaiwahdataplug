@@ -131,7 +131,13 @@ export async function POST(request: NextRequest) {
       id: string;
       balance: number;
     }>(
-      `SELECT id, balance FROM "User" WHERE account_number = $1`,
+      `SELECT u.id, u.balance
+       FROM "User" u
+       LEFT JOIN "UserReservedAccount" ura
+         ON ura."userId" = u.id
+       WHERE u.account_number = $1
+          OR ura."accountNumber" = $1
+       LIMIT 1`,
       [accountNumber]
     );
 
