@@ -9,6 +9,10 @@ export async function middleware(req: NextRequest) {
   response.headers.set("X-XSS-Protection", "1; mode=block");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
   response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains"
+  );
+  response.headers.set(
     "Permissions-Policy",
     "geolocation=(), microphone=(), camera=(), payment=()"
   );
@@ -16,7 +20,7 @@ export async function middleware(req: NextRequest) {
   // Strict Content-Security-Policy
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires inline scripts
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https:",
     "font-src 'self' data:",

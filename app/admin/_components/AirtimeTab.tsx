@@ -39,16 +39,17 @@ export default function AirtimeTab() {
   const [transactions, setTransactions] = useState<AirtimeTransaction[]>([]);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState("");
   const [network, setNetwork] = useState("");
   const [search, setSearch] = useState("");
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (nextPage = 1, append = false) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        page: String(page),
+        page: String(nextPage),
         limit: "20",
         ...(status && { status }),
         ...(network && { network }),
@@ -61,8 +62,11 @@ export default function AirtimeTab() {
 
       if (res.ok) {
         const data = await res.json();
-        setTransactions(data.data);
+        const rows = Array.isArray(data.data) ? data.data : [];
+        setTransactions((prev) => (append ? [...prev, ...rows] : rows));
         setTotal(data.total);
+        setHasMore(rows.length > 0 && nextPage * 20 < Number(data.total || 0));
+        setPage(nextPage);
       } else if (res.status === 403) {
         console.error("Admin access required");
       }
@@ -74,8 +78,8 @@ export default function AirtimeTab() {
   };
 
   useEffect(() => {
-    fetchTransactions();
-  }, [page, status, network, search]);
+    fetchTransactions(1, false);
+  }, [status, network, search]);
 
   const getStatusColor = (s: string) => {
     switch (s.toUpperCase()) {
@@ -216,19 +220,13 @@ export default function AirtimeTab() {
               Showing {transactions.length} of {total} transactions
             </span>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
-                style={{
-                  padding: "6px 12px", borderRadius: 6, background: page === 1 ? T.bgElevated : T.bgCard,
-                  border: `1px solid ${T.border}`, color: T.textPrimary, cursor: page === 1 ? "not-allowed" : "pointer",
-                  fontFamily: font, opacity: page === 1 ? 0.5 : 1,
-                }}>Previous</button>
               <span style={{ padding: "6px 12px", color: T.textSecondary }}>Page {page}</span>
-              <button onClick={() => setPage(p => p + 1)} disabled={page * 20 >= total}
+              <button onClick={() => fetchTransactions(page + 1, true)} disabled={!hasMore || loading}
                 style={{
-                  padding: "6px 12px", borderRadius: 6, background: page * 20 >= total ? T.bgElevated : T.bgCard,
-                  border: `1px solid ${T.border}`, color: T.textPrimary, cursor: page * 20 >= total ? "not-allowed" : "pointer",
-                  fontFamily: font, opacity: page * 20 >= total ? 0.5 : 1,
-                }}>Next</button>
+                  padding: "6px 12px", borderRadius: 6, background: !hasMore ? T.bgElevated : T.bgCard,
+                  border: `1px solid ${T.border}`, color: T.textPrimary, cursor: !hasMore ? "not-allowed" : "pointer",
+                  fontFamily: font, opacity: !hasMore ? 0.5 : 1,
+                }}>{loading ? "Loading..." : "Load more"}</button>
             </div>
           </div>
         </>

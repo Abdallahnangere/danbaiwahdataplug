@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Loader2, Search, MessageCircle, Plus, Minus, DollarSign, History, X, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,6 +49,9 @@ export default function UsersTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [userTransactions, setUserTransactions] = useState<UserTransaction[]>([]);
+  const [txPage, setTxPage] = useState(1);
+  const [txHasMore, setTxHasMore] = useState(false);
+  const txLoadMoreRef = useRef<HTMLDivElement | null>(null);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const [balanceOperation, setBalanceOperation] = useState<"" | "add" | "subtract" | "set">("");
   const [balanceAmount, setBalanceAmount] = useState("");
@@ -79,18 +82,19 @@ export default function UsersTab() {
   }, []);
 
   // Fetch user transactions
-  const fetchUserTransactions = async (userId: string) => {
+  const fetchUserTransactions = async (userId: string, page = 1, append = false) => {
     setTransactionsLoading(true);
     try {
-      const res = await fetch(`/api/admin/users/${userId}/transactions`, { credentials: "include" });
+      const res = await fetch(`/api/admin/users/${userId}/transactions?page=${page}&limit=20`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch transactions");
       const json = await res.json();
-      if (Array.isArray(json)) {
-        setUserTransactions(json);
-      }
+      const rows = Array.isArray(json.data) ? json.data : [];
+      setUserTransactions((prev) => (append ? [...prev, ...rows] : rows));
+      setTxHasMore(!!json.hasMore);
+      setTxPage(page);
     } catch (error) {
       toast.error("Failed to load user transactions");
-      setUserTransactions([]);
+      if (!append) setUserTransactions([]);
     } finally {
       setTransactionsLoading(false);
     }
@@ -99,10 +103,25 @@ export default function UsersTab() {
   // Handle user selection
   const handleSelectUser = async (user: AdminUser) => {
     setSelectedUser(user);
-    await fetchUserTransactions(user.id);
+    setUserTransactions([]);
+    await fetchUserTransactions(user.id, 1, false);
     setBalanceOperation("");
     setBalanceAmount("");
   };
+
+  useEffect(() => {
+    if (!selectedUser || !txHasMore || transactionsLoading) return;
+    const node = txLoadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver((entries) => {
+      const first = entries[0];
+      if (first?.isIntersecting && !transactionsLoading && txHasMore) {
+        fetchUserTransactions(selectedUser.id, txPage + 1, true);
+      }
+    }, { threshold: 0.6 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [selectedUser, txHasMore, transactionsLoading, txPage]);
 
   // Handle balance operation
   const handleBalanceOperation = async () => {
@@ -781,6 +800,26 @@ export default function UsersTab() {
                       </div>
                     </div>
                   ))}
+                  {txHasMore ? (
+                    <button
+                      onClick={() => selectedUser && fetchUserTransactions(selectedUser.id, txPage + 1, true)}
+                      disabled={transactionsLoading}
+                      style={{
+                        padding: "10px 12px",
+                        borderRadius: 8,
+                        background: T.bgCard,
+                        border: `1px solid ${T.border}`,
+                        color: T.textPrimary,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: transactionsLoading ? "not-allowed" : "pointer",
+                        opacity: transactionsLoading ? 0.7 : 1,
+                      }}
+                    >
+                      {transactionsLoading ? "Loading..." : "Load more"}
+                    </button>
+                  ) : null}
+                  <div ref={txLoadMoreRef} style={{ height: 1 }} />
                 </div>
               ) : (
                 <p style={{ margin: 0, color: T.textMuted, textAlign: "center", padding: "20px" }}>

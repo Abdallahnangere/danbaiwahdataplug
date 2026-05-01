@@ -7,9 +7,11 @@ let cachedSecret: Uint8Array | null = null;
 
 const getSecret = (): Uint8Array => {
   if (!cachedSecret) {
-    cachedSecret = new TextEncoder().encode(
-      process.env.JWT_SECRET || "your-super-secret-jwt-key-min-32-chars"
-    );
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.length < 32) {
+      throw new Error("JWT_SECRET is missing or too weak");
+    }
+    cachedSecret = new TextEncoder().encode(secret);
   }
   return cachedSecret;
 };

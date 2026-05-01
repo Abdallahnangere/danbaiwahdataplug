@@ -7,7 +7,6 @@ export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify admin access using JWT role
     const sessionUser = await getSessionUser(request);
     if (!sessionUser || sessionUser.role !== "ADMIN") {
       return NextResponse.json(
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
 
     const offset = (page - 1) * limit;
-    let whereClause = "1=1";
+    let whereClause = "category = 'AIRTIME'";
     const params: any[] = [];
 
     if (status) {
@@ -33,36 +32,33 @@ export async function GET(request: NextRequest) {
     }
 
     if (network && !isNaN(parseInt(network))) {
-      whereClause += ` AND network = $${params.length + 1}`;
+      whereClause += ` AND network_id = $${params.length + 1}`;
       params.push(parseInt(network));
     }
 
     if (search) {
-      whereClause += ` AND (mobile_number LIKE $${params.length + 1} OR ident LIKE $${params.length + 2})`;
-      params.push(`%${search}%`, `%${search}%`);
+      whereClause += ` AND (target LIKE $${params.length + 1} OR reference LIKE $${params.length + 2} OR provider_ref LIKE $${params.length + 3})`;
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const offsetParam = `$${params.length + 1}`;
     const limitParam = `$${params.length + 2}`;
-
     params.push(offset, limit);
 
-    // Fetch transactions
     const transactions = await query(
       `SELECT 
-        id, user_id, ident, network, network_name, mobile_number, amount, 
-        status, api_response, description, balance_before, balance_after, created_at, updated_at
-       FROM airtime_transactions
+        id, user_id, reference as ident, network_id as network, network_name, target as mobile_number, amount, 
+        status, provider_response as api_response, provider_response as description, balance_before, balance_after, created_at, updated_at
+       FROM public.transactions
        WHERE ${whereClause}
        ORDER BY created_at DESC
        OFFSET ${offsetParam} LIMIT ${limitParam}`,
       params
     );
 
-    // Fetch total count
     const countParams = params.slice(0, -2);
     const countResult = await query(
-      `SELECT COUNT(*) as total FROM airtime_transactions WHERE ${whereClause}`,
+      `SELECT COUNT(*) as total FROM public.transactions WHERE ${whereClause}`,
       countParams
     );
 

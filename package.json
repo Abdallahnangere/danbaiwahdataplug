@@ -9,9 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^0.9.0",
     "@base-ui/react": "^1.3.0",
     "@fontsource/inter": "^5.2.8",
+    "@neondatabase/serverless": "^0.9.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-select": "^2.2.6",
@@ -48,8 +48,15 @@
     "es-toolkit": "^1.20.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.3",
+    "object-keys": "^1.1.1",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.0.0",
     "zod": "^4.3.6"
+  },
+  "overrides": {
+    "postcss": "^8.5.10",
+    "follow-redirects": "^1.15.12",
+    "hono": "^4.12.14",
+    "@hono/node-server": "^1.19.13"
   }
 }

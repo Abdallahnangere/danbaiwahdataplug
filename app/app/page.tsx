@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import PinInput from "@/components/PinInput";
 import SuccessCheck from "@/components/SuccessCheck";
 import EnhancedSettingsPanel from "@/components/EnhancedSettingsPanel";
+import TransactionReceipt from "@/components/TransactionReceipt";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const T = {
@@ -92,6 +93,13 @@ interface AirtimeNetwork {
   hexColor: string;
 }
 
+const DATA_NETWORK_PREFIXES: Array<{ id: number; prefix: RegExp }> = [
+  { id: 1, prefix: /^(0803|0806|0703|0706|0810|0813|0814|0816|0903|0906|0913|0916)/ }, // MTN
+  { id: 4, prefix: /^(0801|0802|0808|0812|0701|0708|0902|0904|0907|0912)/ }, // Airtel
+  { id: 2, prefix: /^(0805|0807|0811|0815|0705|0905|0915)/ }, // Glo
+  { id: 3, prefix: /^(0809|0817|0818|0908|0909)/ }, // 9mobile
+];
+
 const getInitials = (name: string) =>
   name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
@@ -117,6 +125,10 @@ export default function DanbaiwaApp() {
   const [balanceVisible, setBalanceVisible]     = useState(true);
   const [loading, setLoading]                   = useState(true);
   const [transactions, setTransactions]         = useState<any[]>([]);
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const [transactionsHasMore, setTransactionsHasMore] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const transactionsLoadMoreRef = useRef<HTMLDivElement | null>(null);
   const [accounts, setAccounts]                 = useState<ReservedAccount[]>([]);
   const [accountsLoading, setAccountsLoading]   = useState(false);
   const [broadcasts, setBroadcasts]             = useState<BroadcastMessage[]>([]);
@@ -137,6 +149,7 @@ export default function DanbaiwaApp() {
   const [selectedNetwork, setSelectedNetwork] = useState<any | null>(null);
   const [phone, setPhone] = useState("");
   const [plans, setPlans] = useState<any[]>([]);
+  const [planCategory, setPlanCategory] = useState<"SME" | "GIFTING" | "CORPORATE">("SME");
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
   const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
   const [buyDataLoading, setBuyDataLoading] = useState(false);
@@ -216,18 +229,40 @@ export default function DanbaiwaApp() {
     return () => clearInterval(interval);
   }, [activeTab, user]);
 
+  const fetchTransactionsPage = async (page: number, append = false) => {
+    try {
+      setTransactionsLoading(true);
+      const res = await fetch(`/api/transactions?page=${page}&limit=20`, { credentials: "include" });
+      if (!res.ok) return;
+      const data = await res.json();
+      const rows = Array.isArray(data.transactions) ? data.transactions : [];
+      setTransactions((prev) => (append ? [...prev, ...rows] : rows));
+      setTransactionsHasMore(!!data.hasMore);
+      setTransactionsPage(page);
+    } finally {
+      setTransactionsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!showTransactionsModal) return;
-    (async () => {
-      try {
-        const res = await fetch("/api/transactions", { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          setTransactions(Array.isArray(data.transactions) ? data.transactions : []);
-        }
-      } catch {}
-    })();
+    setTransactions([]);
+    fetchTransactionsPage(1, false);
   }, [showTransactionsModal]);
+
+  useEffect(() => {
+    if (!showTransactionsModal || !transactionsHasMore || transactionsLoading) return;
+    const node = transactionsLoadMoreRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver((entries) => {
+      const first = entries[0];
+      if (first?.isIntersecting && transactionsHasMore && !transactionsLoading) {
+        fetchTransactionsPage(transactionsPage + 1, true);
+      }
+    }, { threshold: 0.5 });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [showTransactionsModal, transactionsHasMore, transactionsLoading, transactionsPage]);
 
   const fetchBroadcasts = async () => {
     try {
@@ -338,6 +373,10 @@ export default function DanbaiwaApp() {
           : [];
         
         setPlans(uniquePlans);
+        const available = ["SME", "GIFTING", "CORPORATE"].find((cat) =>
+          uniquePlans.some((p: any) => (p.category || "SME") === cat)
+        ) as "SME" | "GIFTING" | "CORPORATE" | undefined;
+        setPlanCategory(available || "SME");
       } catch (error) {
         toast.error("Couldn't load plans. Check your connection.");
         setBuyDataStage(1);
@@ -661,6 +700,12 @@ export default function DanbaiwaApp() {
     if (buyDataStage === 1) {
       const phoneIsValid = phone.length === 11 && /^\d{11}$/.test(phone);
       const canContinue = selectedNetwork !== null && phoneIsValid;
+      const detectDataNetwork = (value: string) => {
+        const prefix = value.slice(0, 4);
+        const match = DATA_NETWORK_PREFIXES.find((n) => n.prefix.test(prefix));
+        if (!match) return null;
+        return networks.find((n) => Number(n.id) === match.id) || null;
+      };
 
       return (
         <div
@@ -680,9 +725,9 @@ export default function DanbaiwaApp() {
             Select Network
           </h2>
 
-          {/* Network selector - 2x2 grid */}
+          {/* Network selector - compact single row */}
           <div style={{
-            display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 28,
+            display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 8, marginBottom: 20,
           }}>
             {networks.map((net) => {
               const isSelected = selectedNetwork?.id === net.id;
@@ -692,28 +737,29 @@ export default function DanbaiwaApp() {
                   onClick={() => setSelectedNetwork(net)}
                   style={{
                     position: "relative",
-                    padding: 16,
-                    borderRadius: 16,
+                    padding: 6,
+                    borderRadius: 10,
                     background: isSelected ? `${T.blue}15` : T.bgCard,
-                    border: `2px solid ${isSelected ? T.blue : T.border}`,
+                    border: `1.5px solid ${isSelected ? T.blue : T.border}`,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
-                    gap: 8,
+                    gap: 4,
                     cursor: "pointer",
                     transition: "all 150ms ease",
                     fontFamily: font,
+                    minHeight: 52,
                   }}
                   role="radio"
                   aria-checked={isSelected}
                 >
-                  <div style={{ position: "relative", width: 28, height: 28 }}>
+                  <div style={{ position: "relative", width: 14, height: 14 }}>
                     <Image
                       src={net.logo}
                       alt={net.name}
                       fill
                       className="object-contain"
-                      sizes="28px"
+                      sizes="14px"
                       priority
                       onError={(e) => {
                         // Fallback if image fails to load
@@ -722,10 +768,11 @@ export default function DanbaiwaApp() {
                     />
                   </div>
                   <span style={{
-                    fontSize: 13,
-                    fontWeight: 600,
+                    fontSize: 10,
+                    fontWeight: 700,
                     color: T.textPrimary,
                     textAlign: "center",
+                    lineHeight: 1.1,
                   }}>
                     {net.name}
                   </span>
@@ -735,10 +782,10 @@ export default function DanbaiwaApp() {
                     <div
                       style={{
                         position: "absolute",
-                        top: 8,
-                        right: 8,
-                        width: 24,
-                        height: 24,
+                        top: 4,
+                        right: 4,
+                        width: 14,
+                        height: 14,
                         borderRadius: "50%",
                         background: T.blue,
                         display: "flex",
@@ -746,7 +793,7 @@ export default function DanbaiwaApp() {
                         justifyContent: "center",
                       }}
                     >
-                      <Check size={14} color="#fff" strokeWidth={3} />
+                      <Check size={9} color="#fff" strokeWidth={3} />
                     </div>
                   )}
                 </button>
@@ -773,6 +820,10 @@ export default function DanbaiwaApp() {
               onChange={(e) => {
                 const digits = e.target.value.replace(/\D/g, "").slice(0, 11);
                 setPhone(digits);
+                if (digits.length >= 4) {
+                  const detected = detectDataNetwork(digits);
+                  if (detected) setSelectedNetwork(detected);
+                }
               }}
               onKeyDown={(e) => {
                 const isDigit = /^\d$/.test(e.key);
@@ -933,12 +984,34 @@ export default function DanbaiwaApp() {
               </p>
             </div>
           ) : (
+            <>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              {(["SME", "GIFTING", "CORPORATE"] as const).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setPlanCategory(cat)}
+                  style={{
+                    padding: "8px 12px",
+                    borderRadius: 999,
+                    border: `1px solid ${planCategory === cat ? T.blue : T.border}`,
+                    background: planCategory === cat ? `${T.blue}25` : T.bgCard,
+                    color: planCategory === cat ? T.blue : T.textSecondary,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    fontFamily: font,
+                  }}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
             <div style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 12,
             }}>
-              {plans.map((plan) => (
+              {plans.filter((plan) => (plan.category || "SME") === planCategory).map((plan) => (
                 <button
                   key={plan.id}
                   onClick={() => {
@@ -986,6 +1059,7 @@ export default function DanbaiwaApp() {
                 </button>
               ))}
             </div>
+            </>
           )}
         </div>
       );
@@ -1264,52 +1338,15 @@ export default function DanbaiwaApp() {
               Your {selectedPlan?.sizeLabel} has been sent to {phone}
             </p>
 
-            {/* Receipt summary */}
-            <div style={{
-              background: T.bgElevated,
-              borderRadius: 16,
-              padding: 20,
-              marginBottom: 28,
-              border: `1px solid ${T.border}`,
-              textAlign: "left",
-            }}>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
-                  Reference
-                </div>
-                <div style={{
-                  fontSize: 15,
-                  fontWeight: 700,
-                  color: T.textPrimary,
-                  fontFamily: "monospace",
-                  wordBreak: "break-all",
-                }}>
-                  {successData?.reference}
-                </div>
-              </div>
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
-                  Amount Paid
-                </div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                  ₦{(successData?.amount || 0).toLocaleString()}
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>
-                  Date
-                </div>
-                <div style={{ fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>
-                  {new Date().toLocaleDateString("en-NG", {
-                    weekday: "short",
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </div>
-              </div>
+            <div style={{ marginBottom: 28, textAlign: "left" }}>
+              <TransactionReceipt
+                beneficiaryNumber={phone}
+                planBought={selectedPlan?.sizeLabel || selectedPlan?.name || "Data Plan"}
+                price={Number(successData?.amount || 0)}
+                status={String(successData?.status || "SUCCESS")}
+                reference={String(successData?.reference || "")}
+              />
             </div>
-
             {/* Done button */}
             <button
               onClick={() => {
@@ -1720,17 +1757,15 @@ export default function DanbaiwaApp() {
           <h2 style={{ margin: "16px 0 8px", fontSize: 24, fontWeight: 800, color: T.textPrimary }}>Airtime Sent!</h2>
           <p style={{ margin: "0 0 24px", fontSize: 14, color: T.textSecondary }}>
             ₦{(parseInt(airtimeAmount) || 0).toLocaleString()} to {airtimePhone}
-          </p>
-
-          <div style={{
-            background: T.bgElevated, borderRadius: 16, padding: 16, marginBottom: 24, border: `1px solid ${T.border}`, textAlign: "left",
-          }}>
-            <div style={{ marginBottom: 12, fontSize: 13 }}>
-              <div style={{ color: T.textMuted, fontWeight: 500, marginBottom: 2 }}>Reference</div>
-              <div style={{ color: T.textPrimary, fontWeight: 600, fontFamily: "monospace" }}>{airtimeSuccessData?.reference || "--"}</div>
-            </div>
+          </p>`r`n          <div style={{ marginBottom: 24, textAlign: "left" }}>
+            <TransactionReceipt
+              beneficiaryNumber={airtimePhone}
+              planBought={`${airtimeNetwork?.name || "Network"} Airtime`}
+              price={Number(parseInt(airtimeAmount) || 0)}
+              status={String(airtimeSuccessData?.status || "SUCCESS")}
+              reference={String(airtimeSuccessData?.reference || "--")}
+            />
           </div>
-
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <button onClick={() => { setBuyAirtimeStage(1); setAirtimePhone(""); setAirtimeAmount(""); setAirtimeNetwork(null); setAirtimeSuccessData(null); setBuyAirtimeError(""); setShowNetworkWarning(false); setAirtimePinInput(["", "", "", "", "", ""]); }}
               style={{
@@ -3614,7 +3649,7 @@ export default function DanbaiwaApp() {
       <Modal show={showTransactionsModal} onClose={() => setShowTransactionsModal(false)}>
         <ModalHeader title="Transactions" onClose={() => setShowTransactionsModal(false)} />
 
-        {transactions.length === 0 ? (
+        {transactions.length === 0 && !transactionsLoading ? (
           <div style={{ textAlign: "center", padding: "48px 20px" }}>
             <div style={{
               width: 72, height: 72, borderRadius: 22, margin: "0 auto 20px",
@@ -3716,6 +3751,29 @@ export default function DanbaiwaApp() {
                 </div>
               );
             })}
+            {transactionsLoading ? (
+              <div style={{ textAlign: "center", color: T.textSecondary, fontSize: 12, padding: 12 }}>Loading...</div>
+            ) : null}
+            {transactionsHasMore && !transactionsLoading ? (
+              <button
+                onClick={() => fetchTransactionsPage(transactionsPage + 1, true)}
+                style={{
+                  marginTop: 8,
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: `1px solid ${T.border}`,
+                  background: T.bgElevated,
+                  color: T.textPrimary,
+                  fontWeight: 600,
+                  fontSize: 13,
+                  cursor: "pointer",
+                  fontFamily: font,
+                }}
+              >
+                Load more
+              </button>
+            ) : null}
+            <div ref={transactionsLoadMoreRef} style={{ height: 1 }} />
           </div>
         )}
       </Modal>
@@ -3881,3 +3939,6 @@ export default function DanbaiwaApp() {
     </div>
   );
 }
+
+
+

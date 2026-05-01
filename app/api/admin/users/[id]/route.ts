@@ -92,8 +92,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400, headers: utf8Headers });
     }
 
-    // Delete user and all related data
-    await execute(`DELETE FROM "DataTransaction" WHERE "userId" = $1`, [id]);
+    // Delete user (transactions cascade via FK on public.transactions)
     await execute(`DELETE FROM "User" WHERE id = $1`, [id]);
 
     return NextResponse.json({ success: true }, { headers: utf8Headers });

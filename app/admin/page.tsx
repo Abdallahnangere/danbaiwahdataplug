@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap, Megaphone } from "lucide-react";
+import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap, Megaphone, Webhook, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import AnalyticsTab from "./_components/AnalyticsTab";
 import DataPlansTab from "./_components/DataPlansTab";
@@ -12,6 +12,8 @@ import AirtimeTab from "./_components/AirtimeTab";
 import CableTab from "./_components/CableTab";
 import PowerTab from "./_components/PowerTab";
 import BroadcastsTab from "./_components/BroadcastsTab";
+import WebhooksTab from "./_components/WebhooksTab";
+import BalancesTab from "./_components/BalancesTab";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────
 const T = {
@@ -35,7 +37,7 @@ export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"analytics" | "broadcasts" | "plans" | "users" | "airtime" | "cable" | "power">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "balances" | "broadcasts" | "plans" | "users" | "airtime" | "cable" | "power" | "webhooks">("analytics");
 
   // Check if already authenticated via JWT/session
   useEffect(() => {
@@ -202,12 +204,14 @@ export default function AdminDashboard() {
 
   const TABS = [
     { id: "analytics" as const, label: "Analytics", icon: BarChart3 },
+    { id: "balances" as const, label: "Balances", icon: Wallet },
     { id: "broadcasts" as const, label: "Broadcasts", icon: Megaphone },
     { id: "plans" as const, label: "Data Plans", icon: Database },
     { id: "users" as const, label: "Users", icon: Users },
     { id: "airtime" as const, label: "Airtime", icon: Phone },
     { id: "cable" as const, label: "Cable TV", icon: Tv },
     { id: "power" as const, label: "Power", icon: Zap },
+    { id: "webhooks" as const, label: "Webhooks", icon: Webhook },
   ];
 
   return (
@@ -311,12 +315,14 @@ export default function AdminDashboard() {
         padding: "20px",
       }}>
         {activeTab === "analytics" && <AnalyticsTab />}
+        {activeTab === "balances" && <BalancesTab />}
         {activeTab === "broadcasts" && <BroadcastsTab />}
         {activeTab === "plans" && <DataPlansTab />}
         {activeTab === "users" && <UsersTab />}
         {activeTab === "airtime" && <AirtimeTab />}
         {activeTab === "cable" && <CableTab />}
         {activeTab === "power" && <PowerTab />}
+        {activeTab === "webhooks" && <WebhooksTab />}
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check rate limit for this phone number
-    const rateLimitCheck = checkRateLimit(phone, "login", {
+    const rateLimitCheck = await checkRateLimit(phone, "login", {
       maxAttempts: 5,
       windowMs: 15 * 60 * 1000, // 15 minutes
     });
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Reset rate limit on successful login
-    resetRateLimit(phone, "login");
+    await resetRateLimit(phone, "login");
 
     // Generate JWT token
     const token = await signToken({
@@ -121,14 +121,13 @@ export async function POST(request: NextRequest) {
           name: user.name,
           role: user.role,
         },
-        token,
       },
       { status: 200, headers: utf8Headers }
     );
   } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
-      { error: "Login failed", details: error.message },
+      { error: "Login failed" },
       { status: 500, headers: utf8Headers }
     );
   }

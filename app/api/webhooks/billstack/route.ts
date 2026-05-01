@@ -1,302 +1,248 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createHash } from "crypto";
-import { queryOne, query } from "@/lib/db";
+import { createHmac, timingSafeEqual } from "crypto";
+import { queryOne, query, execute } from "@/lib/db";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 const utf8Headers = { "Content-Type": "application/json; charset=utf-8" };
+const MAX_BALANCE = 30000;
 
 interface BillStackWebhookPayload {
   event: string;
   data: {
     type: string;
     reference: string;
-    merchant_reference: string;
-    wiaxy_ref: string;
     amount: string | number;
-    created_at: string;
     account: {
       account_number: string;
-      account_name: string;
-      bank_name: string;
-      created_at: string;
-    };
-    payer: {
-      account_number: string;
-      first_name: string;
-      last_name: string;
-      createdAt: string;
     };
   };
 }
 
-export async function POST(request: NextRequest) {
-  try {
-    console.log("[BILLSTACK_WEBHOOK] Incoming webhook request", {
-      timestamp: new Date().toISOString(),
-      method: request.method,
-      url: request.url,
-      headers: {
-        contentType: request.headers.get('content-type'),
-        signature: request.headers.get('x-wiaxy-signature') ? 'present' : 'missing',
-      }
-    });
+function safeEqualHex(a: string, b: string): boolean {
+  const aa = Buffer.from(a, "hex");
+  const bb = Buffer.from(b, "hex");
+  if (aa.length !== bb.length) return false;
+  return timingSafeEqual(aa, bb);
+}
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 1: VERIFY SIGNATURE
-    // ═══════════════════════════════════════════════════════════════════════════
+export async function POST(request: NextRequest) {
+  let eventRef: string | null = null;
+  let webhookEventId: string | null = null;
+  try {
     const signature = request.headers.get("x-wiaxy-signature");
+    const rawBody = await request.text();
+    let payload: BillStackWebhookPayload | null = null;
+    try {
+      payload = JSON.parse(rawBody) as BillStackWebhookPayload;
+      eventRef = String(payload?.data?.reference || "").trim() || null;
+    } catch {
+      payload = null;
+    }
+
+    const headersObj = Object.fromEntries(request.headers.entries());
+    const insertedWebhook = await queryOne<{ id: string }>(
+      `INSERT INTO public.billstack_webhook_events
+       (event_ref, signature, request_headers, payload, raw_body, processing_status)
+       VALUES ($1, $2, $3::jsonb, $4::jsonb, $5, 'RECEIVED')
+       RETURNING id`,
+      [
+        eventRef,
+        signature,
+        JSON.stringify(headersObj),
+        payload ? JSON.stringify(payload) : null,
+        rawBody,
+      ]
+    );
+    webhookEventId = insertedWebhook?.id || null;
 
     if (!signature) {
-      console.error("[BILLSTACK_WEBHOOK] Missing x-wiaxy-signature header");
-      return NextResponse.json(
-        { error: "Missing signature" },
-        { status: 401, headers: utf8Headers }
-      );
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET signature_valid = false, processing_status = 'REJECTED', processing_error = $1, processed_at = NOW()
+           WHERE id = $2`,
+          ["Missing signature", webhookEventId]
+        );
+      }
+      return NextResponse.json({ error: "Missing signature" }, { status: 401, headers: utf8Headers });
     }
 
     const secretKey = process.env.BILLSTACK_SECRET_KEY;
     if (!secretKey) {
-      console.error("[BILLSTACK_WEBHOOK] BILLSTACK_SECRET_KEY not configured");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 401, headers: utf8Headers }
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET signature_valid = false, processing_status = 'ERROR', processing_error = $1, processed_at = NOW()
+           WHERE id = $2`,
+          ["Server configuration error", webhookEventId]
+        );
+      }
+      return NextResponse.json({ error: "Server configuration error" }, { status: 401, headers: utf8Headers });
+    }
+
+    const expectedSignature = createHmac("sha256", secretKey).update(rawBody).digest("hex");
+    if (!safeEqualHex(signature, expectedSignature)) {
+      console.error("[BILLSTACK_WEBHOOK] Signature verification failed");
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET signature_valid = false, processing_status = 'REJECTED', processing_error = $1, processed_at = NOW()
+           WHERE id = $2`,
+          ["Invalid signature", webhookEventId]
+        );
+      }
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401, headers: utf8Headers });
+    }
+
+    if (!payload) {
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET signature_valid = true, processing_status = 'REJECTED', processing_error = $1, processed_at = NOW()
+           WHERE id = $2`,
+          ["Invalid JSON payload", webhookEventId]
+        );
+      }
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400, headers: utf8Headers });
+    }
+
+    if (webhookEventId) {
+      await query(
+        `UPDATE public.billstack_webhook_events
+         SET signature_valid = true
+         WHERE id = $1`,
+        [webhookEventId]
       );
     }
 
-    // Calculate MD5 hash of secret key
-    const expectedSignature = createHash("md5").update(secretKey).digest("hex");
-
-    if (signature !== expectedSignature) {
-      console.error("[BILLSTACK_WEBHOOK] Signature verification failed", {
-        provided: signature,
-        expected: expectedSignature,
-      });
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401, headers: utf8Headers }
-      );
+    if (payload.event !== "PAYMENT_NOTIFICATION" || payload.data?.type !== "RESERVED_ACCOUNT_TRANSACTION") {
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET processing_status = 'IGNORED', processed_at = NOW()
+           WHERE id = $1`,
+          [webhookEventId]
+        );
+      }
+      return NextResponse.json({ status: "ignored" }, { status: 200, headers: utf8Headers });
     }
 
-    console.log("[BILLSTACK_WEBHOOK] Signature verified successfully");
+    const accountNumber = payload.data?.account?.account_number;
+    eventRef = String(payload.data?.reference || "").trim();
+    const amount = Number(payload.data?.amount);
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 2: PARSE WEBHOOK PAYLOAD
-    // ═══════════════════════════════════════════════════════════════════════════
-    const payload: BillStackWebhookPayload = await request.json();
-
-    console.log("[BILLSTACK_WEBHOOK] Payload received", {
-      event: payload.event,
-      type: payload.data?.type,
-      reference: payload.data?.reference,
-      merchant_reference: payload.data?.merchant_reference,
-      amount: payload.data?.amount,
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 3: VALIDATE EVENT AND TYPE
-    // ═══════════════════════════════════════════════════════════════════════════
-    if (
-      payload.event !== "PAYMENT_NOTIFICATION" ||
-      payload.data?.type !== "RESERVED_ACCOUNT_TRANSACTION"
-    ) {
-      console.log("[BILLSTACK_WEBHOOK] Event/type mismatch, ignoring", {
-        event: payload.event,
-        type: payload.data?.type,
-      });
-      return NextResponse.json(
-        { status: "ignored" },
-        { status: 200, headers: utf8Headers }
-      );
+    if (!accountNumber || !eventRef || !Number.isFinite(amount) || amount <= 0) {
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET processing_status = 'REJECTED', processing_error = $1, processed_at = NOW()
+           WHERE id = $2`,
+          ["Invalid business payload", webhookEventId]
+        );
+      }
+      return NextResponse.json({ status: "processed" }, { status: 200, headers: utf8Headers });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 4: LOOK UP USER BY ACCOUNT NUMBER
-    // ═══════════════════════════════════════════════════════════════════════════
-    const accountNumber = payload.data.account.account_number;
-    const transactionReference = payload.data.reference;
-    const amount = parseInt(String(payload.data.amount)) || 0;
+    await execute(
+      `CREATE TABLE IF NOT EXISTS "WebhookEventLock" (
+        provider text NOT NULL,
+        event_ref text NOT NULL,
+        created_at timestamptz NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (provider, event_ref)
+      )`
+    );
 
-    const MAX_BALANCE = 30000; // ₦30,000 limit per user
+    const lock = await queryOne<{ event_ref: string }>(
+      `INSERT INTO "WebhookEventLock" (provider, event_ref)
+       VALUES ($1, $2)
+       ON CONFLICT (provider, event_ref) DO NOTHING
+       RETURNING event_ref`,
+      ["billstack", eventRef]
+    );
 
-    if (!accountNumber) {
-      console.error("[BILLSTACK_WEBHOOK] Missing account_number");
-      return NextResponse.json(
-        { status: "processed" },
-        { status: 200, headers: utf8Headers }
-      );
+    if (!lock) {
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET processing_status = 'DUPLICATE', processed_at = NOW()
+           WHERE id = $1`,
+          [webhookEventId]
+        );
+      }
+      return NextResponse.json({ status: "processed" }, { status: 200, headers: utf8Headers });
     }
 
-    const user = await queryOne<{
-      id: string;
-      balance: number;
-    }>(
+    const user = await queryOne<{ id: string; balance: number | string }>(
       `SELECT u.id, u.balance
        FROM "User" u
-       LEFT JOIN "UserReservedAccount" ura
-         ON ura."userId" = u.id
-       WHERE u.account_number = $1
-          OR ura."accountNumber" = $1
+       LEFT JOIN "UserReservedAccount" ura ON ura."userId" = u.id
+       WHERE u.account_number = $1 OR ura."accountNumber" = $1
        LIMIT 1`,
       [accountNumber]
     );
 
     if (!user) {
-      console.warn("[BILLSTACK_WEBHOOK] User not found for account_number", {
-        accountNumber,
-      });
-      return NextResponse.json(
-        { status: "processed" },
-        { status: 200, headers: utf8Headers }
-      );
-    }
-
-    console.log("[BILLSTACK_WEBHOOK] User found", { userId: user.id });
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 5: IDEMPOTENCY CHECK - Ensure exact duplicate doesn't exist for this user
-    // Idempotency based on: reference + amount + time window (30 seconds)
-    // 
-    // Why time window instead of exact timestamp?
-    // - BillStack sends low-precision timestamps (no milliseconds)
-    // - Two transactions 5 seconds apart might have same created_at value
-    // - Time window prevents webhook retries AND handles timestamp precision issues
-    // ═══════════════════════════════════════════════════════════════════════════
-    const billstackTimestamp = new Date(payload.data.created_at);
-    const thirtySecondsAgo = new Date(Date.now() - 30000); // 30 seconds
-
-    const existingTransaction = await queryOne<{
-      id: string;
-      reference: string;
-      amount: number;
-      created_at: string;
-    }>(
-      `SELECT id, reference, amount, created_at FROM "Transaction" 
-       WHERE user_id = $1 AND reference = $2 AND amount = $3 AND created_at > $4`,
-      [user.id, transactionReference, amount, thirtySecondsAgo.toISOString()]
-    );
-
-    if (existingTransaction) {
-      // True duplicate - same reference + amount within last 30 seconds
-      console.log("[BILLSTACK_WEBHOOK] Transaction already processed (duplicate within 30s window)", {
-        userId: user.id,
-        reference: transactionReference,
-        amount,
-        billstackTimestamp: billstackTimestamp.toISOString(),
-        dbTimestamp: existingTransaction.created_at,
-        timeDifference: new Date().getTime() - new Date(existingTransaction.created_at).getTime() + "ms",
-      });
-      return NextResponse.json(
-        { status: "processed" },
-        { status: 200, headers: utf8Headers }
-      );
-    }
-
-    console.log("[BILLSTACK_WEBHOOK] New transaction, proceeding with credit", {
-      userId: user.id,
-      reference: transactionReference,
-      amount,
-      timestamp: billstackTimestamp.toISOString(),
-    });
-
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 6: CHECK BALANCE LIMIT AND CREDIT USER WALLET
-    // ═══════════════════════════════════════════════════════════════════════════
-    // Ensure balance is numeric (handle string values from database)
-    const currentBalance = typeof user.balance === 'string' 
-      ? parseFloat(user.balance) 
-      : user.balance;
-    
-    let creditAmount = amount;
-    let newBalance = currentBalance + amount;
-
-    // Check if balance would exceed limit
-    if (newBalance > MAX_BALANCE) {
-      console.warn("[BILLSTACK_WEBHOOK] Balance would exceed limit", {
-        userId: user.id,
-        accountNumber,
-        currentBalance,
-        depositAmount: amount,
-        maxAllowed: MAX_BALANCE,
-        calculated: newBalance,
-      });
-      // Cap balance at limit
-      creditAmount = Math.max(0, MAX_BALANCE - currentBalance);
-      newBalance = MAX_BALANCE;
-    }
-
-    // Update user balance with verification
-    const updateResult = await queryOne<{ balance: number }>(
-      `UPDATE "User" SET balance = $1 WHERE id = $2 RETURNING balance`,
-      [newBalance, user.id]
-    );
-
-    if (!updateResult) {
-      console.error("[BILLSTACK_WEBHOOK] Failed to update user balance", { userId: user.id });
-      return NextResponse.json(
-        { status: "processed" },
-        { status: 200, headers: utf8Headers }
-      );
-    }
-
-    console.log("[BILLSTACK_WEBHOOK] User balance updated successfully", {
-      userId: user.id,
-      oldBalance: currentBalance,
-      newBalance: updateResult.balance,
-      amount: creditAmount,
-    });
-
-    // Create transaction record with actual credited amount
-    try {
-      await query(
-        `INSERT INTO "Transaction" (user_id, amount, reference, type, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, NOW())`,
-        [
-          user.id,
-          creditAmount,
-          transactionReference,
-          "deposit",
-          "success",
-        ]
-      );
-
-      console.log("[BILLSTACK_WEBHOOK] Transaction record created", {
-        userId: user.id,
-        amount: creditAmount,
-        reference: transactionReference,
-      });
-    } catch (insertError: any) {
-      // If it's a unique constraint violation, it means this exact transaction (user + ref) was already inserted
-      if (insertError.code === "23505" || insertError.message?.includes("unique constraint")) {
-        console.warn("[BILLSTACK_WEBHOOK] Transaction record already exists (constraint violation)", {
-          userId: user.id,
-          reference: transactionReference,
-          error: insertError.message,
-        });
-        // This is OK - balance was already updated, transaction just wasn't logged again
-      } else {
-        // Other error - log it but don't fail the webhook
-        console.error("[BILLSTACK_WEBHOOK] Error creating transaction record", {
-          userId: user.id,
-          reference: transactionReference,
-          error: insertError.message,
-        });
+      if (webhookEventId) {
+        await query(
+          `UPDATE public.billstack_webhook_events
+           SET processing_status = 'NO_USER', processed_at = NOW()
+           WHERE id = $1`,
+          [webhookEventId]
+        );
       }
+      return NextResponse.json({ status: "processed" }, { status: 200, headers: utf8Headers });
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // STEP 7: RESPOND WITH SUCCESS
-    // ═══════════════════════════════════════════════════════════════════════════
+    const currentBalance = typeof user.balance === "number" ? user.balance : parseFloat(String(user.balance));
+    const nextBalance = Math.min(MAX_BALANCE, currentBalance + amount);
+    const creditAmount = Math.max(0, nextBalance - currentBalance);
+
+    await query(
+      `UPDATE "User" SET balance = $1 WHERE id = $2`,
+      [nextBalance, user.id]
+    );
+
+    await query(
+      `INSERT INTO public.transactions (id, user_id, category, status, amount, reference, created_at, updated_at) VALUES ($1, $2, 'DEPOSIT', 'SUCCESS', $3, $4, NOW(), NOW())`,
+      [`DEP-${eventRef}`, user.id, creditAmount, eventRef]
+    );
+
+    if (webhookEventId) {
+      await query(
+        `UPDATE public.billstack_webhook_events
+         SET processing_status = 'PROCESSED',
+             user_id = $1,
+             credited_amount = $2,
+             processed_at = NOW()
+         WHERE id = $3`,
+        [user.id, creditAmount, webhookEventId]
+      );
+    }
+
     return NextResponse.json(
-      { status: "processed", userId: user.id, newBalance },
+      { status: "processed", userId: user.id, credited: creditAmount, newBalance: nextBalance },
       { status: 200, headers: utf8Headers }
     );
   } catch (error) {
     console.error("[BILLSTACK_WEBHOOK] Error processing webhook", error);
-    // Always return 200 for safety, so BillStack doesn't keep retrying
-    return NextResponse.json(
-      { status: "processed", error: "Server error handled" },
-      { status: 200, headers: utf8Headers }
-    );
+    if (webhookEventId) {
+      await query(
+        `UPDATE public.billstack_webhook_events
+         SET processing_status = 'ERROR',
+             processing_error = $1,
+             processed_at = NOW()
+         WHERE id = $2`,
+        [error instanceof Error ? error.message : String(error), webhookEventId]
+      ).catch(() => {});
+    }
+    if (eventRef) {
+      await execute(
+        `DELETE FROM "WebhookEventLock" WHERE provider = $1 AND event_ref = $2`,
+        ["billstack", eventRef]
+      ).catch(() => {});
+    }
+    return NextResponse.json({ status: "processed", error: "Server error handled" }, { status: 200, headers: utf8Headers });
   }
 }
+

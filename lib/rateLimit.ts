@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { execute, queryOne } from "@/lib/db";
 
-interface RateLimitEntry {
-  count: number;
-  resetTime: number;
+let tableReady = false;
+async function ensureRateLimitTable() {
+  if (tableReady) return;
+  await execute(
+    `CREATE TABLE IF NOT EXISTS "RateLimitBucket" (
+      key text PRIMARY KEY,
+      count integer NOT NULL,
+      reset_at timestamptz NOT NULL
+    )`
+  );
+  tableReady = true;
 }
-
-// In-memory store (use Redis in production)
-const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
  * Check rate limit for a user/endpoint combination
@@ -15,27 +21,29 @@ const rateLimitStore = new Map<string, RateLimitEntry>();
  * @param windowMs Time window in milliseconds
  * @returns true if limit exceeded, false if allowed
  */
-export function checkRateLimit(
+export async function checkRateLimit(
   key: string,
   limit: number = 5,
   windowMs: number = 60000 // 1 minute default
-): boolean {
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
-
-  if (!entry || now > entry.resetTime) {
-    // New window or expired
-    rateLimitStore.set(key, { count: 1, resetTime: now + windowMs });
-    return false; // Not limited
-  }
-
-  // Within window
-  if (entry.count >= limit) {
-    return true; // Limit exceeded
-  }
-
-  entry.count++;
-  return false; // Still allowed
+): Promise<boolean> {
+  await ensureRateLimitTable();
+  const row = await queryOne<{ count: number }>(
+    `INSERT INTO "RateLimitBucket" (key, count, reset_at)
+     VALUES ($1, 1, NOW() + ($2::text || ' milliseconds')::interval)
+     ON CONFLICT (key)
+     DO UPDATE SET
+       count = CASE
+         WHEN "RateLimitBucket".reset_at <= NOW() THEN 1
+         ELSE "RateLimitBucket".count + 1
+       END,
+       reset_at = CASE
+         WHEN "RateLimitBucket".reset_at <= NOW() THEN NOW() + ($2::text || ' milliseconds')::interval
+         ELSE "RateLimitBucket".reset_at
+       END
+     RETURNING count`,
+    [key, windowMs]
+  );
+  return !!row && row.count > limit;
 }
 
 /**
@@ -51,7 +59,7 @@ export async function withRateLimit(
   const windowMs = options.windowMs || 60000;
   const key = `${endpoint}:${userId}`;
 
-  if (checkRateLimit(key, limit, windowMs)) {
+  if (await checkRateLimit(key, limit, windowMs)) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },
       { status: 429, headers: { "Content-Type": "application/json; charset=utf-8" } }

@@ -24,6 +24,10 @@ export async function GET(
     }
 
     const userId = params.id;
+    const { searchParams } = new URL(request.url);
+    const page = Math.max(1, Number(searchParams.get("page") || "1"));
+    const limit = Math.min(50, Math.max(10, Number(searchParams.get("limit") || "20")));
+    const offset = (page - 1) * limit;
 
     if (!userId) {
       return NextResponse.json(
@@ -32,78 +36,59 @@ export async function GET(
       );
     }
 
-    // Fetch user's DATA transactions
-    const dataTransactions = await query(
-      `SELECT 
-        dt.id,
-        dt.phone,
-        dt.amount,
-        dt.status,
-        dt."providerUsed",
-        dt."providerRef",
-        dt."customerRef",
-        dt."createdAt",
-        dp.name,
-        dp."sizeLabel",
-        dp."networkName"
-      FROM "DataTransaction" dt
-      LEFT JOIN "DataPlan" dp ON dt."planId" = dp.id
-      WHERE dt."userId" = $1
-      ORDER BY dt."createdAt" DESC
-      LIMIT 100`,
+    const txRows = await query<{
+      id: string;
+      category: string;
+      target: string | null;
+      provider: string | null;
+      network_name: string | null;
+      amount: number;
+      status: string;
+      created_at: string;
+    }>(
+      `SELECT id, category, target, provider, network_name, amount, status, created_at
+       FROM public.transactions
+       WHERE user_id = $1
+       AND category IN ('DATA', 'AIRTIME')
+       ORDER BY created_at DESC
+       OFFSET $2
+       LIMIT $3`,
+      [userId, offset, limit]
+    );
+    const countRows = await query<{ total: number }>(
+      `SELECT COUNT(*)::int AS total
+       FROM public.transactions
+       WHERE user_id = $1
+       AND category IN ('DATA', 'AIRTIME')`,
       [userId]
     );
+    const total = countRows[0]?.total || 0;
 
-    // Fetch user's AIRTIME transactions
-    const airtimeTransactions = await query(
-      `SELECT 
-        id,
-        mobile_number as phone,
-        amount,
-        status,
-        ident,
-        created_at as "createdAt",
-        network_name,
-        NULL as name
-      FROM airtime_transactions
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-      LIMIT 100`,
-      [userId]
-    );
+    const allTransactions = txRows.map((tx) => {
+      const type = String(tx.category || "").toLowerCase();
+      return {
+        id: String(tx.id || ""),
+        planName:
+          type === "airtime"
+            ? `${String(tx.provider || "Unknown")} Airtime`
+            : `${String(tx.network_name || tx.provider || "Unknown")} Data`,
+        sizeLabel: "",
+        networkName: String(tx.network_name || tx.provider || ""),
+        phone: String(tx.target || ""),
+        amount: Number(tx.amount || 0),
+        status: String(tx.status || "PENDING").toUpperCase(),
+        createdAt: tx.created_at ? new Date(tx.created_at).toISOString() : new Date().toISOString(),
+        type,
+      };
+    });
 
-    // Format data transactions to camelCase
-    const formattedData = (dataTransactions || []).map((tx: any) => ({
-      id: String(tx.id || ""),
-      planName: String(tx.name || "Data Plan"),
-      sizeLabel: tx.sizeLabel ? String(tx.sizeLabel) : "",
-      networkName: String(tx.networkName || ""),
-      phone: String(tx.phone || ""),
-      amount: Number(tx.amount || 0),
-      status: String(tx.status || "PENDING").toUpperCase(),
-      createdAt: tx.createdAt ? new Date(tx.createdAt).toISOString() : new Date().toISOString(),
-      type: "data",
-    }));
-
-    // Format airtime transactions to camelCase
-    const formattedAirtime = (airtimeTransactions || []).map((tx: any) => ({
-      id: String(tx.id || ""),
-      planName: `${String(tx.network_name || "Unknown")} Airtime`,
-      sizeLabel: "",
-      networkName: String(tx.network_name || ""),
-      phone: String(tx.phone || ""),
-      amount: Number(tx.amount || 0),
-      status: String(tx.status || "PENDING").toUpperCase(),
-      createdAt: tx.createdAt ? new Date(tx.createdAt).toISOString() : new Date().toISOString(),
-      type: "airtime",
-    }));
-
-    // Merge and sort by date
-    const allTransactions = [...formattedData, ...formattedAirtime]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 50);
-
-    return NextResponse.json(allTransactions, {
+    return NextResponse.json({
+      data: allTransactions,
+      page,
+      limit,
+      total,
+      hasMore: offset + allTransactions.length < total,
+    }, {
       headers: utf8Headers,
     });
   } catch (error) {

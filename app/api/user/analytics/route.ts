@@ -42,98 +42,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fetch data transactions
-    const dataTransactions = await query<{
-      id: string;
+    const transactions = await query<{
+      category: string;
       amount: number;
       status: string;
-      createdAt: string;
-      phone: string;
     }>(
-      `SELECT id, amount, status, "createdAt", phone 
-       FROM "DataTransaction" 
-       WHERE "userId" = $1 
-       ORDER BY "createdAt" DESC`,
-      [userId]
-    );
-
-    // Fetch airtime transactions
-    const airtimeTransactions = await query<{
-      id: string;
-      amount: number;
-      status: string;
-      created_at: string;
-      mobile_number: string;
-    }>(
-      `SELECT id, amount, status, created_at, mobile_number 
-       FROM airtime_transactions 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC`,
-      [userId]
-    );
-
-    // Fetch cable transactions
-    const cableTransactions = await query<{
-      id: string;
-      amount: number;
-      status: string;
-      created_at: string;
-      smart_card_number: string;
-    }>(
-      `SELECT id, amount, status, created_at, smart_card_number 
-       FROM cable_transactions 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC`,
-      [userId]
-    );
-
-    // Fetch power transactions
-    const powerTransactions = await query<{
-      id: string;
-      amount: number;
-      status: string;
-      created_at: string;
-      meter_number: string;
-    }>(
-      `SELECT id, amount, status, created_at, meter_number 
-       FROM power_transactions 
-       WHERE user_id = $1 
-       ORDER BY created_at DESC`,
+      `SELECT category, amount, status
+       FROM public.transactions
+       WHERE user_id = $1`,
       [userId]
     );
 
     log("TRANSACTIONS_FETCHED", {
-      dataCount: dataTransactions.length,
-      airtimeCount: airtimeTransactions.length,
-      cableCount: cableTransactions.length,
-      powerCount: powerTransactions.length,
+      totalCount: transactions.length,
     });
 
     // Calculate total spend
+    const dataTransactions = transactions.filter((t) => t.category === "DATA");
+    const airtimeTransactions = transactions.filter((t) => t.category === "AIRTIME");
+
     const dataSpend = dataTransactions
-      .filter((t) => t.status === "SUCCESS")
+      .filter((t) => String(t.status).toUpperCase() === "SUCCESS")
       .reduce((sum, t) => sum + (typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0))), 0);
 
     const airtimeSpend = airtimeTransactions
-      .filter((t) => t.status === "SUCCESS")
+      .filter((t) => String(t.status).toUpperCase() === "SUCCESS")
       .reduce((sum, t) => sum + (typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0))), 0);
 
-    const cableSpend = cableTransactions
-      .filter((t) => t.status === "SUCCESS")
-      .reduce((sum, t) => sum + (typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0))), 0);
-
-    const powerSpend = powerTransactions
-      .filter((t) => t.status === "SUCCESS")
-      .reduce((sum, t) => sum + (typeof t.amount === "number" ? t.amount : parseFloat(String(t.amount || 0))), 0);
-
-    const totalSpend = dataSpend + airtimeSpend + cableSpend + powerSpend;
+    const totalSpend = dataSpend + airtimeSpend;
 
     log("ANALYTICS_CALCULATED", {
       totalSpend,
       dataSpend,
       airtimeSpend,
-      cableSpend,
-      powerSpend,
+      cableSpend: 0,
+      powerSpend: 0,
     });
 
     return NextResponse.json(
@@ -143,20 +86,20 @@ export async function GET(request: NextRequest) {
         spendBreakdown: {
           data: dataSpend,
           airtime: airtimeSpend,
-          cable: cableSpend,
-          power: powerSpend,
+          cable: 0,
+          power: 0,
         },
         transactionCounts: {
           data: dataTransactions.length,
           airtime: airtimeTransactions.length,
-          cable: cableTransactions.length,
-          power: powerTransactions.length,
+          cable: 0,
+          power: 0,
         },
         successCounts: {
-          data: dataTransactions.filter((t) => t.status === "SUCCESS").length,
-          airtime: airtimeTransactions.filter((t) => t.status === "SUCCESS").length,
-          cable: cableTransactions.filter((t) => t.status === "SUCCESS").length,
-          power: powerTransactions.filter((t) => t.status === "SUCCESS").length,
+          data: dataTransactions.filter((t) => String(t.status).toUpperCase() === "SUCCESS").length,
+          airtime: airtimeTransactions.filter((t) => String(t.status).toUpperCase() === "SUCCESS").length,
+          cable: 0,
+          power: 0,
         },
       },
       { status: 200, headers: { "Content-Type": "application/json; charset=utf-8" } }
@@ -164,7 +107,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     log("ERROR_500", { error: error.message, stack: error.stack });
     return NextResponse.json(
-      { error: "Failed to fetch analytics", details: error.message },
+      { error: "Failed to fetch analytics" },
       { status: 500, headers: { "Content-Type": "application/json; charset=utf-8" } }
     );
   }

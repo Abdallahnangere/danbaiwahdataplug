@@ -35,6 +35,7 @@ interface DataPlan {
   apiBId: string;
   apiCId: string;
   activeApi: "A" | "B" | "C";
+  category: "SME" | "GIFTING" | "CORPORATE";
   isActive: boolean;
 }
 
@@ -134,6 +135,7 @@ export default function DataPlansTab() {
     apiBId: "",
     apiCId: "",
     activeApi: "A" as "A" | "B" | "C",
+    category: "SME" as "SME" | "GIFTING" | "CORPORATE",
     isActive: true,
   });
 
@@ -183,6 +185,7 @@ export default function DataPlansTab() {
       apiBId: "",
       apiCId: "",
       activeApi: "A",
+      category: "SME",
       isActive: true,
     });
     setShowCreateModal(true);
@@ -201,6 +204,7 @@ export default function DataPlansTab() {
       apiBId: plan.apiBId,
       apiCId: plan.apiCId,
       activeApi: plan.activeApi,
+      category: plan.category || "SME",
       isActive: plan.isActive,
     });
     setEditingPlan(plan);
@@ -244,6 +248,7 @@ export default function DataPlansTab() {
         apiBId: formData.apiBId || undefined,
         apiCId: formData.apiCId || undefined,
         activeApi: formData.activeApi,
+        category: formData.category,
         isActive: formData.isActive,
       };
 
@@ -380,6 +385,7 @@ export default function DataPlansTab() {
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>Network</th>
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>Size</th>
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>Validity</th>
+              <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>Category</th>
               <th style={{ padding: "12px 8px", textAlign: "right", color: T.textMuted, fontWeight: 600 }}>Price</th>
               <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>API A</th>
                 <th style={{ padding: "12px 8px", textAlign: "left", color: T.textMuted, fontWeight: 600 }}>API B</th>
@@ -396,6 +402,7 @@ export default function DataPlansTab() {
                 <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.networkName || "—"}</td>
                 <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.sizeLabel || "—"}</td>
                 <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.validity || "—"}</td>
+                <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.category || "SME"}</td>
                 <td style={{ padding: "12px 8px", textAlign: "right", color: T.textPrimary, fontWeight: 600 }}>
                   ₦{(plan.price || 0).toLocaleString()}
                 </td>
@@ -772,6 +779,31 @@ export default function DataPlansTab() {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Is Active */}
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: T.textMuted, marginBottom: 8, fontWeight: 600 }}>
+              Category
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value as "SME" | "GIFTING" | "CORPORATE" })}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 8,
+                background: T.bgElevated,
+                border: `1px solid ${T.border}`,
+                color: T.textPrimary,
+                fontSize: 14,
+                fontFamily: font,
+              }}
+            >
+              <option value="SME">SME</option>
+              <option value="GIFTING">GIFTING</option>
+              <option value="CORPORATE">CORPORATE</option>
+            </select>
           </div>
 
           {/* Is Active */}

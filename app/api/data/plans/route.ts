@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 // Logging helper - LOGS TO VERCEL IN PRODUCTION + DEVELOPMENT
-const log = (step: string, data: any) => {
+const log = (step: string, data: unknown) => {
   const timestamp = new Date().toISOString();
   const logMessage = `[DATA_PLANS] ${timestamp} ${step}: ${JSON.stringify(data, null, 2)}`;
   console.log(logMessage);  // Always logs - visible in Vercel
@@ -26,43 +26,54 @@ export async function GET(request: NextRequest) {
     const userRole = sessionUser?.role || "USER";
     log("SESSION", { userRole });
 
-    let sqlQuery = "SELECT id, name, \"networkId\", \"networkName\", \"sizeLabel\", validity, price, \"userPrice\", \"agentPrice\", \"isActive\" FROM \"DataPlan\" WHERE \"isActive\" = true";
-    
-    // Filter by networkId if provided
-    if (networkId) {
-      sqlQuery += ` AND "networkId" = ${parseInt(networkId)}`;
+    const queryParams: Array<number> = [];
+    let sqlQuery = "SELECT id, name, network_id, network_name, size_label, validity, user_price, agent_price, category, is_active FROM public.data_plans WHERE is_active = true";
+    if (networkId !== null) {
+      const parsedNetworkId = Number(networkId);
+      if (!Number.isInteger(parsedNetworkId) || parsedNetworkId <= 0) {
+        return NextResponse.json(
+          { error: "Invalid networkId" },
+          { status: 400, headers: { "Content-Type": "application/json; charset=utf-8" } }
+        );
+      }
+      queryParams.push(parsedNetworkId);
+      sqlQuery += ` AND network_id = $${queryParams.length}`;
     }
-    
-    sqlQuery += " ORDER BY \"networkId\", price";
+    sqlQuery += " ORDER BY network_id, user_price";
 
     const plans = await query<{
       id: string;
       name: string;
-      networkId: number;
-      networkName: string;
-      sizeLabel: string;
+      network_id: number;
+      network_name: string;
+      size_label: string;
       validity: string;
-      price: number;
-      userPrice: number | null;
-      agentPrice: number | null;
-      isActive: boolean;
-    }>(sqlQuery);
+      user_price: number;
+      agent_price: number | null;
+      category: "SME" | "GIFTING" | "CORPORATE";
+      is_active: boolean;
+    }>(sqlQuery, queryParams);
 
     // Apply role-based pricing
     const plansWithRoleBasedPrice = plans.map((plan) => {
-      let displayPrice = plan.price;
+      let displayPrice = Number(plan.user_price || 0);
 
       // If user is AGENT and plan has agentPrice, use agentPrice
-      if (userRole === "AGENT" && plan.agentPrice && plan.agentPrice > 0) {
-        displayPrice = plan.agentPrice;
-      }
-      // Otherwise use the regular price
-      else {
-        displayPrice = plan.price;
+      if (userRole === "AGENT" && plan.agent_price && plan.agent_price > 0) {
+        displayPrice = Number(plan.agent_price);
       }
 
       return {
-        ...plan,
+        id: plan.id,
+        name: plan.name,
+        networkId: plan.network_id,
+        networkName: plan.network_name,
+        sizeLabel: plan.size_label,
+        validity: plan.validity,
+        userPrice: Number(plan.user_price || 0),
+        agentPrice: plan.agent_price !== null ? Number(plan.agent_price) : null,
+        category: plan.category,
+        isActive: plan.is_active,
         price: displayPrice, // Display price is now role-aware
       };
     });
@@ -72,10 +83,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(plansWithRoleBasedPrice, {
       headers: { "Content-Type": "application/json; charset=utf-8" }
     });
-  } catch (error: any) {
-    log("ERROR_500", { error: error.message, stack: error.stack });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log("ERROR_500", { error: errorMessage });
     return NextResponse.json(
-      { error: "Failed to fetch plans", details: error.message },
+      { error: "Failed to fetch plans" },
       { 
         status: 500,
         headers: { "Content-Type": "application/json; charset=utf-8" }

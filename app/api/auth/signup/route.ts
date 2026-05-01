@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check rate limit for signup attempts
-    const rateLimitCheck = checkRateLimit(phone, "signup", {
+    const rateLimitCheck = await checkRateLimit(phone, "signup", {
       maxAttempts: 3,
       windowMs: 60 * 60 * 1000, // 1 hour
     });
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Reset rate limit on successful signup
-    resetRateLimit(phone, "signup");
+    await resetRateLimit(phone, "signup");
 
     // Hash PIN using bcrypt
     const salt = await bcrypt.genSalt(10);
@@ -305,14 +305,13 @@ export async function POST(request: NextRequest) {
           bankName: userWithBillStack?.bank_name,
           bankId: userWithBillStack?.bank_id,
         },
-        token,
       },
       { status: 201, headers: utf8Headers }
     );
   } catch (error: any) {
     console.error("[SIGNUP] Error:", error);
     return NextResponse.json(
-      { error: "Failed to create account", details: error.message },
+      { error: "Failed to create account" },
       { status: 500, headers: utf8Headers }
     );
   }

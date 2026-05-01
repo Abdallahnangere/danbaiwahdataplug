@@ -13,12 +13,6 @@ export async function withAdminGuard(
       return await handler(request);
     }
 
-    // Check if request includes ADMIN_PASSWORD header for alternative admin access
-    const adminPassword = request.headers.get("x-admin-password");
-    if (adminPassword && process.env.ADMIN_PASSWORD && adminPassword === process.env.ADMIN_PASSWORD) {
-      return await handler(request);
-    }
-
     return NextResponse.json(
       { error: "Forbidden." },
       { status: 403 }
