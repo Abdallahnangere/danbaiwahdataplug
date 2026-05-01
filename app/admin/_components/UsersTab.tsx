@@ -243,16 +243,24 @@ export default function UsersTab() {
 
   const handleResetPin = async () => {
     if (!selectedUser) return;
+    const pin = window.prompt("Enter new 6-digit PIN for this user:");
+    if (pin === null) return;
+    const nextPin = pin.trim();
+    if (!/^\d{6}$/.test(nextPin)) {
+      toast.error("PIN must be exactly 6 digits");
+      return;
+    }
     setUserActionLoading(true);
     try {
       const res = await fetch(`/api/admin/users/${selectedUser.id}/pin`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ pin: nextPin }),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed");
-      toast.success(`PIN reset successful. Temporary PIN: ${result.temporaryPin}`);
+      toast.success("PIN reset successful");
     } catch (error: any) {
       toast.error(error?.message || "Failed to reset pin");
     } finally {
