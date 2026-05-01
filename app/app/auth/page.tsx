@@ -71,11 +71,11 @@ export default function AuthPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone || phone.length !== 11) {
-      toast.error("Enter valid 11-digit phone");
+      toast.error("Please enter a valid 11-digit phone number.");
       return;
     }
     if (pin.some((p) => !p)) {
-      toast.error("Enter 6-digit PIN");
+      toast.error("Please enter your complete 6-digit PIN.");
       return;
     }
 
@@ -92,14 +92,19 @@ export default function AuthPage() {
         if (typeof window !== "undefined") {
           localStorage.setItem("saved_phone", phone);
         }
-        toast.success("Login successful!");
+        toast.success("Login successful. Welcome back!");
         router.push("/app");
       } else {
         const data = await res.json();
-        toast.error(data.error || "Login failed");
+        const msg = String(data.error || "").toLowerCase().includes("pin")
+          ? "Incorrect PIN. Please try again."
+          : String(data.error || "").toLowerCase().includes("phone")
+            ? "Phone number not found. Please check and try again."
+            : "Login failed. Please try again.";
+        toast.error(msg);
       }
     } catch {
-      toast.error("Connection error");
+      toast.error("Unable to connect right now. Please check your internet and try again.");
     } finally {
       setLoading(false);
     }
@@ -108,27 +113,27 @@ export default function AuthPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || name.length < 2) {
-      toast.error("Enter your full name");
+      toast.error("Please enter your full name.");
       return;
     }
     if (!phone || phone.length !== 11) {
-      toast.error("Enter valid 11-digit phone");
+      toast.error("Please enter a valid 11-digit phone number.");
       return;
     }
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      toast.error("Enter a valid email");
+      toast.error("Please enter a valid email address.");
       return;
     }
     if (pin.some((p) => !p)) {
-      toast.error("Enter 6-digit PIN");
+      toast.error("Please enter your complete 6-digit PIN.");
       return;
     }
     if (pin.join("") !== confirmPin.join("")) {
-      toast.error("PINs don't match");
+      toast.error("PINs do not match. Please re-enter them.");
       return;
     }
     if (!acceptTerms) {
-      toast.error("Accept terms");
+      toast.error("Please accept the terms to continue.");
       return;
     }
 
