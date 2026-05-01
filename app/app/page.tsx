@@ -2317,7 +2317,7 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
-          toast.success(`?${(data.amount || 0).toLocaleString()} ? ${selectedCablePlan.planName} subscribed ?`);
+          toast.success(`₦${(data.amount || 0).toLocaleString()} • ${selectedCablePlan.planName} subscribed ✓`);
           setCableSuccessData(data);
           setCablePinInput(["", "", "", "", "", ""]);
           setBuyCableStage(4);
@@ -2847,7 +2847,7 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
-          toast.success(`?${(data.amount || 0).toLocaleString()} ? Power credit loaded ?`);
+          toast.success(`₦${(data.amount || 0).toLocaleString()} • Power credit loaded ✓`);
           setPowerSuccessData(data);
           setPowerPinInput(["", "", "", "", "", ""]);
           setBuyPowerStage(5);
@@ -3316,7 +3316,7 @@ export default function DanbaiwaApp() {
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <span style={{
                       fontSize: 31, fontWeight: 700, color: "rgba(255,255,255,0.8)",
-                    }}>?</span>
+                    }}>₦</span>
                     <span
                       key={balanceVisible ? "vis" : "hid"}
                       style={{
@@ -3349,7 +3349,7 @@ export default function DanbaiwaApp() {
                             letterSpacing: "0.5px",
                           }}>
                             <span style={{ fontFamily: "monospace" }}>{user.accountNumber}</span>
-                            <span style={{ color: "rgba(255,255,255,0.6)" }}>?</span>
+                            <span style={{ color: "rgba(255,255,255,0.6)" }}>•</span>
                             <span>{user.bankName}</span>
                           </div>
                         </div>
@@ -3735,7 +3735,7 @@ export default function DanbaiwaApp() {
                             Account Name
                           </p>
                           <p style={{ margin: 0, fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>
-                            {account.accountName || "?"}
+                            {account.accountName || "—"}
                           </p>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -3752,7 +3752,7 @@ export default function DanbaiwaApp() {
                               Reference
                             </p>
                             <p style={{ margin: 0, fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
-                              {account.billstackReference || "?"}
+                              {account.billstackReference || "—"}
                             </p>
                           </div>
                         </div>
