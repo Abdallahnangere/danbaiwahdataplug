@@ -25,15 +25,23 @@ export async function GET(request: NextRequest) {
       target: string | null;
       provider: string | null;
       network_name: string | null;
+      plan_id: string | null;
+      reference: string | null;
       amount: number;
       status: string;
       created_at: string;
+      plan_name: string | null;
+      size_label: string | null;
     }>(
-      `SELECT id, category, target, provider, network_name, amount, status, created_at
-       FROM public.transactions
+      `SELECT
+         t.id, t.category, t.target, t.provider, t.network_name, t.plan_id, t.reference,
+         t.amount, t.status, t.created_at,
+         dp.name AS plan_name, dp.size_label
+       FROM public.transactions t
+       LEFT JOIN public.data_plans dp ON dp.id = t.plan_id
        WHERE user_id = $1
        AND category IN ('DATA', 'AIRTIME')
-       ORDER BY created_at DESC
+       ORDER BY t.created_at DESC
        OFFSET $2
        LIMIT $3`,
       [userId, offset, limit]
@@ -54,10 +62,11 @@ export async function GET(request: NextRequest) {
         planName:
           type === "airtime"
             ? `${tx.provider || "Network"} Airtime`
-            : `${tx.network_name || tx.provider || "Network"} Data`,
-        sizeLabel: "",
+            : tx.plan_name || `${tx.network_name || tx.provider || "Network"} Data`,
+        sizeLabel: tx.size_label || "",
         networkName: tx.network_name || tx.provider || "Provider",
         phone: tx.target || "",
+        reference: tx.reference || "",
         amount: Number(tx.amount) || 0,
         status: String(tx.status || "PENDING"),
         createdAt: tx.created_at,

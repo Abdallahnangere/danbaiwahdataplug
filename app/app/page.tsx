@@ -129,6 +129,7 @@ export default function DanbaiwaApp() {
   const [transactionsHasMore, setTransactionsHasMore] = useState(false);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
   const transactionsLoadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<any | null>(null);
   const [accounts, setAccounts]                 = useState<ReservedAccount[]>([]);
   const [accountsLoading, setAccountsLoading]   = useState(false);
   const [broadcasts, setBroadcasts]             = useState<BroadcastMessage[]>([]);
@@ -242,6 +243,62 @@ export default function DanbaiwaApp() {
     } finally {
       setTransactionsLoading(false);
     }
+  };
+
+  const downloadTransactionReceiptPng = (tx: any) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 900;
+    canvas.height = 1200;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "#166534";
+    ctx.fillRect(0, 0, canvas.width, 120);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "bold 40px Arial";
+    ctx.fillText("Danbaiwah Data Plug", 40, 72);
+    ctx.font = "24px Arial";
+    ctx.fillText("www.danbaiwahdataplug.com", 40, 104);
+
+    ctx.fillStyle = "#052E16";
+    ctx.font = "bold 34px Arial";
+    ctx.fillText("Transaction Receipt", 40, 190);
+
+    const rows = [
+      ["Beneficiary Number", tx.phone || "N/A"],
+      ["Plan Bought", tx.planName || "N/A"],
+      ["Network", tx.networkName || "N/A"],
+      ["Price", `NGN ${Number(tx.amount || 0).toLocaleString()}`],
+      ["Status", String(tx.status || "PENDING")],
+      ["Reference", tx.reference || "N/A"],
+      ["Date", new Date(tx.createdAt).toLocaleDateString("en-NG")],
+      ["Time", new Date(tx.createdAt).toLocaleTimeString("en-NG")],
+    ];
+
+    let y = 260;
+    rows.forEach(([k, v]) => {
+      ctx.fillStyle = "#15803D";
+      ctx.font = "bold 24px Arial";
+      ctx.fillText(`${k}:`, 40, y);
+      ctx.fillStyle = "#14532D";
+      ctx.font = "24px Arial";
+      ctx.fillText(String(v), 330, y);
+      y += 80;
+    });
+
+    ctx.fillStyle = "#DCFCE7";
+    ctx.fillRect(40, 980, 820, 120);
+    ctx.fillStyle = "#166534";
+    ctx.font = "bold 26px Arial";
+    ctx.fillText("Thank you for using Danbaiwah Data Plug", 70, 1050);
+
+    const link = document.createElement("a");
+    link.download = `receipt-${tx.reference || tx.id}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
   };
 
   useEffect(() => {
@@ -3698,6 +3755,7 @@ export default function DanbaiwaApp() {
               return (
                 <div
                   key={idx}
+                  onClick={() => setSelectedTransaction(tx)}
                   style={{
                     background: T.bgElevated,
                     borderRadius: 16,
@@ -3706,6 +3764,7 @@ export default function DanbaiwaApp() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    cursor: "pointer",
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -3747,6 +3806,7 @@ export default function DanbaiwaApp() {
                     }}>
                       {tx.status}
                     </span>
+                    <div style={{ marginTop: 6, fontSize: 10, color: T.textMuted }}>Tap for receipt</div>
                   </div>
                 </div>
               );
@@ -3779,6 +3839,41 @@ export default function DanbaiwaApp() {
       </Modal>
 
       {/* ══════════════════ SETTINGS MODAL ══════════════════ */}
+      <Modal show={!!selectedTransaction} onClose={() => setSelectedTransaction(null)}>
+        <ModalHeader title="Receipt" onClose={() => setSelectedTransaction(null)} />
+        {selectedTransaction ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <TransactionReceipt
+              beneficiaryNumber={selectedTransaction.phone || "N/A"}
+              planBought={selectedTransaction.planName || "N/A"}
+              price={Number(selectedTransaction.amount || 0)}
+              status={String(selectedTransaction.status || "PENDING")}
+              reference={selectedTransaction.reference || selectedTransaction.id}
+            />
+            <div style={{ fontSize: 12, color: T.textSecondary }}>
+              {new Date(selectedTransaction.createdAt).toLocaleDateString("en-NG")} · {new Date(selectedTransaction.createdAt).toLocaleTimeString("en-NG")}
+            </div>
+            <button
+              onClick={() => downloadTransactionReceiptPng(selectedTransaction)}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: 12,
+                background: T.green,
+                border: "none",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: font,
+              }}
+            >
+              Download PNG
+            </button>
+          </div>
+        ) : null}
+      </Modal>
+
       <Modal show={showSettingsModal} onClose={() => setShowSettingsModal(false)}>
         <EnhancedSettingsPanel
           user={user}
