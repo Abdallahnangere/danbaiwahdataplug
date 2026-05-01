@@ -14,7 +14,6 @@ import SuccessCheck from "@/components/SuccessCheck";
 import EnhancedSettingsPanel from "@/components/EnhancedSettingsPanel";
 import TransactionReceipt from "@/components/TransactionReceipt";
 
-// â”€â”€â”€ DESIGN TOKENS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const T = {
   // Backgrounds
   bg:        "#F4FAF6",
@@ -56,7 +55,6 @@ const T = {
 
 const font = '"Sora", "Manrope", "Avenir Next", "Segoe UI", sans-serif';
 
-// â”€â”€â”€ TYPES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface User {
   id: string;
   fullName: string;
@@ -117,7 +115,6 @@ const AVAILABLE_RESERVED_BANKS = [
   { id: "9PSB", label: "9PSB" },
 ] as const;
 
-// â”€â”€â”€ MAIN COMPONENT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function DanbaiwaApp() {
   const router = useRouter();
   const [user, setUser]                         = useState<User | null>(null);
@@ -192,7 +189,6 @@ export default function DanbaiwaApp() {
   const [buyPowerError, setBuyPowerError] = useState("");
   const [powerSuccessData, setPowerSuccessData] = useState<any | null>(null);
 
-  // â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -210,7 +206,6 @@ export default function DanbaiwaApp() {
     checkAuth();
   }, []);
 
-  // â”€â”€ Real-time balance refresh every 5 seconds when on home tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     if (activeTab !== "home" || !user) return;
 
@@ -538,9 +533,7 @@ export default function DanbaiwaApp() {
     }
   }, [activeTab, networks.length]);
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // CRITICAL: NO CACHING - Always fetch plans fresh from database
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   useEffect(() => {
     // Clear plans if not in plan-loading stage
     if (buyDataStage !== 2) {
@@ -712,7 +705,6 @@ export default function DanbaiwaApp() {
     }
   };
 
-  // â”€â”€ Loading screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (loading || !user) {
     return (
       <div style={{
@@ -734,7 +726,7 @@ export default function DanbaiwaApp() {
           <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
         </div>
         <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
-          Securing your sessionâ€¦
+          Securing your session?
         </p>
       </div>
     );
@@ -756,7 +748,6 @@ export default function DanbaiwaApp() {
     { id: "settings",     icon: SettingsIcon,    label: "Settings"     },
   ];
 
-  // â”€â”€ Shared sub-components (inline) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   // Modal wrapper
   const Modal = ({
@@ -870,7 +861,6 @@ export default function DanbaiwaApp() {
     </div>
   );
 
-  // â”€â”€ BuyDataCard: defined as a plain function (not a JSX component) so React
   // never unmounts/remounts it on parent re-renders, keeping the keyboard alive.
   // The plans-loading useEffect has been moved up to DanbaiwaApp above.
   const BuyDataCard = () => {
@@ -1270,7 +1260,7 @@ export default function DanbaiwaApp() {
                     color: T.blue,
                     marginTop: 4,
                   }}>
-                    â‚¦{(plan.price || 0).toLocaleString()}
+                    ?{(plan.price || 0).toLocaleString()}
                   </div>
                 </button>
               ))}
@@ -1442,7 +1432,7 @@ export default function DanbaiwaApp() {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
               <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                â‚¦{(selectedPlan?.price || 0).toLocaleString()}
+                ?{(selectedPlan?.price || 0).toLocaleString()}
               </span>
             </div>
           </div>
@@ -1647,17 +1637,17 @@ export default function DanbaiwaApp() {
   ];
 
   const CABLE_PROVIDERS = [
-    { id: "dstv", name: "DSTV", logo: "ðŸ“º" },
-    { id: "gotv", name: "GOTV", logo: "ðŸ“º" },
-    { id: "startimes", name: "Startimes", logo: "ðŸ“º" },
+    { id: "dstv", name: "DSTV", logo: "??" },
+    { id: "gotv", name: "GOTV", logo: "??" },
+    { id: "startimes", name: "Startimes", logo: "??" },
   ];
 
   const POWER_PROVIDERS = [
-    { id: "ekedc", name: "EKEDC", logo: "âš¡" },
-    { id: "ibadanelectricity", name: "Ibadan Electricity", logo: "âš¡" },
-    { id: "enugu", name: "Enugu Electricity", logo: "âš¡" },
-    { id: "kano", name: "Kano Electricity", logo: "âš¡" },
-    { id: "kaduna", name: "Kaduna Electricity", logo: "âš¡" },
+    { id: "ekedc", name: "EKEDC", logo: "?" },
+    { id: "ibadanelectricity", name: "Ibadan Electricity", logo: "?" },
+    { id: "enugu", name: "Enugu Electricity", logo: "?" },
+    { id: "kano", name: "Kano Electricity", logo: "?" },
+    { id: "kaduna", name: "Kaduna Electricity", logo: "?" },
   ];
 
   const METER_TYPES = [
@@ -1750,8 +1740,8 @@ export default function DanbaiwaApp() {
                   background: `${T.amber}20`, border: `1px solid ${T.amber}50`, borderRadius: 12, padding: 12,
                   marginBottom: 16, color: T.amber, fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8,
                 }}>
-                  <span>âš  Looks like {detectedNet?.name}, not {airtimeNetwork?.name}</span>
-                  <button onClick={() => setShowNetworkWarning(true)} style={{ background: "transparent", border: "none", color: T.amber, cursor: "pointer", fontWeight: 600 }}>Use anyway â†’</button>
+                  <span>? Looks like {detectedNet?.name}, not {airtimeNetwork?.name}</span>
+                  <button onClick={() => setShowNetworkWarning(true)} style={{ background: "transparent", border: "none", color: T.amber, cursor: "pointer", fontWeight: 600 }}>Use anyway ?</button>
                 </div>
               )}
             </>
@@ -1768,11 +1758,11 @@ export default function DanbaiwaApp() {
                       padding: 10, borderRadius: 10, background: selectedPreset === amt ? T.blue : T.bgCard,
                       border: `1.5px solid ${selectedPreset === amt ? T.blue : T.border}`, color: selectedPreset === amt ? "#fff" : T.textPrimary,
                       fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: font, transition: "all 150ms",
-                    }}>â‚¦{amt.toLocaleString()}</button>
+                    }}>?{amt.toLocaleString()}</button>
                 ))}
               </div>
 
-              <input type="number" inputMode="decimal" placeholder="Custom (â‚¦50-â‚¦5,000)" value={airtimeAmount}
+              <input type="number" inputMode="decimal" placeholder="Custom (?50-?5,000)" value={airtimeAmount}
                 onChange={(e) => setAirtimeAmount(e.target.value.replace(/\D/g, ""))}
                 min="50" max="5000"
                 style={{
@@ -1782,11 +1772,11 @@ export default function DanbaiwaApp() {
                 }} />
               {!amountValid && airtimeAmount && (
                 <div style={{ fontSize: 12, color: T.red, marginBottom: 16 }}>
-                  {amountNum < 50 ? "Minimum is â‚¦50" : "Maximum is â‚¦5,000"}
+                  {amountNum < 50 ? "Minimum is ?50" : "Maximum is ?5,000"}
                 </div>
               )}
               {amountValid && (
-                <div style={{ fontSize: 12, color: T.green, marginBottom: 16, fontWeight: 600 }}>âœ“ Valid amount</div>
+                <div style={{ fontSize: 12, color: T.green, marginBottom: 16, fontWeight: 600 }}>? Valid amount</div>
               )}
             </>
           )}
@@ -1831,7 +1821,7 @@ export default function DanbaiwaApp() {
             <div style={{ height: 1, background: T.border, marginBottom: 16 }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 500 }}>Amount</div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: T.green }}>â‚¦{amountNum.toLocaleString()}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: T.green }}>?{amountNum.toLocaleString()}</div>
             </div>
           </div>
 
@@ -1933,7 +1923,7 @@ export default function DanbaiwaApp() {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
               <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                â‚¦{amountNum.toLocaleString()}
+                ?{amountNum.toLocaleString()}
               </span>
             </div>
           </div>
@@ -1992,7 +1982,7 @@ export default function DanbaiwaApp() {
           <SuccessCheck greenColor={T.green} size={80} />
           <h2 style={{ margin: "16px 0 8px", fontSize: 24, fontWeight: 800, color: T.textPrimary }}>Airtime Sent!</h2>
           <p style={{ margin: "0 0 24px", fontSize: 14, color: T.textSecondary }}>
-            â‚¦{(parseInt(airtimeAmount) || 0).toLocaleString()} to {airtimePhone}
+            ?{(parseInt(airtimeAmount) || 0).toLocaleString()} to {airtimePhone}
           </p>`r`n          <div style={{ marginBottom: 24, textAlign: "left" }}>
             <TransactionReceipt
               beneficiaryNumber={airtimePhone}
@@ -2205,7 +2195,7 @@ export default function DanbaiwaApp() {
                     <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{plan.planName}</div>
                     <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Plan Code: {plan.planCode}</div>
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>â‚¦{(plan.price || 0).toLocaleString()}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>?{(plan.price || 0).toLocaleString()}</div>
                 </button>
               ))}
             </div>
@@ -2268,7 +2258,7 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
-          toast.success(`â‚¦${(data.amount || 0).toLocaleString()} â€“ ${selectedCablePlan.planName} subscribed âœ“`);
+          toast.success(`?${(data.amount || 0).toLocaleString()} ? ${selectedCablePlan.planName} subscribed ?`);
           setCableSuccessData(data);
           setCablePinInput(["", "", "", "", "", ""]);
           setBuyCableStage(4);
@@ -2333,7 +2323,7 @@ export default function DanbaiwaApp() {
             <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
-              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>â‚¦{(selectedCablePlan?.price || 0).toLocaleString()}</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>?{(selectedCablePlan?.price || 0).toLocaleString()}</span>
             </div>
           </div>
 
@@ -2448,7 +2438,7 @@ export default function DanbaiwaApp() {
             <div>
               <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Amount Paid</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                â‚¦{(cableSuccessData?.amount || 0).toLocaleString()}
+                ?{(cableSuccessData?.amount || 0).toLocaleString()}
               </div>
             </div>
           </div>
@@ -2732,9 +2722,9 @@ export default function DanbaiwaApp() {
                 >
                   <div style={{ textAlign: "left" }}>
                     <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{plan.planName || "Electricity Plan"}</div>
-                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Amount: â‚¦{(plan.price || 0).toLocaleString()}</div>
+                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Amount: ?{(plan.price || 0).toLocaleString()}</div>
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>â‚¦{(plan.price || 0).toLocaleString()}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>?{(plan.price || 0).toLocaleString()}</div>
                 </button>
               ))}
             </div>
@@ -2798,7 +2788,7 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
-          toast.success(`â‚¦${(data.amount || 0).toLocaleString()} â€“ Power credit loaded âœ“`);
+          toast.success(`?${(data.amount || 0).toLocaleString()} ? Power credit loaded ?`);
           setPowerSuccessData(data);
           setPowerPinInput(["", "", "", "", "", ""]);
           setBuyPowerStage(5);
@@ -2863,7 +2853,7 @@ export default function DanbaiwaApp() {
             <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
-              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>â‚¦{(selectedPowerPlan?.price || 0).toLocaleString()}</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>?{(selectedPowerPlan?.price || 0).toLocaleString()}</span>
             </div>
           </div>
 
@@ -2978,7 +2968,7 @@ export default function DanbaiwaApp() {
             <div>
               <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Amount Paid</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                â‚¦{(powerSuccessData?.amount || 0).toLocaleString()}
+                ?{(powerSuccessData?.amount || 0).toLocaleString()}
               </div>
             </div>
           </div>
@@ -3020,7 +3010,6 @@ export default function DanbaiwaApp() {
     return null;
   };
 
-  // â”€â”€â”€ RENDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
     <div style={{
       background: T.bg,
@@ -3033,7 +3022,6 @@ export default function DanbaiwaApp() {
       position: "relative",
     }}>
 
-      {/* â”€â”€ Ambient top glow â”€â”€ */}
       <div style={{
         position: "fixed", top: -120, left: "50%", transform: "translateX(-50%)",
         width: 500, height: 300,
@@ -3041,10 +3029,8 @@ export default function DanbaiwaApp() {
         pointerEvents: "none", zIndex: 0,
       }} />
 
-      {/* â”€â”€ Safe-area top spacer â”€â”€ */}
       <div style={{ height: "env(safe-area-inset-top, 16px)", flexShrink: 0 }} />
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{
         padding: "16px 20px 20px",
         display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -3053,7 +3039,7 @@ export default function DanbaiwaApp() {
         {/* Left: greeting */}
         <div>
           <p style={{ margin: 0, fontSize: 13, color: T.textMuted, fontWeight: 500, letterSpacing: "0.2px" }}>
-            Welcome back ðŸ‘‹
+            Welcome back ??
           </p>
           <h1 style={{
             margin: "2px 0 0", fontSize: 22, fontWeight: 800,
@@ -3165,7 +3151,6 @@ export default function DanbaiwaApp() {
         </div>
       )}
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SCROLLABLE CONTENT â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{
         flex: 1, overflowY: "auto",
         WebkitOverflowScrolling: "touch",
@@ -3173,14 +3158,12 @@ export default function DanbaiwaApp() {
       }}>
         <>
 
-          {/* â•â• HOME TAB â•â• */}
           {activeTab === "home" && (
             <div
               key="home"
               style={{ padding: "0 20px 120px" }}
             >
 
-              {/* â”€â”€ Balance Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <div
                 style={{
                   borderRadius: 28,
@@ -3274,7 +3257,7 @@ export default function DanbaiwaApp() {
                   <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
                     <span style={{
                       fontSize: 31, fontWeight: 700, color: "rgba(255,255,255,0.8)",
-                    }}>â‚¦</span>
+                    }}>?</span>
                     <span
                       key={balanceVisible ? "vis" : "hid"}
                       style={{
@@ -3284,7 +3267,7 @@ export default function DanbaiwaApp() {
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "â€¢â€¢â€¢â€¢â€¢â€¢"}
+                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "??????"}
                     </span>
                   </div>
 
@@ -3307,7 +3290,7 @@ export default function DanbaiwaApp() {
                             letterSpacing: "0.5px",
                           }}>
                             <span style={{ fontFamily: "monospace" }}>{user.accountNumber}</span>
-                            <span style={{ color: "rgba(255,255,255,0.6)" }}>â€¢</span>
+                            <span style={{ color: "rgba(255,255,255,0.6)" }}>?</span>
                             <span>{user.bankName}</span>
                           </div>
                         </div>
@@ -3341,7 +3324,6 @@ export default function DanbaiwaApp() {
                   </div></div>
               </div>
 
-              {/* â”€â”€ Section label â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <p style={{
                 margin: "0 0 14px", fontSize: 13, fontWeight: 700,
                 color: T.textMuted, textTransform: "uppercase",
@@ -3350,7 +3332,6 @@ export default function DanbaiwaApp() {
                 Quick Services
               </p>
 
-              {/* â”€â”€ Services Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
               <div style={{
                 display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
                 gap: 12, marginBottom: 32,
@@ -3577,7 +3558,7 @@ export default function DanbaiwaApp() {
                         }}
                       >
                         {bank.label}
-                        {alreadyCreated ? " â€¢ Added" : ""}
+                        {alreadyCreated ? " ? Added" : ""}
                       </button>
                     );
                   })}
@@ -3695,7 +3676,7 @@ export default function DanbaiwaApp() {
                             Account Name
                           </p>
                           <p style={{ margin: 0, fontSize: 14, color: T.textPrimary, fontWeight: 600 }}>
-                            {account.accountName || "â€”"}
+                            {account.accountName || "?"}
                           </p>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -3712,7 +3693,7 @@ export default function DanbaiwaApp() {
                               Reference
                             </p>
                             <p style={{ margin: 0, fontSize: 13, color: T.textSecondary, fontWeight: 600 }}>
-                              {account.billstackReference || "â€”"}
+                              {account.billstackReference || "?"}
                             </p>
                           </div>
                         </div>
@@ -3724,7 +3705,6 @@ export default function DanbaiwaApp() {
             </div>
           )}
 
-          {/* â•â• SERVICE TABS â•â• */}
           {/* FIX: Called as {BuyDataCard()} not <BuyDataCard /> so React does
               not treat it as a new component type on each render, preventing
               the unmount/remount that was dismissing the keyboard. */}
@@ -3772,7 +3752,7 @@ export default function DanbaiwaApp() {
                     border: `1px solid ${T.border}`, textAlign: "left",
                   }}>
                     <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      ðŸ“ž Call Us
+                      ?? Call Us
                     </p>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
                       08069601974
@@ -3797,7 +3777,7 @@ export default function DanbaiwaApp() {
                     border: `1px solid ${T.border}`, textAlign: "left",
                   }}>
                     <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      ðŸ’¬ Chat With Us
+                      ?? Chat With Us
                     </p>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
                       08069601974
@@ -3822,7 +3802,7 @@ export default function DanbaiwaApp() {
                     border: `1px solid ${T.border}`, textAlign: "left",
                   }}>
                     <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      ðŸ“ Location
+                      ?? Location
                     </p>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
                       Jigawa State, Gagarawa
@@ -3883,7 +3863,6 @@ export default function DanbaiwaApp() {
         </>
       </div>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• BOTTOM NAV â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
         background: `rgba(255,255,255,0.92)`,
@@ -3951,7 +3930,6 @@ export default function DanbaiwaApp() {
       </div>
 
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• SETTINGS MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Modal show={!!selectedTransaction} onClose={() => setSelectedTransaction(null)}>
         <ModalHeader title="Receipt" onClose={() => setSelectedTransaction(null)} />
         {selectedTransaction ? (
@@ -3966,7 +3944,7 @@ export default function DanbaiwaApp() {
               createdAt={selectedTransaction.createdAt}
             />
             <div style={{ fontSize: 12, color: T.textSecondary }}>
-              {new Date(selectedTransaction.createdAt).toLocaleDateString("en-NG")} Â· {new Date(selectedTransaction.createdAt).toLocaleTimeString("en-NG")}
+              {new Date(selectedTransaction.createdAt).toLocaleDateString("en-NG")} ? {new Date(selectedTransaction.createdAt).toLocaleTimeString("en-NG")}
             </div>
             <button
               onClick={() => downloadTransactionReceiptPng(selectedTransaction)}
@@ -4003,7 +3981,6 @@ export default function DanbaiwaApp() {
         />
       </Modal>
 
-      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• CHANGE PIN MODAL â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <Modal show={showPinChangeModal} onClose={() => setShowPinChangeModal(false)}>
         <ModalHeader title="Change PIN" onClose={() => setShowPinChangeModal(false)} />
 
@@ -4018,7 +3995,7 @@ export default function DanbaiwaApp() {
               autoFocus
               value={pinForm.oldPin}
               onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="??????"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -4038,7 +4015,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.newPin}
               onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="??????"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -4058,7 +4035,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.confirmPin}
               onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="??????"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
