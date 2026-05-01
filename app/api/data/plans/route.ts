@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     log("SESSION", { userRole });
 
     const queryParams: Array<number> = [];
-    let sqlQuery = "SELECT id, name, network_id, network_name, size_label, validity, user_price, agent_price, category, is_active FROM public.data_plans WHERE is_active = true";
+    let sqlQuery = "SELECT id, name, network_id, network_name, size_label, validity, user_price, agent_price, category, is_active FROM public.data_plans WHERE 1=1";
     if (networkId !== null) {
       const parsedNetworkId = Number(networkId);
       if (!Number.isInteger(parsedNetworkId) || parsedNetworkId <= 0) {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       queryParams.push(parsedNetworkId);
       sqlQuery += ` AND network_id = $${queryParams.length}`;
     }
-    sqlQuery += " ORDER BY network_id, user_price";
+    sqlQuery += " ORDER BY network_id, is_active DESC, user_price";
 
     const plans = await query<{
       id: string;

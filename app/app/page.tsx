@@ -148,6 +148,8 @@ export default function DanbaiwaApp() {
   const [plans, setPlans] = useState<any[]>([]);
   const [planCategory, setPlanCategory] = useState<"SME" | "GIFTING" | "CORPORATE">("SME");
   const [selectedPlan, setSelectedPlan] = useState<any | null>(null);
+  const [savedBeneficiaries, setSavedBeneficiaries] = useState<any[]>([]);
+  const [saveBeneficiary, setSaveBeneficiary] = useState(true);
   const [pinInput, setPinInput] = useState(["", "", "", "", "", ""]);
   const [buyDataLoading, setBuyDataLoading] = useState(false);
   const [buyDataError, setBuyDataError] = useState("");
@@ -533,6 +535,21 @@ export default function DanbaiwaApp() {
     }
   }, [activeTab, networks.length]);
 
+  useEffect(() => {
+    if (activeTab !== "data") return;
+    const fetchBeneficiaries = async () => {
+      try {
+        const res = await fetch("/api/data/beneficiaries", { credentials: "include" });
+        if (!res.ok) return;
+        const data = await res.json();
+        setSavedBeneficiaries(Array.isArray(data.data) ? data.data : []);
+      } catch {
+        setSavedBeneficiaries([]);
+      }
+    };
+    fetchBeneficiaries();
+  }, [activeTab]);
+
   // CRITICAL: NO CACHING - Always fetch plans fresh from database
   useEffect(() => {
     // Clear plans if not in plan-loading stage
@@ -726,7 +743,7 @@ export default function DanbaiwaApp() {
           <Loader2 size={36} color="white" style={{ animation: "spin 1s linear infinite" }} />
         </div>
         <p style={{ color: T.textSecondary, fontSize: 14, margin: 0, fontFamily: font }}>
-          Securing your session?
+          Securing your session…
         </p>
       </div>
     );
@@ -1084,6 +1101,26 @@ export default function DanbaiwaApp() {
               {phone.length}/11
             </div>
           </div>
+          {savedBeneficiaries.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: T.textMuted, fontSize: 12, marginBottom: 6 }}>Saved beneficiaries</div>
+              <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+                {savedBeneficiaries.slice(0, 8).map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => {
+                      setPhone(String(b.phone || ""));
+                      const net = networks.find((n) => Number(n.id) === Number(b.network_id));
+                      if (net) setSelectedNetwork(net);
+                    }}
+                    style={{ border: `1px solid ${T.border}`, background: T.bgCard, color: T.textSecondary, borderRadius: 999, padding: "6px 10px", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap" }}
+                  >
+                    {b.network_name || "Network"} • {b.phone}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Continue button */}
           <button
@@ -1221,21 +1258,25 @@ export default function DanbaiwaApp() {
                 <button
                   key={plan.id}
                   onClick={() => {
+                    if (!plan.isActive) return;
                     setSelectedPlan(plan);
                     setBuyDataStage(3);
                   }}
+                  disabled={!plan.isActive}
                   style={{
                     padding: 16,
                     borderRadius: 16,
                     background: T.bgCard,
-                    border: `1.5px solid ${T.border}`,
+                    border: `1.5px solid ${!plan.isActive ? `${T.red}66` : T.border}`,
                     display: "flex",
                     flexDirection: "column",
                     gap: 8,
-                    cursor: "pointer",
+                    cursor: !plan.isActive ? "not-allowed" : "pointer",
                     transition: "all 150ms ease",
                     fontFamily: font,
                     textAlign: "left",
+                    filter: !plan.isActive ? "blur(0.6px) grayscale(0.35)" : "none",
+                    opacity: !plan.isActive ? 0.65 : 1,
                   }}
                   role="radio"
                 >
@@ -1260,8 +1301,9 @@ export default function DanbaiwaApp() {
                     color: T.blue,
                     marginTop: 4,
                   }}>
-                    ?{(plan.price || 0).toLocaleString()}
+                    ₦{(plan.price || 0).toLocaleString()}
                   </div>
+                  {!plan.isActive && <div style={{ fontSize: 11, color: T.red, fontWeight: 700 }}>Temporarily unavailable</div>}
                 </button>
               ))}
             </div>
@@ -1337,6 +1379,19 @@ export default function DanbaiwaApp() {
           }
 
           const data = await purchaseRes.json();
+          if (saveBeneficiary) {
+            fetch("/api/data/beneficiaries", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                phone,
+                networkId: selectedNetwork?.id,
+                networkName: selectedNetwork?.name,
+                label: selectedPlan?.sizeLabel || "Data",
+              }),
+            }).catch(() => {});
+          }
           toast.success(`Data purchase successful for ${phone}.`);
           setSuccessData(data);
           setPinInput(["", "", "", "", "", ""]);
@@ -1432,10 +1487,14 @@ export default function DanbaiwaApp() {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
               <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                ?{(selectedPlan?.price || 0).toLocaleString()}
+                ₦{(selectedPlan?.price || 0).toLocaleString()}
               </span>
             </div>
           </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, color: T.textSecondary, fontSize: 12 }}>
+            <input type="checkbox" checked={saveBeneficiary} onChange={(e) => setSaveBeneficiary(e.target.checked)} />
+            Save this beneficiary for future purchases
+          </label>
 
           {/* PIN Input */}
           <label style={{
@@ -1637,17 +1696,17 @@ export default function DanbaiwaApp() {
   ];
 
   const CABLE_PROVIDERS = [
-    { id: "dstv", name: "DSTV", logo: "??" },
-    { id: "gotv", name: "GOTV", logo: "??" },
-    { id: "startimes", name: "Startimes", logo: "??" },
+    { id: "dstv", name: "DSTV", logo: "📺" },
+    { id: "gotv", name: "GOTV", logo: "📺" },
+    { id: "startimes", name: "Startimes", logo: "📺" },
   ];
 
   const POWER_PROVIDERS = [
-    { id: "ekedc", name: "EKEDC", logo: "?" },
-    { id: "ibadanelectricity", name: "Ibadan Electricity", logo: "?" },
-    { id: "enugu", name: "Enugu Electricity", logo: "?" },
-    { id: "kano", name: "Kano Electricity", logo: "?" },
-    { id: "kaduna", name: "Kaduna Electricity", logo: "?" },
+    { id: "ekedc", name: "EKEDC", logo: "⚡" },
+    { id: "ibadanelectricity", name: "Ibadan Electricity", logo: "⚡" },
+    { id: "enugu", name: "Enugu Electricity", logo: "⚡" },
+    { id: "kano", name: "Kano Electricity", logo: "⚡" },
+    { id: "kaduna", name: "Kaduna Electricity", logo: "⚡" },
   ];
 
   const METER_TYPES = [
@@ -1740,8 +1799,8 @@ export default function DanbaiwaApp() {
                   background: `${T.amber}20`, border: `1px solid ${T.amber}50`, borderRadius: 12, padding: 12,
                   marginBottom: 16, color: T.amber, fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 8,
                 }}>
-                  <span>? Looks like {detectedNet?.name}, not {airtimeNetwork?.name}</span>
-                  <button onClick={() => setShowNetworkWarning(true)} style={{ background: "transparent", border: "none", color: T.amber, cursor: "pointer", fontWeight: 600 }}>Use anyway ?</button>
+                  <span>⚠ Looks like {detectedNet?.name}, not {airtimeNetwork?.name}</span>
+                  <button onClick={() => setShowNetworkWarning(true)} style={{ background: "transparent", border: "none", color: T.amber, cursor: "pointer", fontWeight: 600 }}>Use anyway →</button>
                 </div>
               )}
             </>
@@ -1758,11 +1817,11 @@ export default function DanbaiwaApp() {
                       padding: 10, borderRadius: 10, background: selectedPreset === amt ? T.blue : T.bgCard,
                       border: `1.5px solid ${selectedPreset === amt ? T.blue : T.border}`, color: selectedPreset === amt ? "#fff" : T.textPrimary,
                       fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: font, transition: "all 150ms",
-                    }}>?{amt.toLocaleString()}</button>
+                    }}>₦{amt.toLocaleString()}</button>
                 ))}
               </div>
 
-              <input type="number" inputMode="decimal" placeholder="Custom (?50-?5,000)" value={airtimeAmount}
+              <input type="number" inputMode="decimal" placeholder="Custom (₦50-₦5,000)" value={airtimeAmount}
                 onChange={(e) => setAirtimeAmount(e.target.value.replace(/\D/g, ""))}
                 min="50" max="5000"
                 style={{
@@ -1772,11 +1831,11 @@ export default function DanbaiwaApp() {
                 }} />
               {!amountValid && airtimeAmount && (
                 <div style={{ fontSize: 12, color: T.red, marginBottom: 16 }}>
-                  {amountNum < 50 ? "Minimum is ?50" : "Maximum is ?5,000"}
+                  {amountNum < 50 ? "Minimum is ₦50" : "Maximum is ₦5,000"}
                 </div>
               )}
               {amountValid && (
-                <div style={{ fontSize: 12, color: T.green, marginBottom: 16, fontWeight: 600 }}>? Valid amount</div>
+                <div style={{ fontSize: 12, color: T.green, marginBottom: 16, fontWeight: 600 }}>✓ Valid amount</div>
               )}
             </>
           )}
@@ -1821,7 +1880,7 @@ export default function DanbaiwaApp() {
             <div style={{ height: 1, background: T.border, marginBottom: 16 }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 500 }}>Amount</div>
-              <div style={{ fontSize: 24, fontWeight: 700, color: T.green }}>?{amountNum.toLocaleString()}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, color: T.green }}>₦{amountNum.toLocaleString()}</div>
             </div>
           </div>
 
@@ -1923,7 +1982,7 @@ export default function DanbaiwaApp() {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
               <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>
-                ?{amountNum.toLocaleString()}
+                ₦{amountNum.toLocaleString()}
               </span>
             </div>
           </div>
@@ -1982,7 +2041,7 @@ export default function DanbaiwaApp() {
           <SuccessCheck greenColor={T.green} size={80} />
           <h2 style={{ margin: "16px 0 8px", fontSize: 24, fontWeight: 800, color: T.textPrimary }}>Airtime Sent!</h2>
           <p style={{ margin: "0 0 24px", fontSize: 14, color: T.textSecondary }}>
-            ?{(parseInt(airtimeAmount) || 0).toLocaleString()} to {airtimePhone}
+            ₦{(parseInt(airtimeAmount) || 0).toLocaleString()} to {airtimePhone}
           </p>`r`n          <div style={{ marginBottom: 24, textAlign: "left" }}>
             <TransactionReceipt
               beneficiaryNumber={airtimePhone}
@@ -2195,7 +2254,7 @@ export default function DanbaiwaApp() {
                     <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{plan.planName}</div>
                     <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Plan Code: {plan.planCode}</div>
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>?{(plan.price || 0).toLocaleString()}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>₦{(plan.price || 0).toLocaleString()}</div>
                 </button>
               ))}
             </div>
@@ -2323,7 +2382,7 @@ export default function DanbaiwaApp() {
             <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
-              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>?{(selectedCablePlan?.price || 0).toLocaleString()}</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>₦{(selectedCablePlan?.price || 0).toLocaleString()}</span>
             </div>
           </div>
 
@@ -2438,7 +2497,7 @@ export default function DanbaiwaApp() {
             <div>
               <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Amount Paid</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                ?{(cableSuccessData?.amount || 0).toLocaleString()}
+                ₦{(cableSuccessData?.amount || 0).toLocaleString()}
               </div>
             </div>
           </div>
@@ -2722,9 +2781,9 @@ export default function DanbaiwaApp() {
                 >
                   <div style={{ textAlign: "left" }}>
                     <div style={{ fontSize: 16, fontWeight: 800, color: T.textPrimary }}>{plan.planName || "Electricity Plan"}</div>
-                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Amount: ?{(plan.price || 0).toLocaleString()}</div>
+                    <div style={{ fontSize: 12, color: T.textMuted, marginTop: 4 }}>Amount: ₦{(plan.price || 0).toLocaleString()}</div>
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>?{(plan.price || 0).toLocaleString()}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: T.blue }}>₦{(plan.price || 0).toLocaleString()}</div>
                 </button>
               ))}
             </div>
@@ -2853,7 +2912,7 @@ export default function DanbaiwaApp() {
             <div style={{ height: 1, background: T.border, margin: "16px 0" }} />
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ color: T.textSecondary, fontWeight: 600, fontSize: 14 }}>Amount</span>
-              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>?{(selectedPowerPlan?.price || 0).toLocaleString()}</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 18 }}>₦{(selectedPowerPlan?.price || 0).toLocaleString()}</span>
             </div>
           </div>
 
@@ -2968,7 +3027,7 @@ export default function DanbaiwaApp() {
             <div>
               <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 4, fontWeight: 500 }}>Amount Paid</div>
               <div style={{ fontSize: 18, fontWeight: 700, color: T.green }}>
-                ?{(powerSuccessData?.amount || 0).toLocaleString()}
+                ₦{(powerSuccessData?.amount || 0).toLocaleString()}
               </div>
             </div>
           </div>
@@ -3039,7 +3098,7 @@ export default function DanbaiwaApp() {
         {/* Left: greeting */}
         <div>
           <p style={{ margin: 0, fontSize: 13, color: T.textMuted, fontWeight: 500, letterSpacing: "0.2px" }}>
-            Welcome back ??
+            Welcome back 👋
           </p>
           <h1 style={{
             margin: "2px 0 0", fontSize: 22, fontWeight: 800,
@@ -3267,7 +3326,7 @@ export default function DanbaiwaApp() {
                         textShadow: "0 2px 12px rgba(0,0,0,0.2)",
                       }}
                     >
-                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "??????"}
+                      {balanceVisible ? user.balance.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "••••••"}
                     </span>
                   </div>
 
@@ -3558,7 +3617,7 @@ export default function DanbaiwaApp() {
                         }}
                       >
                         {bank.label}
-                        {alreadyCreated ? " ? Added" : ""}
+                        {alreadyCreated ? " • Added" : ""}
                       </button>
                     );
                   })}
@@ -3752,7 +3811,7 @@ export default function DanbaiwaApp() {
                     border: `1px solid ${T.border}`, textAlign: "left",
                   }}>
                     <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      ?? Call Us
+                      📞 Call Us
                     </p>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
                       08069601974
@@ -3777,7 +3836,7 @@ export default function DanbaiwaApp() {
                     border: `1px solid ${T.border}`, textAlign: "left",
                   }}>
                     <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      ?? Chat With Us
+                      💬 Chat With Us
                     </p>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
                       08069601974
@@ -3802,7 +3861,7 @@ export default function DanbaiwaApp() {
                     border: `1px solid ${T.border}`, textAlign: "left",
                   }}>
                     <p style={{ margin: "0 0 8px", fontSize: 14, fontWeight: 700, color: T.textSecondary, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-                      ?? Location
+                      📍 Location
                     </p>
                     <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: T.textPrimary }}>
                       Jigawa State, Gagarawa
@@ -3944,7 +4003,7 @@ export default function DanbaiwaApp() {
               createdAt={selectedTransaction.createdAt}
             />
             <div style={{ fontSize: 12, color: T.textSecondary }}>
-              {new Date(selectedTransaction.createdAt).toLocaleDateString("en-NG")} ? {new Date(selectedTransaction.createdAt).toLocaleTimeString("en-NG")}
+              {new Date(selectedTransaction.createdAt).toLocaleDateString("en-NG")} · {new Date(selectedTransaction.createdAt).toLocaleTimeString("en-NG")}
             </div>
             <button
               onClick={() => downloadTransactionReceiptPng(selectedTransaction)}
@@ -3995,7 +4054,7 @@ export default function DanbaiwaApp() {
               autoFocus
               value={pinForm.oldPin}
               onChange={(e) => setPinForm({ ...pinForm, oldPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="??????"
+              placeholder="••••••"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -4015,7 +4074,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.newPin}
               onChange={(e) => setPinForm({ ...pinForm, newPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="??????"
+              placeholder="••••••"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -4035,7 +4094,7 @@ export default function DanbaiwaApp() {
               maxLength={6}
               value={pinForm.confirmPin}
               onChange={(e) => setPinForm({ ...pinForm, confirmPin: e.target.value.replace(/\D/g, "") })}
-              placeholder="??????"
+              placeholder="••••••"
               style={{
                 width: "100%", padding: "14px 14px", borderRadius: 14,
                 border: `1px solid ${T.border}`, background: T.bgElevated,
@@ -4126,6 +4185,7 @@ export default function DanbaiwaApp() {
     </div>
   );
 }
+
 
 
 

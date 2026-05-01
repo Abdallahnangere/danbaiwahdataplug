@@ -31,6 +31,7 @@ interface AdminUser {
   accountNumber?: string | null;
   bankName?: string | null;
   accountName?: string | null;
+  isActive?: boolean;
 }
 
 interface UserTransaction {
@@ -57,6 +58,7 @@ export default function UsersTab() {
   const [balanceAmount, setBalanceAmount] = useState("");
   const [balanceLoading, setBalanceLoading] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
+  const [userActionLoading, setUserActionLoading] = useState(false);
 
   // Fetch users
   useEffect(() => {
@@ -213,6 +215,66 @@ export default function UsersTab() {
       toast.error("Failed to update user role");
     } finally {
       setRoleLoading(false);
+    }
+  };
+
+  const handleToggleActive = async () => {
+    if (!selectedUser) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isActive: !(selectedUser.isActive !== false) }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed");
+      const next = { ...selectedUser, isActive: result.isActive };
+      setSelectedUser(next);
+      setUsers(users.map((u) => (u.id === selectedUser.id ? { ...u, isActive: result.isActive } : u)));
+      toast.success(result.isActive ? "User unbanned successfully" : "User banned successfully");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to update user status");
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const handleResetPin = async () => {
+    if (!selectedUser) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/pin`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed");
+      toast.success(`PIN reset successful. Temporary PIN: ${result.temporaryPin}`);
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to reset pin");
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
+    if (!confirm(`Delete ${selectedUser.fullName || selectedUser.phone}? This cannot be undone.`)) return;
+    setUserActionLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}`, { method: "DELETE", credentials: "include" });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || "Failed");
+      setUsers(users.filter((u) => u.id !== selectedUser.id));
+      setSelectedUser(null);
+      toast.success("User deleted successfully");
+    } catch (error: any) {
+      toast.error(error?.message || "Failed to delete user");
+    } finally {
+      setUserActionLoading(false);
     }
   };
 
@@ -632,6 +694,12 @@ export default function UsersTab() {
                     </button>
                   </div>
                 </div>
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: 12, color: T.textMuted, fontWeight: 600 }}>Status</p>
+                  <span style={{ color: selectedUser.isActive === false ? T.red : T.green, fontWeight: 700, fontSize: 13 }}>
+                    {selectedUser.isActive === false ? "Banned" : "Active"}
+                  </span>
+                </div>
               </div>
 
               {/* BillStack Account Section */}
@@ -665,6 +733,17 @@ export default function UsersTab() {
                   ₦{(selectedUser.balance || 0).toLocaleString()}
                 </p>
               </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+              <button onClick={handleToggleActive} disabled={userActionLoading} style={{ padding: "10px 12px", borderRadius: 8, background: selectedUser.isActive === false ? T.green : T.red, border: "none", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+                {selectedUser.isActive === false ? "Unban User" : "Ban User"}
+              </button>
+              <button onClick={handleResetPin} disabled={userActionLoading} style={{ padding: "10px 12px", borderRadius: 8, background: T.violet, border: "none", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+                Reset PIN
+              </button>
+              <button onClick={handleDeleteUser} disabled={userActionLoading} style={{ padding: "10px 12px", borderRadius: 8, background: T.bgCard, border: `1px solid ${T.red}`, color: T.red, fontWeight: 700, cursor: "pointer" }}>
+                Delete User
+              </button>
             </div>
 
             {/* Balance Operations */}

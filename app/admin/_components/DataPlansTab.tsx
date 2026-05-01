@@ -332,6 +332,23 @@ export default function DataPlansTab() {
     }
   };
 
+  const handleTogglePlanActive = async (plan: DataPlan) => {
+    try {
+      const res = await fetch(`/api/admin/plans/${plan.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isActive: !plan.isActive }),
+      });
+      if (!res.ok) throw new Error("Failed to update status");
+      const updated = await res.json();
+      setPlans(plans.map((p) => (p.id === updated.id ? updated : p)));
+      toast.success(updated.isActive ? "Plan activated" : "Plan deactivated");
+    } catch {
+      toast.error("Failed to update plan status");
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: "flex", justifyContent: "center", padding: "40px 20px", fontFamily: font }}>
@@ -365,6 +382,21 @@ export default function DataPlansTab() {
         Create Plan
       </button>
 
+      {/* Control Center */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(200px,1fr))", gap: 10, marginBottom: 12 }}>
+        {NETWORKS.map((n) => {
+          const netPlans = plans.filter((p) => Number(p.networkId) === Number(n.id));
+          const activeCount = netPlans.filter((p) => p.isActive).length;
+          return (
+            <div key={n.id} style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 10, padding: 10 }}>
+              <div style={{ color: T.textPrimary, fontWeight: 700, fontSize: 13 }}>{n.name}</div>
+              <div style={{ color: T.textSecondary, fontSize: 12 }}>{activeCount}/{netPlans.length} active</div>
+              <div style={{ color: T.textMuted, fontSize: 11 }}>SME/GIFTING/CORPORATE grouped below</div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Plans table */}
       <div style={{
         padding: 20,
@@ -396,7 +428,7 @@ export default function DataPlansTab() {
             </tr>
           </thead>
           <tbody>
-            {plans.map((plan) => (
+            {filteredPlans.map((plan) => (
               <tr key={plan.id || Math.random()} style={{ borderBottom: `1px solid ${T.border}` }}>
                 <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.name || "—"}</td>
                 <td style={{ padding: "12px 8px", color: T.textSecondary }}>{plan.networkName || "—"}</td>
@@ -491,6 +523,22 @@ export default function DataPlansTab() {
                     >
                       {deleteLoading === plan.id ? <Loader2 size={14} /> : <Trash2 size={14} />}
                     </button>
+                    <button
+                      onClick={() => handleTogglePlanActive(plan)}
+                      style={{
+                        background: plan.isActive ? `${T.red}22` : `${T.green}22`,
+                        border: `1px solid ${plan.isActive ? T.red : T.green}`,
+                        borderRadius: 6,
+                        width: 78,
+                        height: 32,
+                        cursor: "pointer",
+                        color: plan.isActive ? T.red : T.green,
+                        fontSize: 11,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {plan.isActive ? "Disable" : "Enable"}
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -498,7 +546,7 @@ export default function DataPlansTab() {
           </tbody>
         </table>
 
-        {plans.length === 0 && (
+        {filteredPlans.length === 0 && (
           <div style={{ padding: "40px 20px", textAlign: "center", color: T.textSecondary }}>
             No plans yet. Create one to get started.
           </div>

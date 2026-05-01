@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap, Megaphone, Webhook, Wallet } from "lucide-react";
+import { Loader2, LogOut, BarChart3, Database, Users, Phone, Tv, Zap, Megaphone, Webhook, Wallet, History } from "lucide-react";
 import { toast } from "sonner";
 import AnalyticsTab from "./_components/AnalyticsTab";
 import DataPlansTab from "./_components/DataPlansTab";
@@ -14,6 +14,7 @@ import PowerTab from "./_components/PowerTab";
 import BroadcastsTab from "./_components/BroadcastsTab";
 import WebhooksTab from "./_components/WebhooksTab";
 import BalancesTab from "./_components/BalancesTab";
+import TransactionsTab from "./_components/TransactionsTab";
 
 // ─── DESIGN TOKENS ───────────────────────────────────────────────
 const T = {
@@ -37,7 +38,7 @@ export default function AdminDashboard() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"analytics" | "balances" | "broadcasts" | "plans" | "users" | "airtime" | "cable" | "power" | "webhooks">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "balances" | "broadcasts" | "plans" | "users" | "transactions" | "airtime" | "cable" | "power" | "webhooks">("analytics");
 
   // Check if already authenticated via JWT/session
   useEffect(() => {
@@ -208,6 +209,7 @@ export default function AdminDashboard() {
     { id: "broadcasts" as const, label: "Broadcasts", icon: Megaphone },
     { id: "plans" as const, label: "Data Plans", icon: Database },
     { id: "users" as const, label: "Users", icon: Users },
+    { id: "transactions" as const, label: "Transactions", icon: History },
     { id: "airtime" as const, label: "Airtime", icon: Phone },
     { id: "cable" as const, label: "Cable TV", icon: Tv },
     { id: "power" as const, label: "Power", icon: Zap },
@@ -319,6 +321,7 @@ export default function AdminDashboard() {
         {activeTab === "broadcasts" && <BroadcastsTab />}
         {activeTab === "plans" && <DataPlansTab />}
         {activeTab === "users" && <UsersTab />}
+        {activeTab === "transactions" && <TransactionsTab />}
         {activeTab === "airtime" && <AirtimeTab />}
         {activeTab === "cable" && <CableTab />}
         {activeTab === "power" && <PowerTab />}

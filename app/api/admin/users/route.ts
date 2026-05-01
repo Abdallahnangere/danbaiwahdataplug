@@ -23,12 +23,13 @@ export async function GET(request: NextRequest) {
       phone: string | null;
       balance: number;
       role: string;
+      isActive: boolean;
       createdAt: string;
       account_number: string | null;
       bank_name: string | null;
       account_name: string | null;
     }>(
-      `SELECT id, email, name, phone, balance, role, "createdAt", account_number, bank_name, account_name
+      `SELECT id, email, name, phone, balance, role, "isActive", "createdAt", account_number, bank_name, account_name
        FROM "User"
        ORDER BY "createdAt" DESC`,
       []
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
         phone: String(user.phone || ""),
         balance: typeof user.balance === 'number' ? user.balance : parseFloat(String(user.balance || 0)),
         tier: String(user.role || "user"),
+        isActive: !!user.isActive,
         createdAt: user.createdAt || new Date().toISOString(),
         accountNumber: user.account_number || null,
         bankName: user.bank_name || null,

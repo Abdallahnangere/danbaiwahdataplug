@@ -22,7 +22,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { balance, operation, amount } = body;
+    const { balance, operation, amount, isActive } = body;
 
     // If operation-based adjustment
     if (operation && amount) {
@@ -37,11 +37,11 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ success: true, balance: result.balance }, { headers: utf8Headers });
       } else if (operation === "subtract") {
         const result = await queryOne<{ balance: number }>(
-          `UPDATE "User" SET balance = balance - $1 WHERE id = $2 RETURNING balance`,
+          `UPDATE "User" SET balance = balance - $1 WHERE id = $2 AND balance >= $1 RETURNING balance`,
           [parseFloat(amount), id]
         );
         if (!result) {
-          return NextResponse.json({ error: "User not found" }, { status: 404, headers: utf8Headers });
+          return NextResponse.json({ error: "User not found or insufficient balance for deduction" }, { status: 404, headers: utf8Headers });
         }
         return NextResponse.json({ success: true, balance: result.balance }, { headers: utf8Headers });
       } else if (operation === "set") {
@@ -66,6 +66,16 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: "User not found" }, { status: 404, headers: utf8Headers });
       }
       return NextResponse.json({ success: true, balance: result.balance }, { headers: utf8Headers });
+    }
+    if (typeof isActive === "boolean") {
+      const result = await queryOne<{ id: string; isActive: boolean }>(
+        `UPDATE "User" SET "isActive" = $1 WHERE id = $2 RETURNING id, "isActive"`,
+        [isActive, id]
+      );
+      if (!result) {
+        return NextResponse.json({ error: "User not found" }, { status: 404, headers: utf8Headers });
+      }
+      return NextResponse.json({ success: true, isActive: result.isActive }, { headers: utf8Headers });
     }
 
     return NextResponse.json({ error: "Invalid request" }, { status: 400, headers: utf8Headers });
@@ -92,6 +102,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "User ID is required" }, { status: 400, headers: utf8Headers });
     }
 
+    // Prevent admin self-delete
+    if (sessionUser.userId === id) {
+      return NextResponse.json({ error: "You cannot delete your own admin account" }, { status: 400, headers: utf8Headers });
+    }
     // Delete user (transactions cascade via FK on public.transactions)
     await execute(`DELETE FROM "User" WHERE id = $1`, [id]);
 
