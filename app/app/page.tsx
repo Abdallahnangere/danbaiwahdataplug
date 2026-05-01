@@ -245,55 +245,215 @@ export default function DanbaiwaApp() {
     }
   };
 
-  const downloadTransactionReceiptPng = (tx: any) => {
+  const downloadTransactionReceiptPng = async (tx: any) => {
     const canvas = document.createElement("canvas");
-    canvas.width = 900;
-    canvas.height = 1200;
+    canvas.width = 840;
+    canvas.height = 1028;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.fillStyle = "#FFFFFF";
+    const NAIRA = "\u20A6";
+    const WEBSITE = "www.danbaiwahdataplug.com";
+    const SUPPORT_EMAIL = "support@danbaiwahdataplug.com";
+    const receiptStatus = String(tx.status || "PENDING").toUpperCase();
+    const success = receiptStatus === "SUCCESS";
+    const amount = Number(tx.amount || 0);
+    const reference = String(tx.reference || tx.id || "N/A");
+    const createdAt = tx.createdAt ? new Date(tx.createdAt) : new Date();
+    const dateTime = Number.isNaN(createdAt.getTime())
+      ? "N/A"
+      : new Intl.DateTimeFormat("en-GB", {
+          timeZone: "Africa/Lagos",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hourCycle: "h23",
+        }).format(createdAt);
+
+    const roundedRect = (
+      context: CanvasRenderingContext2D,
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      radius: number
+    ) => {
+      const r = Math.min(radius, width / 2, height / 2);
+      context.beginPath();
+      context.moveTo(x + r, y);
+      context.lineTo(x + width - r, y);
+      context.quadraticCurveTo(x + width, y, x + width, y + r);
+      context.lineTo(x + width, y + height - r);
+      context.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+      context.lineTo(x + r, y + height);
+      context.quadraticCurveTo(x, y + height, x, y + height - r);
+      context.lineTo(x, y + r);
+      context.quadraticCurveTo(x, y, x + r, y);
+      context.closePath();
+    };
+
+    const loadLogo = () =>
+      new Promise<HTMLImageElement | null>((resolve) => {
+        const image = new window.Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => resolve(null);
+        image.src = "/logo.jpeg";
+      });
+
+    const drawRightFittedText = (
+      text: string,
+      rightX: number,
+      baselineY: number,
+      maxWidth: number,
+      initialSize = 28
+    ) => {
+      let fontSize = initialSize;
+      do {
+        ctx.font = `900 ${fontSize}px Arial`;
+        if (ctx.measureText(text).width <= maxWidth || fontSize <= 18) break;
+        fontSize -= 1;
+      } while (fontSize > 18);
+      ctx.fillText(text, rightX, baselineY);
+    };
+
+    ctx.fillStyle = "#F3F4F6";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "#166534";
-    ctx.fillRect(0, 0, canvas.width, 120);
-    ctx.fillStyle = "#FFFFFF";
-    ctx.font = "bold 40px Arial";
-    ctx.fillText("Danbaiwah Data Plug", 40, 72);
-    ctx.font = "24px Arial";
-    ctx.fillText("www.danbaiwahdataplug.com", 40, 104);
+    const headerGradient = ctx.createLinearGradient(0, 0, canvas.width, 500);
+    headerGradient.addColorStop(0, "#064E3B");
+    headerGradient.addColorStop(0.56, "#16A34A");
+    headerGradient.addColorStop(1, "#34D399");
+    ctx.fillStyle = headerGradient;
+    ctx.fillRect(0, 0, canvas.width, 498);
 
-    ctx.fillStyle = "#052E16";
-    ctx.font = "bold 34px Arial";
-    ctx.fillText("Transaction Receipt", 40, 190);
+    ctx.fillStyle = "rgba(255,255,255,0.12)";
+    ctx.beginPath();
+    ctx.arc(780, 58, 202, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(5,150,105,0.18)";
+    ctx.beginPath();
+    ctx.arc(746, 94, 50, 0, Math.PI * 2);
+    ctx.fill();
+
+    const logo = await loadLogo();
+    roundedRect(ctx, 44, 52, 78, 78, 22);
+    ctx.fillStyle = "rgba(255,255,255,0.94)";
+    ctx.fill();
+    if (logo) {
+      ctx.save();
+      roundedRect(ctx, 56, 64, 54, 54, 14);
+      ctx.clip();
+      ctx.drawImage(logo, 56, 64, 54, 54);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#047857";
+      ctx.font = "900 30px Arial";
+      ctx.textAlign = "center";
+      ctx.fillText("D", 83, 102);
+    }
+
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 32px Arial";
+    ctx.fillText("DANBAIWA", 140, 88);
+    ctx.fillStyle = "rgba(255,255,255,0.62)";
+    ctx.font = "900 18px Arial";
+    ctx.fillText("TRANSACTION RECEIPT", 141, 114);
+
+    const statusText = success ? "SUCCESS" : receiptStatus;
+    ctx.font = "900 23px Arial";
+    const statusWidth = Math.max(178, ctx.measureText(statusText).width + 80);
+    roundedRect(ctx, canvas.width - statusWidth - 44, 66, statusWidth, 52, 26);
+    ctx.fillStyle = success ? "rgba(22,163,74,0.28)" : "rgba(185,28,28,0.22)";
+    ctx.fill();
+    ctx.strokeStyle = success ? "rgba(74,222,128,0.68)" : "rgba(248,113,113,0.72)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = success ? "#86EFAC" : "#FCA5A5";
+    ctx.beginPath();
+    ctx.arc(canvas.width - statusWidth - 15, 92, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillText(statusText, canvas.width - statusWidth + 4, 100);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(255,255,255,0.56)";
+    ctx.font = "900 21px Arial";
+    ctx.fillText("TOTAL AMOUNT PAID", canvas.width / 2, 190);
+    ctx.fillStyle = "#FFFFFF";
+    ctx.font = "900 112px Arial";
+    ctx.fillText(amount.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 }), canvas.width / 2 + 38, 315);
+    ctx.fillStyle = "rgba(255,255,255,0.64)";
+    ctx.font = "900 42px Arial";
+    ctx.fillText(NAIRA, 224, 269);
+
+    ctx.font = "900 18px Consolas, monospace";
+    const refText = `REF: ${reference}`;
+    const refWidth = Math.min(560, Math.max(244, ctx.measureText(refText).width + 58));
+    roundedRect(ctx, (canvas.width - refWidth) / 2, 356, refWidth, 47, 15);
+    ctx.fillStyle = "rgba(255,255,255,0.10)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,0.58)";
+    ctx.fillText(refText.length > 38 ? `${refText.slice(0, 35)}...` : refText, canvas.width / 2, 386);
+
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 498, canvas.width, 356);
+    for (let x = 42; x < canvas.width + 44; x += 44) {
+      ctx.beginPath();
+      ctx.arc(x, 498, 21, Math.PI, 0);
+      ctx.fill();
+    }
 
     const rows = [
-      ["Beneficiary Number", tx.phone || "N/A"],
-      ["Plan Bought", tx.planName || "N/A"],
-      ["Network", tx.networkName || "N/A"],
-      ["Price", `NGN ${Number(tx.amount || 0).toLocaleString()}`],
-      ["Status", String(tx.status || "PENDING")],
-      ["Reference", tx.reference || "N/A"],
-      ["Date", new Date(tx.createdAt).toLocaleDateString("en-NG")],
-      ["Time", new Date(tx.createdAt).toLocaleTimeString("en-NG")],
+      ["NETWORK", String(tx.networkName || "N/A")],
+      ["PLAN BOUGHT", String(tx.planName || "N/A")],
+      ["RECIPIENT", String(tx.phone || "N/A")],
+      ["DATE & TIME", dateTime],
     ];
 
-    let y = 260;
-    rows.forEach(([k, v]) => {
-      ctx.fillStyle = "#15803D";
-      ctx.font = "bold 24px Arial";
-      ctx.fillText(`${k}:`, 40, y);
-      ctx.fillStyle = "#14532D";
-      ctx.font = "24px Arial";
-      ctx.fillText(String(v), 330, y);
-      y += 80;
+    ctx.textAlign = "left";
+    rows.forEach(([label, value], index) => {
+      const rowTop = 508 + index * 82;
+      ctx.strokeStyle = "#E7EBE8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(44, rowTop + 75);
+      ctx.lineTo(796, rowTop + 75);
+      ctx.stroke();
+
+      ctx.fillStyle = "#9CA3AF";
+      ctx.font = "900 21px Arial";
+      ctx.fillText(label, 44, rowTop + 47);
+
+      ctx.textAlign = "right";
+      ctx.fillStyle = "#181827";
+      drawRightFittedText(value, 796, rowTop + 47, 395, 28);
+      ctx.textAlign = "left";
     });
 
-    ctx.fillStyle = "#DCFCE7";
-    ctx.fillRect(40, 980, 820, 120);
-    ctx.fillStyle = "#166534";
-    ctx.font = "bold 26px Arial";
-    ctx.fillText("Thank you for using Danbaiwah Data Plug", 70, 1050);
+    ctx.fillStyle = "#F3F4F6";
+    ctx.fillRect(0, 854, canvas.width, 174);
+    ctx.strokeStyle = "#D1D5DB";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(62, 893);
+    ctx.lineTo(268, 893);
+    ctx.moveTo(572, 893);
+    ctx.lineTo(778, 893);
+    ctx.stroke();
+    ctx.fillStyle = "#A7ABB3";
+    ctx.textAlign = "center";
+    ctx.font = "900 18px Arial";
+    ctx.fillText("SECURED BY DANBAIWA", canvas.width / 2, 900);
+    ctx.font = "400 20px Arial";
+    ctx.fillText(SUPPORT_EMAIL, canvas.width / 2, 946);
+    ctx.fillStyle = "#C0C4CB";
+    ctx.font = "600 17px Arial";
+    ctx.fillText(`\u00A9 DANBAIWA DATA PLUG 2026 \u00B7 ${WEBSITE}`, canvas.width / 2, 982);
 
     const link = document.createElement("a");
     link.download = `receipt-${tx.reference || tx.id}.png`;
@@ -1402,6 +1562,8 @@ export default function DanbaiwaApp() {
                 price={Number(successData?.amount || 0)}
                 status={String(successData?.status || "SUCCESS")}
                 reference={String(successData?.reference || "")}
+                networkName={selectedNetwork?.name || selectedPlan?.networkName || "N/A"}
+                createdAt={successData?.createdAt || null}
               />
             </div>
             {/* Done button */}
@@ -1821,6 +1983,8 @@ export default function DanbaiwaApp() {
               price={Number(parseInt(airtimeAmount) || 0)}
               status={String(airtimeSuccessData?.status || "SUCCESS")}
               reference={String(airtimeSuccessData?.reference || "--")}
+              networkName={airtimeNetwork?.name || "N/A"}
+              createdAt={airtimeSuccessData?.createdAt || null}
             />
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -3849,6 +4013,8 @@ export default function DanbaiwaApp() {
               price={Number(selectedTransaction.amount || 0)}
               status={String(selectedTransaction.status || "PENDING")}
               reference={selectedTransaction.reference || selectedTransaction.id}
+              networkName={selectedTransaction.networkName || "N/A"}
+              createdAt={selectedTransaction.createdAt}
             />
             <div style={{ fontSize: 12, color: T.textSecondary }}>
               {new Date(selectedTransaction.createdAt).toLocaleDateString("en-NG")} · {new Date(selectedTransaction.createdAt).toLocaleTimeString("en-NG")}
