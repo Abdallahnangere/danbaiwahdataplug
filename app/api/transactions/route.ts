@@ -39,8 +39,8 @@ export async function GET(request: NextRequest) {
          dp.name AS plan_name, dp.size_label
        FROM public.transactions t
        LEFT JOIN public.data_plans dp ON dp.id = t.plan_id
-       WHERE user_id = $1
-       AND category IN ('DATA', 'AIRTIME')
+       WHERE t.user_id = $1
+       AND t.category IN ('DATA', 'AIRTIME')
        ORDER BY t.created_at DESC
        OFFSET $2
        LIMIT $3`,
