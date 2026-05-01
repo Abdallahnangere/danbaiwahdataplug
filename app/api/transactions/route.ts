@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
       target: string | null;
       provider: string | null;
       network_name: string | null;
+      network_id: number | null;
       plan_id: string | null;
       reference: string | null;
       amount: number;
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
       size_label: string | null;
     }>(
       `SELECT
-         t.id, t.category, t.target, t.provider, t.network_name, t.plan_id, t.reference,
+         t.id, t.category, t.target, t.provider, t.network_name, t.network_id, t.plan_id, t.reference,
          t.amount, t.status, t.created_at,
          dp.name AS plan_name, dp.size_label
        FROM public.transactions t
@@ -57,14 +58,21 @@ export async function GET(request: NextRequest) {
 
     const formatted = allTransactions.map((tx) => {
       const type = String(tx.category || "").toLowerCase();
+      const fallbackNetworkName =
+        tx.network_id === 1 ? "MTN" :
+        tx.network_id === 2 ? "Glo" :
+        tx.network_id === 3 ? "9mobile" :
+        tx.network_id === 4 ? "Airtel" :
+        "Network";
+      const resolvedNetwork = tx.network_name || fallbackNetworkName;
       return {
         id: tx.id,
         planName:
           type === "airtime"
-            ? `${tx.provider || "Network"} Airtime`
-            : tx.plan_name || `${tx.network_name || tx.provider || "Network"} Data`,
+            ? `${resolvedNetwork} Airtime`
+            : tx.plan_name || `${resolvedNetwork} Data`,
         sizeLabel: tx.size_label || "",
-        networkName: tx.network_name || tx.provider || "Provider",
+        networkName: resolvedNetwork,
         phone: tx.target || "",
         reference: tx.reference || "",
         amount: Number(tx.amount) || 0,

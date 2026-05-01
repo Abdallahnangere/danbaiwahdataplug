@@ -17,44 +17,44 @@ import TransactionReceipt from "@/components/TransactionReceipt";
 // ─── DESIGN TOKENS ───────────────────────────────────────────────────────────
 const T = {
   // Backgrounds
-  bg:        "#07090F",
-  bgCard:    "#0F1320",
-  bgElevated:"#161B2E",
-  bgGlass:   "rgba(255,255,255,0.05)",
+  bg:        "#F4FAF6",
+  bgCard:    "#FFFFFF",
+  bgElevated:"#ECF8F0",
+  bgGlass:   "rgba(255,255,255,0.78)",
 
   // Brand
-  blue:      "#3B82F6",
-  blueMid:   "#6366F1",
-  blueLight: "#60A5FA",
-  violet:    "#8B5CF6",
-  cyan:      "#06B6D4",
+  blue:      "#0D9A6B",
+  blueMid:   "#18B57E",
+  blueLight: "#39C996",
+  violet:    "#1E7B62",
+  cyan:      "#0EA677",
 
   // Text
-  textPrimary:   "#F1F5FF",
-  textSecondary: "#8B93B0",
-  textMuted:     "#4B5370",
+  textPrimary:   "#0F2A1F",
+  textSecondary: "#3D6A59",
+  textMuted:     "#6F9486",
 
   // Borders
-  border:      "rgba(255,255,255,0.07)",
-  borderStrong:"rgba(255,255,255,0.12)",
+  border:      "rgba(13,154,107,0.16)",
+  borderStrong:"rgba(13,154,107,0.28)",
 
   // Status
   green:  "#10B981",
   red:    "#EF4444",
-  amber:  "#F59E0B",
+  amber:  "#E09B14",
 
   // Service accent palette
   services: {
-    data:        { icon: "#3B82F6", glow: "rgba(59,130,246,0.3)",  bg: "rgba(59,130,246,0.1)"  },
-    airtime:     { icon: "#EF4444", glow: "rgba(239,68,68,0.3)",   bg: "rgba(239,68,68,0.08)"  },
-    cable:       { icon: "#8B5CF6", glow: "rgba(139,92,246,0.3)",  bg: "rgba(139,92,246,0.08)" },
-    electricity: { icon: "#F59E0B", glow: "rgba(245,158,11,0.3)",  bg: "rgba(245,158,11,0.08)" },
-    exampin:     { icon: "#10B981", glow: "rgba(16,185,129,0.3)",  bg: "rgba(16,185,129,0.08)" },
-    contact:     { icon: "#06B6D4", glow: "rgba(6,182,212,0.3)",   bg: "rgba(6,182,212,0.08)"  },
+    data:        { icon: "#0D9A6B", glow: "rgba(13,154,107,0.18)", bg: "rgba(13,154,107,0.09)" },
+    airtime:     { icon: "#0E8A6B", glow: "rgba(14,138,107,0.18)", bg: "rgba(14,138,107,0.09)" },
+    cable:       { icon: "#2A9F7B", glow: "rgba(42,159,123,0.18)", bg: "rgba(42,159,123,0.09)" },
+    electricity: { icon: "#3AA56B", glow: "rgba(58,165,107,0.18)", bg: "rgba(58,165,107,0.09)" },
+    exampin:     { icon: "#0FAD7C", glow: "rgba(15,173,124,0.18)", bg: "rgba(15,173,124,0.09)" },
+    contact:     { icon: "#22B087", glow: "rgba(34,176,135,0.18)", bg: "rgba(34,176,135,0.09)" },
   },
 };
 
-const font = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif';
+const font = '"Sora", "Manrope", "Avenir Next", "Segoe UI", sans-serif';
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 interface User {
@@ -769,7 +769,7 @@ export default function DanbaiwaApp() {
           onClick={onClose}
           style={{
             position: "fixed", inset: 0, zIndex: 200,
-            background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
+            background: "rgba(15,42,31,0.22)", backdropFilter: "blur(10px)",
             display: "flex", alignItems: "flex-end",
           }}
         >
@@ -3087,9 +3087,9 @@ export default function DanbaiwaApp() {
           <div
             style={{
               borderRadius: 18,
-              border: `1px solid rgba(59,130,246,0.25)`,
-              background: "linear-gradient(135deg, rgba(59,130,246,0.18), rgba(6,182,212,0.12))",
-              boxShadow: "0 12px 30px rgba(0,0,0,0.18)",
+              border: `1px solid rgba(13,154,107,0.28)`,
+              background: "linear-gradient(135deg, rgba(13,154,107,0.16), rgba(57,201,150,0.10))",
+              boxShadow: "0 10px 26px rgba(13,154,107,0.16)",
               padding: "14px 16px",
               display: "flex",
               gap: 12,
@@ -3101,7 +3101,7 @@ export default function DanbaiwaApp() {
                 width: 38,
                 height: 38,
                 borderRadius: 12,
-                background: "rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.65)",
                 border: `1px solid ${T.border}`,
                 display: "flex",
                 alignItems: "center",
@@ -3171,21 +3171,21 @@ export default function DanbaiwaApp() {
                   marginBottom: 28,
                   overflow: "hidden",
                   position: "relative",
-                  background: `linear-gradient(145deg, #1A237E 0%, #1565C0 40%, #0288D1 75%, #00BCD4 100%)`,
-                  boxShadow: `0 24px 64px rgba(0,136,209,0.35), 0 0 0 1px rgba(255,255,255,0.08)`,
+                  background: `linear-gradient(145deg, #0F7A5B 0%, #14966E 45%, #1CB884 100%)`,
+                  boxShadow: `0 18px 42px rgba(13,154,107,0.28), 0 0 0 1px rgba(255,255,255,0.34)`,
                 }}
               >
                 {/* Decorative orbs */}
                 <div style={{
                   position: "absolute", top: -60, right: -60,
                   width: 220, height: 220, borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)",
+                  background: "radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%)",
                   pointerEvents: "none",
                 }} />
                 <div style={{
                   position: "absolute", bottom: -80, left: -40,
                   width: 200, height: 200, borderRadius: "50%",
-                  background: "radial-gradient(circle, rgba(0,188,212,0.15) 0%, transparent 70%)",
+                  background: "radial-gradient(circle, rgba(157,255,218,0.22) 0%, transparent 70%)",
                   pointerEvents: "none",
                 }} />
                 {/* Shine line */}
@@ -3268,7 +3268,7 @@ export default function DanbaiwaApp() {
                             color: "white", fontWeight: 700, cursor: "pointer",
                             fontSize: 11, display: "flex", alignItems: "center",
                             gap: 4, backdropFilter: "blur(10px)",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                            boxShadow: "0 2px 8px rgba(13,154,107,0.18)",
                             flexShrink: 0,
                           }}
                         >
@@ -3304,7 +3304,7 @@ export default function DanbaiwaApp() {
                       color: "white", fontWeight: 700, cursor: "pointer",
                       fontSize: 11, display: "flex", alignItems: "center",
                       gap: 4, backdropFilter: "blur(10px)",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
+                      boxShadow: "0 2px 8px rgba(13,154,107,0.18)",
                       flexShrink: 0, marginLeft: 8,
                     }}
                   >
@@ -3342,8 +3342,8 @@ export default function DanbaiwaApp() {
                         display: "flex", flexDirection: "column",
                         alignItems: "center", gap: 10,
                         cursor: "pointer",
-                        boxShadow: `0 4px 20px rgba(0,0,0,0.25)`,
-                        transition: "box-shadow 0.2s",
+                        boxShadow: `0 4px 14px rgba(13,154,107,0.12)`,
+                        transition: "box-shadow 0.18s, transform 0.18s",
                       }}
                     >
                       {/* Icon bubble */}
@@ -3352,7 +3352,7 @@ export default function DanbaiwaApp() {
                         background: svc.sc.bg,
                         border: `1px solid ${svc.sc.icon}22`,
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        boxShadow: `0 6px 20px ${svc.sc.glow}`,
+                        boxShadow: `0 4px 14px ${svc.sc.glow}`,
                       }}>
                         <Icon size={26} color={svc.sc.icon} strokeWidth={2} />
                       </div>
@@ -3378,7 +3378,7 @@ export default function DanbaiwaApp() {
                 background: T.bgCard, borderRadius: 20,
                 border: `1px solid ${T.border}`,
                 overflow: "hidden",
-                boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                boxShadow: "0 4px 16px rgba(13,154,107,0.1)",
               }}>
                 {ACCOUNT_SERVICES.map((item, idx) => {
                   const Icon = item.icon;
@@ -3554,7 +3554,7 @@ export default function DanbaiwaApp() {
                         borderRadius: 20,
                         border: `1px solid ${T.border}`,
                         padding: 18,
-                        boxShadow: "0 4px 20px rgba(0,0,0,0.2)",
+                        boxShadow: "0 4px 16px rgba(13,154,107,0.1)",
                       }}
                     >
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
@@ -3804,7 +3804,7 @@ export default function DanbaiwaApp() {
       {/* ══════════════════ BOTTOM NAV ══════════════════ */}
       <div style={{
         position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-        background: `rgba(7,9,15,0.88)`,
+        background: `rgba(255,255,255,0.92)`,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         borderTop: `1px solid ${T.border}`,
@@ -4181,7 +4181,7 @@ export default function DanbaiwaApp() {
               color: "white", fontWeight: 700, fontSize: 16,
               cursor: pinChangeLoading ? "not-allowed" : "pointer", letterSpacing: "-0.2px",
               fontFamily: font,
-              boxShadow: pinChangeLoading ? "none" : "0 8px 24px rgba(16,185,129,0.3)",
+              boxShadow: pinChangeLoading ? "none" : "0 8px 20px rgba(13,154,107,0.24)",
               opacity: pinChangeLoading ? 0.6 : 1,
             }}
           >
