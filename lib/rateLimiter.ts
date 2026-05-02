@@ -15,25 +15,11 @@ export interface RateLimitOptions {
   windowMs: number;
 }
 
-let tableReady = false;
-async function ensureRateLimitTable() {
-  if (tableReady) return;
-  await execute(
-    `CREATE TABLE IF NOT EXISTS "AuthRateLimitBucket" (
-      key text PRIMARY KEY,
-      count integer NOT NULL,
-      reset_at timestamptz NOT NULL
-    )`
-  );
-  tableReady = true;
-}
-
 export async function checkRateLimit(
   identifier: string,
   endpoint: string,
   options: RateLimitOptions = { maxAttempts: 5, windowMs: 15 * 60 * 1000 }
 ): Promise<RateLimitResult> {
-  await ensureRateLimitTable();
   const key = `${identifier}:${endpoint}`;
   const row = await queryOne<{ count: number; reset_ms: string }>(
     `INSERT INTO "AuthRateLimitBucket" (key, count, reset_at)
@@ -64,7 +50,6 @@ export async function checkRateLimit(
 }
 
 export async function resetRateLimit(identifier: string, endpoint: string): Promise<void> {
-  await ensureRateLimitTable();
   const key = `${identifier}:${endpoint}`;
   await execute(`DELETE FROM "AuthRateLimitBucket" WHERE key = $1`, [key]);
 }

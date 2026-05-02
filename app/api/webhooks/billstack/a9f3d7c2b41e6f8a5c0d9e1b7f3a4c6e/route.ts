@@ -56,51 +56,10 @@ function buildIdempotencyKey(payload: WiaxyPayload) {
   return `REF:${reference}|ACCT:${acct}|AMT:${amount}|AT:${createdAt}`;
 }
 
-async function ensureWebhookTables() {
-  await execute(
-    `CREATE TABLE IF NOT EXISTS public.billstack_webhook_events (
-      id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      provider text NOT NULL DEFAULT 'billstack',
-      event_ref text,
-      signature text,
-      signature_valid boolean,
-      request_headers jsonb NOT NULL DEFAULT '{}'::jsonb,
-      payload jsonb,
-      raw_body text,
-      processing_status text NOT NULL DEFAULT 'RECEIVED',
-      processing_error text,
-      user_id text,
-      credited_amount numeric(14,2),
-      received_at timestamptz NOT NULL DEFAULT NOW(),
-      processed_at timestamptz
-    )`,
-    []
-  );
-  await execute(`ALTER TABLE public.billstack_webhook_events ADD COLUMN IF NOT EXISTS account_number text`, []);
-  await execute(`ALTER TABLE public.billstack_webhook_events ADD COLUMN IF NOT EXISTS merchant_reference text`, []);
-  await execute(`ALTER TABLE public.billstack_webhook_events ADD COLUMN IF NOT EXISTS wiaxy_ref text`, []);
-  await execute(`ALTER TABLE public.billstack_webhook_events ADD COLUMN IF NOT EXISTS idempotency_key text`, []);
-  await execute(`CREATE INDEX IF NOT EXISTS idx_billstack_webhook_events_received_at ON public.billstack_webhook_events(received_at DESC)`, []);
-  await execute(`CREATE INDEX IF NOT EXISTS idx_billstack_webhook_events_status ON public.billstack_webhook_events(processing_status)`, []);
-  await execute(`CREATE INDEX IF NOT EXISTS idx_billstack_webhook_events_event_ref ON public.billstack_webhook_events(event_ref)`, []);
-  await execute(`CREATE INDEX IF NOT EXISTS idx_billstack_webhook_events_idempotency_key ON public.billstack_webhook_events(idempotency_key)`, []);
-  await execute(
-    `CREATE TABLE IF NOT EXISTS public.webhook_credit_idempotency (
-      provider text NOT NULL,
-      idempotency_key text NOT NULL,
-      created_at timestamptz NOT NULL DEFAULT NOW(),
-      PRIMARY KEY (provider, idempotency_key)
-    )`,
-    []
-  );
-}
-
 export async function POST(request: NextRequest) {
   let webhookEventId: string | null = null;
   let idempotencyKey: string | null = null;
   try {
-    await ensureWebhookTables();
-
     const rawBody = await request.text();
     const signature = request.headers.get("x-wiaxy-signature") || request.headers.get("x-billstack-signature");
     let payload: WiaxyPayload | null = null;

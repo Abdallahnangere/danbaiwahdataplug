@@ -1,19 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { execute, queryOne } from "@/lib/db";
 
-let tableReady = false;
-async function ensureRateLimitTable() {
-  if (tableReady) return;
-  await execute(
-    `CREATE TABLE IF NOT EXISTS "RateLimitBucket" (
-      key text PRIMARY KEY,
-      count integer NOT NULL,
-      reset_at timestamptz NOT NULL
-    )`
-  );
-  tableReady = true;
-}
-
 /**
  * Check rate limit for a user/endpoint combination
  * @param key Unique identifier (e.g., "user-123-purchase")
@@ -26,7 +13,6 @@ export async function checkRateLimit(
   limit: number = 5,
   windowMs: number = 60000 // 1 minute default
 ): Promise<boolean> {
-  await ensureRateLimitTable();
   const row = await queryOne<{ count: number }>(
     `INSERT INTO "RateLimitBucket" (key, count, reset_at)
      VALUES ($1, 1, NOW() + ($2::text || ' milliseconds')::interval)

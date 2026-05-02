@@ -29,6 +29,9 @@ export default function BalancesTab() {
   const [asOf, setAsOf] = useState("");
 
   const fetchData = async (manual = false) => {
+    if (!manual && typeof document !== "undefined" && document.visibilityState !== "visible") {
+      return;
+    }
     if (manual) setRefreshing(true);
     try {
       const res = await fetch("/api/admin/balances", { credentials: "include", cache: "no-store" });
@@ -47,7 +50,7 @@ export default function BalancesTab() {
   useEffect(() => {
     let timer: ReturnType<typeof setInterval> | null = null;
     fetchData();
-    timer = setInterval(fetchData, 5000);
+    timer = setInterval(fetchData, 30000);
     return () => { if (timer) clearInterval(timer); };
   }, []);
 

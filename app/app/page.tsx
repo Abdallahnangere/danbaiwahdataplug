@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -83,6 +83,18 @@ interface BroadcastMessage {
   createdAt: string;
 }
 
+interface HomeBootstrapResponse {
+  user: User;
+  broadcasts: BroadcastMessage[];
+  accountsSummary?: {
+    totalReservedAccounts: number;
+    hasPrimaryAccount: boolean;
+    primaryAccountNumber: string | null;
+    primaryBankName: string | null;
+    primaryAccountName: string | null;
+  };
+}
+
 interface AirtimeNetwork {
   id: number;
   name: string;
@@ -114,6 +126,8 @@ const AVAILABLE_RESERVED_BANKS = [
   { id: "BANKLY", label: "Bankly" },
   { id: "9PSB", label: "9PSB" },
 ] as const;
+
+const HOME_POLL_INTERVAL_MS = 45000;
 
 export default function DanbaiwaApp() {
   const router = useRouter();
@@ -190,41 +204,90 @@ export default function DanbaiwaApp() {
   const [buyPowerLoading, setBuyPowerLoading] = useState(false);
   const [buyPowerError, setBuyPowerError] = useState("");
   const [powerSuccessData, setPowerSuccessData] = useState<any | null>(null);
+  const hasShownWelcomeRef = useRef(false);
+  const loadHomeBootstrap = useCallback(
+    async (options?: { silent?: boolean; redirectOnAuthFailure?: boolean }) => {
+      try {
+        if (!options?.silent) {
+          setBroadcastsLoading(true);
+        }
+
+        const res = await fetch("/api/app/bootstrap", { credentials: "include" });
+        if (res.status === 401) {
+          if (options?.redirectOnAuthFailure) {
+            router.push("/app/auth");
+          }
+          return null;
+        }
+        if (!res.ok) {
+          throw new Error("Failed to fetch home data");
+        }
+
+        const data = (await res.json()) as HomeBootstrapResponse;
+        if (data?.user) {
+          setUser(data.user);
+          if (!hasShownWelcomeRef.current && data.user.fullName) {
+            toast.success(`Welcome back, ${data.user.fullName.split(" ")[0]}!`);
+            hasShownWelcomeRef.current = true;
+          }
+        }
+        setBroadcasts(Array.isArray(data?.broadcasts) ? data.broadcasts : []);
+        return data;
+      } catch {
+        if (options?.redirectOnAuthFailure) {
+          router.push("/app/auth");
+        }
+        return null;
+      } finally {
+        if (!options?.silent) {
+          setBroadcastsLoading(false);
+        }
+      }
+    },
+    [router]
+  );
 
   useEffect(() => {
+    let isMounted = true;
+
     const checkAuth = async () => {
-      try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (!res.ok) return router.push("/app/auth");
-        const data = await res.json();
-        setUser(data);
-        toast.success(`Welcome back, ${data.fullName.split(" ")[0]}!`);
-      } catch {
-        router.push("/app/auth");
-      } finally {
+      await loadHomeBootstrap({ redirectOnAuthFailure: true });
+      if (isMounted) {
         setLoading(false);
       }
     };
+
     checkAuth();
-  }, []);
+    return () => {
+      isMounted = false;
+    };
+  }, [loadHomeBootstrap]);
 
   useEffect(() => {
     if (activeTab !== "home" || !user) return;
 
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch("/api/auth/me", { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (error) {
-        // Silent fail on refresh - don't show errors
-      }
-    }, 5000); // Refresh every 5 seconds
+    const refreshHomeData = async () => {
+      if (document.visibilityState !== "visible") return;
+      await loadHomeBootstrap({ silent: true });
+    };
 
-    return () => clearInterval(interval);
-  }, [activeTab, user]);
+    const interval = window.setInterval(() => {
+      void refreshHomeData();
+    }, HOME_POLL_INTERVAL_MS);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void loadHomeBootstrap({ silent: true });
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [activeTab, user?.id, loadHomeBootstrap]);
 
   const fetchTransactionsPage = async (page: number, append = false) => {
     try {
@@ -477,20 +540,6 @@ export default function DanbaiwaApp() {
     return () => observer.disconnect();
   }, [activeTab, transactionsHasMore, transactionsLoading, transactionsPage]);
 
-  const fetchBroadcasts = async () => {
-    try {
-      setBroadcastsLoading(true);
-      const res = await fetch("/api/broadcasts", { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch broadcasts");
-      const data = await res.json();
-      setBroadcasts(Array.isArray(data.broadcasts) ? data.broadcasts : []);
-    } catch {
-      setBroadcasts([]);
-    } finally {
-      setBroadcastsLoading(false);
-    }
-  };
-
   const fetchAccounts = async () => {
     try {
       setAccountsLoading(true);
@@ -505,11 +554,6 @@ export default function DanbaiwaApp() {
       setAccountsLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!user) return;
-    fetchBroadcasts();
-  }, [user?.id]);
 
   useEffect(() => {
     if (activeTab !== "accounts") return;
@@ -3285,10 +3329,8 @@ export default function DanbaiwaApp() {
                     <button
                       onClick={async () => {
                         try {
-                          const res = await fetch("/api/auth/me", { credentials: "include" });
-                          if (res.ok) {
-                            const updatedUser = await res.json();
-                            setUser(updatedUser);
+                          const data = await loadHomeBootstrap({ silent: true });
+                          if (data?.user) {
                             toast.success("Wallet updated.");
                           }
                         } catch {
